@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sliding-tasks-simulation"
+version = "0.1.0"
+description = "Deterministic MRL simulation for Sliding Tasks"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+pythonpath = ["sandboxes/simulation/src"]
+testpaths = ["sandboxes/simulation/tests"]
+addopts = "-q"
+
+[tool.setuptools]
+package-dir = {"" = "sandboxes/simulation/src"}
+
+[tool.setuptools.packages.find]
+where = ["sandboxes/simulation/src"]
+

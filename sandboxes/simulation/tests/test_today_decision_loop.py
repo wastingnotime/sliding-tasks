@@ -1,0 +1,154 @@
+from datetime import date, datetime
+
+import pytest
+
+from app.application.simulation import SlidingTasksSimulation
+from app.domain.model import (
+    CardStatus,
+    DomainError,
+    Recurrence,
+    RecurrenceKind,
+    TaskSubtype,
+    TaskType,
+)
+
+
+DAY_ONE = date(2026, 9, 14)  # Monday
+DAILY = Recurrence(RecurrenceKind.DAILY)
+
+
+def simulation() -> SlidingTasksSimulation:
+    return SlidingTasksSimulation(datetime(2026, 9, 14, 6, 0))
+
+
+def event_types(env: SlidingTasksSimulation, task_id: str) -> list[str]:
+    return [event.event_type for event in env.events() if event.task_id == task_id]
+
+
+def test_regular_success_and_conscious_dismiss_are_distinct() -> None:
+    env = simulation()
+    pushups = env.create_task("pushups", TaskType.SKILL, TaskSubtype.REGULAR, DAILY)
+    housekeeping = env.create_task("housekeeping", TaskType.CHORE, TaskSubtype.REGULAR, DAILY)
+    first, second = env.open_day(DAY_ONE)
+
+    env.done_card(first.id)
+    env.dismiss_card(second.id)
+    env.close_day()
+
+    assert event_types(env, pushups.id)[-1] == "CardDone"
+    assert event_types(env, housekeeping.id)[-1] == "CardDismissed"
+    assert "CardMissed" not in event_types(env, housekeeping.id)
+
+
+def test_untouched_regular_card_is_missed_at_day_close() -> None:
+    env = simulation()
+    task = env.create_task("play piano", TaskType.SKILL, TaskSubtype.REGULAR, DAILY)
+    card = env.open_day(DAY_ONE)[0]
+
+    env.close_day()
+
+    assert card.status == CardStatus.MISSED
+    assert event_types(env, task.id)[-1] == "CardMissed"
+
+
+def test_touch_is_repeatable_and_does_not_resolve() -> None:
+    env = simulation()
+    task = env.create_task("write code", TaskType.SKILL, TaskSubtype.REGULAR, DAILY)
+    card = env.open_day(DAY_ONE)[0]
+
+    env.touch_card(card.id)
+    env.touch_card(card.id)
+    assert card.status == CardStatus.PENDING
+    env.done_card(card.id)
+
+    assert event_types(env, task.id)[-4:] == ["CardGenerated", "CardTouched", "CardTouched", "CardDone"]
+
+
+def test_repeated_touches_preserve_facts_when_card_is_missed() -> None:
+    env = simulation()
+    task = env.create_task("play piano", TaskType.SKILL, TaskSubtype.REGULAR, DAILY)
+    card = env.open_day(DAY_ONE)[0]
+    env.touch_card(card.id)
+    env.touch_card(card.id)
+
+    env.close_day()
+
+    assert event_types(env, task.id)[-4:] == ["CardGenerated", "CardTouched", "CardTouched", "CardMissed"]
+
+
+def test_unresolved_one_time_task_carries_forward_until_explicit_done() -> None:
+    env = simulation()
+    task = env.create_task("mount wardrobe", TaskType.CHORE, TaskSubtype.ONE_TIME)
+    day_one_card = env.open_day(DAY_ONE)[0]
+    env.close_day()
+    day_two_card = env.open_day(date(2026, 9, 15))[0]
+    env.close_day()
+    day_three_card = env.open_day(date(2026, 9, 16))[0]
+    env.done_card(day_three_card.id)
+    env.close_day()
+    assert env.open_day(date(2026, 9, 17)) == ()
+
+    assert day_one_card.id != day_two_card.id != day_three_card.id
+    assert event_types(env, task.id).count("CardMissed") == 2
+    assert event_types(env, task.id).count("CardDone") == 1
+
+
+def test_regular_rule_change_does_not_rewrite_today_snapshot() -> None:
+    env = simulation()
+    task = env.create_task("old title", TaskType.TASK, TaskSubtype.REGULAR, DAILY)
+    card = env.open_day(DAY_ONE)[0]
+
+    env.update_task(task.id, title="new title", recurrence=Recurrence(RecurrenceKind.WEEKDAYS))
+
+    assert card.title_snapshot == "old title"
+    env.close_day()
+    assert env.open_day(date(2026, 9, 15))[0].title_snapshot == "new title"
+
+
+def test_one_time_task_added_during_today_is_immediately_actionable() -> None:
+    env = simulation()
+    env.open_day(DAY_ONE)
+
+    task = env.create_task("one-time meeting", TaskType.TASK, TaskSubtype.ONE_TIME)
+
+    cards = env.get_today_cards()
+    assert len(cards) == 1
+    assert cards[0].task_id == task.id
+
+
+def test_resolved_card_rejects_later_outcome() -> None:
+    env = simulation()
+    env.create_task("lunch", TaskType.REQUIRED, TaskSubtype.REGULAR, DAILY)
+    card = env.open_day(DAY_ONE)[0]
+    env.done_card(card.id)
+
+    with pytest.raises(DomainError, match="already resolved"):
+        env.dismiss_card(card.id)
+
+
+def test_recurrence_rules_are_deterministic() -> None:
+    monday = DAY_ONE
+    saturday = date(2026, 9, 19)
+    assert Recurrence(RecurrenceKind.WEEKDAYS).occurs_on(monday)
+    assert not Recurrence(RecurrenceKind.WEEKENDS).occurs_on(monday)
+    assert Recurrence(RecurrenceKind.WEEKENDS).occurs_on(saturday)
+    assert Recurrence(RecurrenceKind.SPECIFIC_WEEKDAYS, frozenset({0, 2})).occurs_on(monday)
+    assert Recurrence(RecurrenceKind.NTH_DAY_OF_MONTH, day_of_month=14).occurs_on(monday)
+
+
+def test_basic_analytics_are_derived_from_factual_events() -> None:
+    env = simulation()
+    env.create_task("pushups", TaskType.SKILL, TaskSubtype.REGULAR, DAILY)
+    env.create_task("piano", TaskType.SKILL, TaskSubtype.REGULAR, DAILY)
+    first, second = env.open_day(DAY_ONE)
+    env.touch_card(first.id)
+    env.done_card(first.id)
+    env.close_day()
+
+    metrics = env.analytics()
+    assert metrics.generated == 2
+    assert metrics.touched == 1
+    assert metrics.done == 1
+    assert metrics.missed == 1
+    assert metrics.completion_rate == 0.5
+

@@ -28,3 +28,11 @@ expected-but-noisy failures. The invariant now checks the actual invariant at
 all observation points: a card may be pending, but it cannot acquire more than
 one terminal outcome. The adapter test requires every emitted invariant result
 to pass. Final-closure behavior remains covered by the domain tests.
+
+## Build update — sequence experiment
+
+The sequence question is now executable in the shared environment. Reorder and
+jump are explicit, factual, non-resolving events; reordering changes only the
+current board's guidance order. This keeps sequence separate from calendar
+rigidity. Longer replay histories are still needed before deciding whether
+these events materially improve analytics, so the model remains unreleased.

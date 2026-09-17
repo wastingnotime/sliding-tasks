@@ -67,6 +67,8 @@ def _close_day(context: SimulationContext) -> None:
 def _open_day_two(context: SimulationContext) -> None:
     env = _environment_for(context)
     cards = env.open_day(date(2026, 9, 15))
+    env.reorder_today_cards(cards[-1].id, 0)
+    env.jump_to_card(cards[-1].id)
     context.emit("use_case", "one_time_carried_forward", source="Scenario", payload={"cards": len(cards)})
 
 

@@ -126,6 +126,35 @@ def test_resolved_card_rejects_later_outcome() -> None:
         env.dismiss_card(card.id)
 
 
+def test_sequence_reorder_and_jump_are_observations_not_decisions() -> None:
+    env = simulation()
+    first_task = env.create_task("first", TaskType.TASK, TaskSubtype.REGULAR, DAILY)
+    second_task = env.create_task("second", TaskType.TASK, TaskSubtype.REGULAR, DAILY)
+    third_task = env.create_task("third", TaskType.TASK, TaskSubtype.REGULAR, DAILY)
+    first, second, third = env.open_day(DAY_ONE)
+
+    env.reorder_today_cards(third.id, 0)
+    env.jump_to_card(third.id)
+
+    assert [card.id for card in env.get_today_cards()] == [third.id, first.id, second.id]
+    assert third.status == CardStatus.PENDING
+    assert event_types(env, third_task.id)[-2:] == ["CardReordered", "CardJumped"]
+    assert event_types(env, first_task.id) == ["TaskCreated", "CardGenerated"]
+    assert event_types(env, second_task.id) == ["TaskCreated", "CardGenerated"]
+
+
+def test_sequence_actions_only_apply_to_pending_cards_on_today() -> None:
+    env = simulation()
+    env.create_task("one", TaskType.TASK, TaskSubtype.REGULAR, DAILY)
+    card = env.open_day(DAY_ONE)[0]
+    env.done_card(card.id)
+
+    with pytest.raises(DomainError, match="already resolved"):
+        env.jump_to_card(card.id)
+    with pytest.raises(DomainError, match="already resolved"):
+        env.reorder_today_cards(card.id, 0)
+
+
 def test_recurrence_rules_are_deterministic() -> None:
     monday = DAY_ONE
     saturday = date(2026, 9, 19)
@@ -151,4 +180,3 @@ def test_basic_analytics_are_derived_from_factual_events() -> None:
     assert metrics.done == 1
     assert metrics.missed == 1
     assert metrics.completion_rate == 0.5
-

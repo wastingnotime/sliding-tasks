@@ -136,6 +136,20 @@ class SlidingTasksSimulation:
         if task.subtype == TaskSubtype.ONE_TIME:
             task.resolved = True
 
+    def reorder_today_cards(self, card_id: str, position: int) -> None:
+        """Experiment: make guidance order explicit without changing outcomes."""
+        self._pending_today_card(card_id)
+        if position < 0 or position >= len(self.card_order):
+            raise DomainError("card position is outside today's board")
+        self.card_order.remove(card_id)
+        self.card_order.insert(position, card_id)
+        self._record("CardReordered", self.cards[card_id].task_id, card_id, {"position": position})
+
+    def jump_to_card(self, card_id: str) -> None:
+        """Experiment: observe navigation without treating it as a decision."""
+        card = self._pending_today_card(card_id)
+        self._record("CardJumped", card.task_id, card.id)
+
     def events(self) -> tuple[DomainEvent, ...]:
         return self.store.all()
 
@@ -239,4 +253,3 @@ class SlidingTasksSimulation:
             "subtype": task.subtype.value,
             "active": task.active,
         }
-

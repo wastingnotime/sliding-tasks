@@ -13,6 +13,8 @@ def test_runtime_scenario_emits_domain_evidence_and_finishes() -> None:
     assert "CardDone" in names
     assert "CardDismissed" in names
     assert "CardMissed" in names
+    assert "CardReordered" in names
+    assert "CardJumped" in names
     assert "basic_analytics" in names
     assert observations[-1].name == "sliding-tasks-today-decision-loop"
     invariant_results = [o for o in observations if o.type == "invariant_result"]

@@ -39,8 +39,8 @@ and nth day of month. Frequency targets are deliberately excluded.
 
 1. **Today decision loop** — built: task generation, interactions, day closure,
    carry-forward, event-derived analytics, runtime observation.
-2. **Sequence experiment** — candidate: test whether explicit reorder and jump
-   observations create useful signal.
+2. **Sequence experiment** — built: explicit reorder and jump observations are
+   factual, non-resolving actions; usefulness remains under evaluation.
 3. **Metric usefulness** — candidate: use longer deterministic histories to
    select metrics that change user understanding.
 4. **Model release adapters** — gated: define mobile/API-facing contracts only
@@ -54,4 +54,3 @@ and nth day of month. Frequency targets are deliberately excluded.
 - Which time-derived and touch-derived metrics are genuinely useful?
 - Should one-time dismissal permanently resolve the intention? The current
   experiment says yes and makes that assumption visible in tests.
-

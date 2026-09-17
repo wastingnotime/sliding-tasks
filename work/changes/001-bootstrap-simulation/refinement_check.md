@@ -20,3 +20,11 @@ metrics should wait for longer histories. Continue refinement before model EGD;
 the sequence/reordering question and metric usefulness remain open. This is not
 a model release decision.
 
+## Refinement update — runtime invariant semantics
+
+The first runtime replay showed that a "no pending cards after final closure"
+invariant was evaluated during intermediate open-day states and emitted
+expected-but-noisy failures. The invariant now checks the actual invariant at
+all observation points: a card may be pending, but it cannot acquire more than
+one terminal outcome. The adapter test requires every emitted invariant result
+to pass. Final-closure behavior remains covered by the domain tests.

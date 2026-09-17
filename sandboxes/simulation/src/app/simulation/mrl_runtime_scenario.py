@@ -84,8 +84,16 @@ def _finish_day_two(context: SimulationContext) -> None:
     )
 
 
-def _all_cards_resolved(_: object) -> bool:
-    return _environment is None or all(card.status.value != "pending" for card in _environment.cards.values())
+def _cards_have_consistent_outcomes(_: object) -> bool:
+    """Every card has at most one terminal outcome, even while today is open."""
+    if _environment is None:
+        return True
+    terminal_events = {"CardDone", "CardDismissed", "CardMissed"}
+    outcomes: dict[str, set[str]] = {}
+    for event in _environment.events():
+        if event.card_id and event.event_type in terminal_events:
+            outcomes.setdefault(event.card_id, set()).add(event.event_type)
+    return all(len(card_outcomes) <= 1 for card_outcomes in outcomes.values())
 
 
 def create_simulation() -> Scenario:
@@ -102,7 +110,7 @@ def create_simulation() -> Scenario:
             InitialScheduledAction(datetime(2026, 9, 15, 6, 0, tzinfo=timezone.utc), _open_day_two, "open-day-two", "Scenario"),
             InitialScheduledAction(datetime(2026, 9, 15, 23, 59, tzinfo=timezone.utc), _finish_day_two, "finish-day-two", "Scenario"),
         ],
-        invariants=[Invariant("no pending cards after final closure", _all_cards_resolved)],
+        invariants=[Invariant("cards have consistent terminal outcomes", _cards_have_consistent_outcomes)],
         observatory_nodes=[
             ObservatoryNode("rules", "Task rules", "domain", "model"),
             ObservatoryNode("board", "Today's board", "projection", "model"),
@@ -115,4 +123,3 @@ def create_simulation() -> Scenario:
             ObservatoryEdge("events", "analytics", "project"),
         ],
     )
-

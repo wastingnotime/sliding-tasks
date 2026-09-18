@@ -4,6 +4,7 @@
 
 - Initial handoff and product constraints
 - Slice 001 contract
+- Slice 002 sequence experiment contract
 - Deterministic tests for scenarios A-H
 - WNT runtime scenario observations
 
@@ -36,3 +37,13 @@ jump are explicit, factual, non-resolving events; reordering changes only the
 current board's guidance order. This keeps sequence separate from calendar
 rigidity. Longer replay histories are still needed before deciding whether
 these events materially improve analytics, so the model remains unreleased.
+
+## Refinement update — sequence experiment
+
+The replay confirms that explicit reorder and jump can be represented as
+low-cost facts: the selected card remains pending until a decision, the other
+cards retain their relative order, and task rules are untouched. The current
+analytics projection intentionally counts neither as an interpretation. Keep
+both events in the raw history for now, but defer navigation-specific metrics
+until a longer multi-day replay can show whether they explain outcomes or
+change user understanding. No new domain boundary was discovered.

@@ -104,3 +104,11 @@ The deterministic recurrence vocabulary is now exercised through controlled
 board generation across weekday, weekend, specific-weekday, and nth-day dates.
 No scheduling policy or frequency target was introduced; recurrence remains a
 date eligibility predicate for today's board.
+
+## Refinement update — calendar edge behavior
+
+The recurrence replay remains deterministic, including overlapping rules. An
+nth-day rule for a date that does not exist in a month produces no occurrence;
+the simulation does not invent rollover or scheduler behavior. This is
+sufficient for the current model scope. Time zones, locale-specific week
+definitions, and frequency targets remain outside the slice.

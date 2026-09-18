@@ -163,6 +163,7 @@ def test_recurrence_rules_are_deterministic() -> None:
     assert Recurrence(RecurrenceKind.WEEKENDS).occurs_on(saturday)
     assert Recurrence(RecurrenceKind.SPECIFIC_WEEKDAYS, frozenset({0, 2})).occurs_on(monday)
     assert Recurrence(RecurrenceKind.NTH_DAY_OF_MONTH, day_of_month=14).occurs_on(monday)
+    assert not Recurrence(RecurrenceKind.NTH_DAY_OF_MONTH, day_of_month=31).occurs_on(date(2026, 2, 28))
 
 
 def test_basic_analytics_are_derived_from_factual_events() -> None:

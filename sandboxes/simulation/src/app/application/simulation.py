@@ -127,14 +127,14 @@ class SlidingTasksSimulation:
         card = self._pending_today_card(card_id)
         self._resolve(card, CardStatus.DONE, "CardDone")
         task = self._task(card.task_id)
-        if task.subtype == TaskSubtype.ONE_TIME and self.one_time_dismissal_resolves:
+        if task.subtype == TaskSubtype.ONE_TIME:
             task.resolved = True
 
     def dismiss_card(self, card_id: str) -> None:
         card = self._pending_today_card(card_id)
         self._resolve(card, CardStatus.DISMISSED, "CardDismissed")
         task = self._task(card.task_id)
-        if task.subtype == TaskSubtype.ONE_TIME:
+        if task.subtype == TaskSubtype.ONE_TIME and self.one_time_dismissal_resolves:
             task.resolved = True
 
     def reorder_today_cards(self, card_id: str, position: int) -> None:

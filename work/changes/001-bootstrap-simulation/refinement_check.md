@@ -173,3 +173,12 @@ The EGD artifact compares the handoff, semantic hypothesis, nine simulation
 slices, deterministic tests, and runtime evidence. It passes the model as
 internally coherent with a deferred release decision; unresolved policy and
 usefulness questions remain explicit, and no technology synchronization starts.
+
+## Corrective build — simulation depth
+
+The prior EGD missed a structural gap: one service and scripted callbacks did
+not constitute the required actor-driven MRL environment. The shared model now
+has explicit application use cases, four runtime actors, four independent
+behavior beams, and observations across intention, command, use-case, domain,
+projection, and invariant layers. The prior EGD is superseded; refinement and a
+fresh EGD are required.

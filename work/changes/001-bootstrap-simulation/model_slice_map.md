@@ -39,5 +39,9 @@ The next built support boundary is the model-EGD checker documented in
 `work/changes/010-model-egd/egd.md`. It prepares release evidence but does not
 release the model.
 
+Slice `010-actors-beams-use-cases` replaces the shallow scripted orchestration
+with explicit use cases, runtime actors, and deterministic behavior beams. It
+invalidates the prior EGD result until this deeper shape is refined.
+
 Later candidates are model release adapter contracts. They remain gated on
 further refinement and model EGD.

@@ -1,4 +1,8 @@
-# Model EGD result
+# Model EGD result — superseded
+
+> Superseded on 2026-09-18 after discovering that the evaluated environment
+> lacked explicit use cases, runtime actors, and behavior beams. A new EGD is
+> required after the deeper simulation shape is refined.
 
 ## Evidence reviewed
 
@@ -36,4 +40,3 @@
 has credible deterministic evidence. Keep the model in simulation refinement
 until the remaining product-policy and usefulness questions are explicitly
 accepted; do not synchronize production technology projects yet.
-

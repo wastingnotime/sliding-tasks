@@ -1,127 +1,126 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from typing import Callable
 
-from app.application.simulation import SlidingTasksSimulation
 from app.domain.model import Recurrence, RecurrenceKind, TaskSubtype, TaskType
-from mrl_simulation_runtime.context import SimulationContext
+from app.simulation.actors import BeamActorBehavior
+from app.simulation.beams import BeamAction, BehaviorBeam
+from app.simulation.subject import SimulationSubject
+from mrl_simulation_runtime.actors import Actor
 from mrl_simulation_runtime.invariants import Invariant
-from mrl_simulation_runtime.scenario import (
-    InitialScheduledAction,
-    ObservatoryEdge,
-    ObservatoryNode,
-    Scenario,
-)
-
+from mrl_simulation_runtime.scenario import ObservatoryEdge, ObservatoryNode, Scenario
 
 INITIAL_TIME = datetime(2026, 9, 14, 6, 0, tzinfo=timezone.utc)
-_environment: SlidingTasksSimulation | None = None
 
 
-def _environment_for(context: SimulationContext) -> SlidingTasksSimulation:
-    global _environment
-    if _environment is None:
-        _environment = SlidingTasksSimulation(context.clock.now())
-
-        def observe(event: object) -> None:
-            context.emit(
-                "domain_event",
-                event.event_type,
-                source="SlidingTasksSimulation",
-                actor="user" if event.event_type in {"CardTouched", "CardDone", "CardDismissed"} else None,
-                correlation_id=event.card_id or event.task_id,
-                payload={
-                    "event_id": event.event_id,
-                    "task_id": event.task_id,
-                    "card_id": event.card_id,
-                    **event.payload,
-                },
-            )
-
-        _environment.listen(observe)
-    _environment.clock.set(context.clock.now())
-    return _environment
+def _at(day: int, hour: int, minute: int = 0) -> datetime:
+    return datetime(2026, 9, day, hour, minute, tzinfo=timezone.utc)
 
 
-def _open_day_one(context: SimulationContext) -> None:
-    env = _environment_for(context)
+def _card_id(subject: SimulationSubject, title: str) -> str:
+    return next(card.id for card in subject.environment.get_today_cards() if card.title_snapshot == title)
+
+
+def _setup_day_one(subject: SimulationSubject, context: object, actor: str) -> None:
+    subject.bind(context)
     daily = Recurrence(RecurrenceKind.DAILY)
-    env.create_task("pushups", TaskType.SKILL, TaskSubtype.REGULAR, daily)
-    env.create_task("housekeeping", TaskType.CHORE, TaskSubtype.REGULAR, daily)
-    env.create_task("play piano", TaskType.SKILL, TaskSubtype.REGULAR, daily)
-    env.create_task("mount wardrobe", TaskType.CHORE, TaskSubtype.ONE_TIME)
-    cards = env.open_day(date(2026, 9, 14))
-    env.done_card(cards[0].id)
-    env.dismiss_card(cards[1].id)
-    env.touch_card(cards[2].id)
-    env.touch_card(cards[2].id)
-    context.emit("use_case", "day_opened_and_acted", source="Scenario", payload={"cards": len(cards)})
+    subject.use_cases.create_task.execute(actor, title="pushups", task_type=TaskType.SKILL, subtype=TaskSubtype.REGULAR, recurrence=daily)
+    subject.use_cases.create_task.execute(actor, title="housekeeping", task_type=TaskType.CHORE, subtype=TaskSubtype.REGULAR, recurrence=daily)
+    subject.use_cases.create_task.execute(actor, title="play piano", task_type=TaskType.SKILL, subtype=TaskSubtype.REGULAR, recurrence=daily)
+    subject.use_cases.create_task.execute(actor, title="mount wardrobe", task_type=TaskType.CHORE, subtype=TaskSubtype.ONE_TIME)
+    subject.use_cases.open_day.execute(actor, date(2026, 9, 14))
 
 
-def _close_day(context: SimulationContext) -> None:
-    env = _environment_for(context)
-    env.close_day()
-    context.emit("use_case", "day_closed", source="Scenario")
+def _act_day_one(subject: SimulationSubject, context: object, actor: str) -> None:
+    subject.bind(context)
+    subject.use_cases.complete_card.execute(actor, _card_id(subject, "pushups"))
+    subject.use_cases.dismiss_card.execute(actor, _card_id(subject, "housekeeping"))
+    piano = _card_id(subject, "play piano")
+    subject.use_cases.touch_card.execute(actor, piano)
+    subject.use_cases.touch_card.execute(actor, piano)
 
 
-def _open_day_two(context: SimulationContext) -> None:
-    env = _environment_for(context)
-    cards = env.open_day(date(2026, 9, 15))
-    env.reorder_today_cards(cards[-1].id, 0)
-    env.jump_to_card(cards[-1].id)
-    context.emit("use_case", "one_time_carried_forward", source="Scenario", payload={"cards": len(cards)})
+def _close_day(subject: SimulationSubject, context: object, actor: str) -> None:
+    subject.bind(context)
+    subject.use_cases.close_day.execute(actor)
 
 
-def _finish_day_two(context: SimulationContext) -> None:
-    env = _environment_for(context)
-    one_time = next(card for card in env.get_today_cards() if card.title_snapshot == "mount wardrobe")
-    env.done_card(one_time.id)
-    env.close_day()
-    metrics = env.analytics()
-    context.emit(
-        "projection",
-        "basic_analytics",
-        source="AnalyticsProjection",
-        payload={**metrics.__dict__, "by_task": env.metrics_by_task(), "by_type": env.metrics_by_type(), "touches_before_resolution": env.touches_before_resolution(), "sequence_activity": env.sequence_activity()},
-    )
+def _open_day_two(subject: SimulationSubject, context: object, actor: str) -> None:
+    subject.bind(context)
+    subject.use_cases.open_day.execute(actor, date(2026, 9, 15))
 
 
-def _cards_have_consistent_outcomes(_: object) -> bool:
-    """Every card has at most one terminal outcome, even while today is open."""
-    if _environment is None:
-        return True
-    terminal_events = {"CardDone", "CardDismissed", "CardMissed"}
+def _navigate_day_two(subject: SimulationSubject, context: object, actor: str) -> None:
+    subject.bind(context)
+    one_time = _card_id(subject, "mount wardrobe")
+    subject.use_cases.reorder_card.execute(actor, one_time, 0)
+    subject.use_cases.jump_to_card.execute(actor, one_time)
+
+
+def _complete_one_time(subject: SimulationSubject, context: object, actor: str) -> None:
+    subject.bind(context)
+    subject.use_cases.complete_card.execute(actor, _card_id(subject, "mount wardrobe"))
+
+
+def _observe_analytics(subject: SimulationSubject, context: object, actor: str) -> None:
+    subject.bind(context)
+    metrics = subject.use_cases.get_analytics.execute(actor)
+    env = subject.environment
+    context.emit("projection", "basic_analytics", source="AnalyticsProjection", actor=actor, payload={**metrics.__dict__, "by_task": env.metrics_by_task(), "by_type": env.metrics_by_type(), "touches_before_resolution": env.touches_before_resolution(), "sequence_activity": env.sequence_activity()})
+
+
+def _action(subject: SimulationSubject, callback: Callable[[SimulationSubject, object, str], None]):
+    return lambda context, actor: callback(subject, context, actor)
+
+
+def _outcomes_are_consistent(subject: SimulationSubject) -> bool:
+    terminal = {"CardDone", "CardDismissed", "CardMissed"}
     outcomes: dict[str, set[str]] = {}
-    for event in _environment.events():
-        if event.card_id and event.event_type in terminal_events:
+    for event in subject.environment.events():
+        if event.card_id and event.event_type in terminal:
             outcomes.setdefault(event.card_id, set()).add(event.event_type)
-    return all(len(card_outcomes) <= 1 for card_outcomes in outcomes.values())
+    return all(len(values) <= 1 for values in outcomes.values())
 
 
 def create_simulation() -> Scenario:
-    global _environment
-    _environment = None
+    subject = SimulationSubject(INITIAL_TIME)
+    planning = BehaviorBeam("planning-beam", (BeamAction(_at(14, 6), "configure intentions and open today", _action(subject, _setup_day_one)),))
+    daily_life = BehaviorBeam("daily-life-beam", (
+        BeamAction(_at(14, 8), "act on morning cards", _action(subject, _act_day_one)),
+        BeamAction(_at(15, 7), "navigate today's sequence", _action(subject, _navigate_day_two)),
+        BeamAction(_at(15, 18), "complete carried intention", _action(subject, _complete_one_time)),
+    ))
+    boundary = BehaviorBeam("day-boundary-beam", (
+        BeamAction(_at(14, 23, 59), "close first day", _action(subject, _close_day)),
+        BeamAction(_at(15, 6), "open second day", _action(subject, _open_day_two)),
+        BeamAction(_at(15, 23, 59), "close second day", _action(subject, _close_day)),
+    ))
+    analytics = BehaviorBeam("analytics-beam", (BeamAction(_at(15, 23, 59), "inspect behavioral history", _action(subject, _observe_analytics)),))
+    actors = [
+        Actor("Planner", BeamActorBehavior("Planner", planning)),
+        Actor("User", BeamActorBehavior("User", daily_life)),
+        Actor("DayBoundary", BeamActorBehavior("DayBoundary", boundary)),
+        Actor("Analyst", BeamActorBehavior("Analyst", analytics)),
+    ]
     return Scenario(
-        name="sliding-tasks-today-decision-loop",
-        seed=20260917,
+        name="sliding-tasks-shared-environment",
+        seed=20260918,
         initial_time=INITIAL_TIME,
-        run_id="today-decision-loop-001",
-        scheduled_actions=[
-            InitialScheduledAction(INITIAL_TIME, _open_day_one, "open-day-one", "Scenario"),
-            InitialScheduledAction(datetime(2026, 9, 14, 23, 59, tzinfo=timezone.utc), _close_day, "close-day-one", "Scenario"),
-            InitialScheduledAction(datetime(2026, 9, 15, 6, 0, tzinfo=timezone.utc), _open_day_two, "open-day-two", "Scenario"),
-            InitialScheduledAction(datetime(2026, 9, 15, 23, 59, tzinfo=timezone.utc), _finish_day_two, "finish-day-two", "Scenario"),
-        ],
-        invariants=[Invariant("cards have consistent terminal outcomes", _cards_have_consistent_outcomes)],
+        run_id="shared-environment-actors-beams-001",
+        actors=actors,
+        invariants=[Invariant("cards have consistent terminal outcomes", lambda _: _outcomes_are_consistent(subject))],
         observatory_nodes=[
-            ObservatoryNode("rules", "Task rules", "domain", "model"),
-            ObservatoryNode("board", "Today's board", "projection", "model"),
+            *(ObservatoryNode(actor.name, actor.name, "actor", "actors") for actor in actors),
+            ObservatoryNode("use-cases", "Application use cases", "use_case", "use_cases"),
+            ObservatoryNode("domain", "Task/Card domain", "domain", "model"),
             ObservatoryNode("events", "Event history", "event_store", "infrastructure"),
-            ObservatoryNode("analytics", "Basic analytics", "projection", "model"),
+            ObservatoryNode("analytics", "Analytics", "projection", "model"),
         ],
         observatory_edges=[
-            ObservatoryEdge("rules", "board", "generate"),
-            ObservatoryEdge("board", "events", "observe decisions"),
-            ObservatoryEdge("events", "analytics", "project"),
+            *(ObservatoryEdge(actor.name, "use-cases", "intends") for actor in actors),
+            ObservatoryEdge("use-cases", "domain", "commands"),
+            ObservatoryEdge("domain", "events", "emits"),
+            ObservatoryEdge("events", "analytics", "projects"),
         ],
     )

@@ -18,6 +18,17 @@ card decisions, factual history, and basic derived metrics. It excludes UI,
 persistence, authentication, scheduling infrastructure, external enrichment,
 and production technology choices.
 
+## Simulation forces
+
+- **Planner** configures intentions and opens the initial board.
+- **User** touches, decides, and navigates cards.
+- **DayBoundary** closes unresolved occurrences and opens the next date.
+- **Analyst** observes history through projections.
+
+Each actor drives an independent deterministic behavior beam through explicit
+application use cases. The semantic observation path is actor intention,
+command, use case, domain event, and projection/invariant evidence.
+
 ## State transitions
 
 ```text

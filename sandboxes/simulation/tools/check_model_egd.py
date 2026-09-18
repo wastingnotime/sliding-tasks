@@ -20,7 +20,8 @@ REQUIRED_EVENTS = {"TaskCreated", "CardGenerated", "CardTouched", "CardDone", "C
 
 
 def main() -> int:
-    observations = SimulationRunner().run(create_simulation()).observations.observations
+    scenario = create_simulation()
+    observations = SimulationRunner().run(scenario).observations.observations
     names = {observation.name for observation in observations}
     invariant_results = [observation.payload.get("passed") for observation in observations if observation.type == "invariant_result"]
     analytics = next(observation for observation in observations if observation.name == "basic_analytics")
@@ -34,6 +35,9 @@ def main() -> int:
         "sequence_activity": "sequence_activity" in analytics.payload,
         "runtime_record_shape": all(stable_fields <= set(record) for record in records),
         "runtime_jsonl_serializable": _is_json_serializable(records),
+        "runtime_actors_present": {actor.name for actor in scenario.actors} == {"Planner", "User", "DayBoundary", "Analyst"},
+        "behavior_beams_present": sum(observation.type == "beam" for observation in observations) == 4,
+        "explicit_use_case_flow": {"actor_intention", "command", "use_case", "domain_event"} <= {observation.type for observation in observations},
     }
     for name, passed in checks.items():
         print(f"{name}: {'PASS' if passed else 'FAIL'}")

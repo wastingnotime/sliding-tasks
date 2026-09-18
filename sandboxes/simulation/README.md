@@ -18,6 +18,11 @@ shape: commands decide factual events, an append-only in-memory store retains
 them, and state and analytics are projections of those events. Time and IDs are
 deterministic.
 
+The shared environment is driven by four runtime-visible actors—Planner, User,
+DayBoundary, and Analyst. Each actor activates a repository-owned behavior beam
+that schedules independent intentions. Explicit application use cases translate
+those intentions into domain behavior and observations.
+
 Run the executable examples:
 
 ```bash

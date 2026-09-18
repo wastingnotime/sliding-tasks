@@ -1,4 +1,7 @@
-# Model EGD candidate — Sliding Tasks
+# Model EGD candidate — Sliding Tasks (superseded)
+
+> Superseded because this candidate did not require explicit application use
+> cases, runtime actors, or behavior beams. See change 011.
 
 ## Scope compared
 

@@ -302,6 +302,7 @@ def test_task_deactivation_preserves_today_and_controls_future_generation() -> N
     assert env.get_today_cards()[0].id == today_card.id
     env.close_day()
     assert env.open_day(date(2026, 9, 15)) == ()
+    env.close_day()
     env.update_task(task.id, active=True)
     next_card = env.open_day(date(2026, 9, 16))[0]
     assert next_card.id != today_card.id

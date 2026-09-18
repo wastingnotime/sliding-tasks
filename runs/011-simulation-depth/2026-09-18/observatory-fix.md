@@ -16,3 +16,10 @@
   aggregate → event effect beams with no inbound-adapter beam nodes.
 - Removed `use_case_id` from decision observations because the observatory
   interpreted it as a self-target and discarded the use case → aggregate beam.
+- Refined topology semantics with explicit `route`, `command`, and `event`
+  edge kinds, plus actor/use-case/aggregate/event/projection badges and node
+  descriptions for the observatory inspector.
+- Use-case decision payloads now identify the semantic role
+  `use_case_to_aggregate` without changing target inference.
+- Verification: 28 tests passed, model checks passed, and the existing
+  supervised browser session remained available on port 8765.

@@ -63,3 +63,12 @@ def test_observatory_declares_unique_beam_and_effect_endpoints() -> None:
     assert all(edge.from_node in node_ids and edge.to_node in node_ids for edge in scenario.observatory_edges)
     layers = {node.id: node.layer for node in scenario.observatory_nodes}
     assert all(layers[actor] < 0 for actor in ("Planner", "User", "DayBoundary", "Analyst"))
+    assert {edge.kind for edge in scenario.observatory_edges} >= {"route", "command", "event"}
+    assert {node.badge for node in scenario.observatory_nodes} >= {"ACTOR", "USE CASE", "AGGREGATE", "EVENT", "PROJECTION"}
+
+
+def test_use_case_decisions_explain_their_beam_role() -> None:
+    observations = SimulationRunner().run(create_simulation()).observations.observations
+    decisions = [o for o in observations if o.type == "use_case_decision"]
+    assert decisions
+    assert all(o.payload["beam_role"] == "use_case_to_aggregate" for o in decisions)

@@ -146,3 +146,10 @@ The repository now has a narrow tool for writing the standard runtime
 observation log as JSONL. It keeps the adapter boundary intact and creates
 replayable evidence for inspection or future model EGD without making runtime
 infrastructure part of the domain surface.
+
+## Refinement update — evidence tool boundary
+
+The evidence writer now has a command-level round-trip test: it executes as a
+standalone process, writes JSONL, and the WNT observation model parses all 35
+observations. This confirms the tool remains a thin evidence boundary rather
+than an alternate simulation implementation.

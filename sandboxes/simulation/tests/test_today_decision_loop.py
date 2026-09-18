@@ -246,3 +246,23 @@ def test_type_metrics_follow_each_occurrence_snapshot_across_task_edit() -> None
     assert env.metrics_by_type()["chore"]["generated"] == 1
     assert env.metrics_by_type()["skill"]["dismissed"] == 1
     assert env.metrics_by_type()["skill"]["generated"] == 1
+
+
+def test_one_time_dismissal_default_resolves_intention() -> None:
+    env = simulation()
+    env.create_task("mount wardrobe", TaskType.CHORE, TaskSubtype.ONE_TIME)
+    card = env.open_day(DAY_ONE)[0]
+    env.dismiss_card(card.id)
+    env.close_day()
+    assert env.open_day(date(2026, 9, 15)) == ()
+
+
+def test_one_time_dismissal_experiment_can_carry_intention_forward() -> None:
+    env = SlidingTasksSimulation(datetime(2026, 9, 14, 6, 0), one_time_dismissal_resolves=False)
+    env.create_task("mount wardrobe", TaskType.CHORE, TaskSubtype.ONE_TIME)
+    card = env.open_day(DAY_ONE)[0]
+    env.dismiss_card(card.id)
+    env.close_day()
+    next_day = env.open_day(date(2026, 9, 15))
+    assert len(next_day) == 1
+    assert next_day[0].title_snapshot == "mount wardrobe"

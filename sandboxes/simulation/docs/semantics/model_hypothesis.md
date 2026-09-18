@@ -46,6 +46,8 @@ and nth day of month. Frequency targets are deliberately excluded.
    still evaluated before release.
 4. **Type-transition projection** — built: type metrics use each occurrence's
    card snapshot when task classification changes.
+5. **One-time dismissal policy** — built as a controlled experiment; default
+   behavior resolves the intention, alternate behavior carries it forward.
 4. **Model release adapters** — gated: define mobile/API-facing contracts only
    after model EGD accepts the domain.
 

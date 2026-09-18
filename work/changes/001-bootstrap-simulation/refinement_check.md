@@ -81,3 +81,11 @@ without introducing a second event stream or rewriting facts. The core model is
 coherent for the four built slices, but EGD is still deferred while one-time
 dismissal policy, recurrence sufficiency, and the usefulness of sequence and
 navigation facts remain open.
+
+## Build update — one-time dismissal policy
+
+The current assumption is now parameterized as a controlled experiment: the
+default resolves a dismissed one-time intention, while the alternate mode keeps
+the Task eligible for tomorrow. Both paths preserve the same factual card
+event. This exposes the product choice for evaluation without changing the
+default model.

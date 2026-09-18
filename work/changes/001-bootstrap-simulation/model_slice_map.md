@@ -15,5 +15,9 @@ The next built slice is `type-transition-projection`, documented at
 `sandboxes/simulation/docs/slices/004-type-transition-projection.md`. It keeps
 type analytics stable per occurrence when task classification changes.
 
+The next built slice is `one-time-dismissal-policy`, documented at
+`sandboxes/simulation/docs/slices/005-one-time-dismissal-policy.md`. It makes
+the current dismissal assumption comparable with carry-forward behavior.
+
 Later candidates are model release adapter contracts. They remain gated on
 further refinement and model EGD.

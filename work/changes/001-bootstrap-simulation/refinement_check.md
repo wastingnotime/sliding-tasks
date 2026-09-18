@@ -71,3 +71,13 @@ The open type-transition question is now executable. Type analytics classify
 each occurrence from its card-generation snapshot, so a later task edit splits
 old and new outcomes into their respective buckets without rewriting history.
 Taxonomy migration and naming policy remain out of scope.
+
+## Refinement update — type-transition replay
+
+The full runtime replay remains invariant-clean, and the dedicated transition
+scenario separates one historical `chore` occurrence from a later `skill`
+occurrence after a task edit. This confirms the projection boundary is stable
+without introducing a second event stream or rewriting facts. The core model is
+coherent for the four built slices, but EGD is still deferred while one-time
+dismissal policy, recurrence sufficiency, and the usefulness of sequence and
+navigation facts remain open.

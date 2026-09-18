@@ -166,3 +166,10 @@ explicitly deferred.
 The EGD checker now validates not only semantic coverage but also the runtime
 observation envelope: every record has `sim_time`, `type`, `name`, and `payload`
 and the complete observation set serializes as JSONL-compatible data.
+
+## Build update — model EGD result
+
+The EGD artifact compares the handoff, semantic hypothesis, nine simulation
+slices, deterministic tests, and runtime evidence. It passes the model as
+internally coherent with a deferred release decision; unresolved policy and
+usefulness questions remain explicit, and no technology synchronization starts.

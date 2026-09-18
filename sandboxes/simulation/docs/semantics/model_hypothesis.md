@@ -50,6 +50,8 @@ and nth day of month. Frequency targets are deliberately excluded.
    behavior resolves the intention, alternate behavior carries it forward.
 6. **Recurrence sufficiency** — built: deterministic date predicates drive
    board generation; frequency targets remain excluded.
+7. **Task lifecycle eligibility** — built: active changes affect future
+   generation and never rewrite today's generated occurrence.
 4. **Model release adapters** — gated: define mobile/API-facing contracts only
    after model EGD accepts the domain.
 

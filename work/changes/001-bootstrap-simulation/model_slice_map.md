@@ -23,5 +23,9 @@ The next built slice is `recurrence-sufficiency`, documented at
 `sandboxes/simulation/docs/slices/006-recurrence-sufficiency.md`. It validates
 deterministic recurrence rules through end-to-end board generation.
 
+The next built slice is `task-lifecycle`, documented at
+`sandboxes/simulation/docs/slices/007-task-lifecycle.md`. It validates active
+rule changes against today's immutable generated cards.
+
 Later candidates are model release adapter contracts. They remain gated on
 further refinement and model EGD.

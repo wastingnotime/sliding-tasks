@@ -112,3 +112,10 @@ nth-day rule for a date that does not exist in a month produces no occurrence;
 the simulation does not invent rollover or scheduler behavior. This is
 sufficient for the current model scope. Time zones, locale-specific week
 definitions, and frequency targets remain outside the slice.
+
+## Build update — task lifecycle eligibility
+
+Task activation is now exercised end to end. Deactivation leaves today's
+already-generated Card actionable and stable, suppresses future generation,
+and reactivation creates a fresh later occurrence. This preserves the
+present-only board boundary while keeping Task rules configurable.

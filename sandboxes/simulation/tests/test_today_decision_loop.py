@@ -292,3 +292,17 @@ def test_recurrence_rules_drive_end_to_end_board_generation() -> None:
     assert {card.task_id for card in env.open_day(date(2026, 9, 16))} == {weekday.id, wednesday.id}
     env.close_day()
     assert {card.task_id for card in env.open_day(date(2026, 9, 30))} == {weekday.id, wednesday.id, month_end.id}
+
+
+def test_task_deactivation_preserves_today_and_controls_future_generation() -> None:
+    env = simulation()
+    task = env.create_task("wellbeing", TaskType.TASK, TaskSubtype.REGULAR, DAILY)
+    today_card = env.open_day(DAY_ONE)[0]
+    env.deactivate_task(task.id)
+    assert env.get_today_cards()[0].id == today_card.id
+    env.close_day()
+    assert env.open_day(date(2026, 9, 15)) == ()
+    env.update_task(task.id, active=True)
+    next_card = env.open_day(date(2026, 9, 16))[0]
+    assert next_card.id != today_card.id
+    assert next_card.title_snapshot == "wellbeing"

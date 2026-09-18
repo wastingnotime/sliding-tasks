@@ -39,6 +39,18 @@ class Recurrence:
     weekdays: frozenset[int] = frozenset()
     day_of_month: int | None = None
 
+    def __post_init__(self) -> None:
+        if self.kind == RecurrenceKind.SPECIFIC_WEEKDAYS:
+            if not self.weekdays or not self.weekdays.issubset(range(7)):
+                raise DomainError("specific weekday recurrence requires weekdays 0..6")
+        elif self.weekdays:
+            raise DomainError("weekdays are only valid for specific weekday recurrence")
+        if self.kind == RecurrenceKind.NTH_DAY_OF_MONTH:
+            if self.day_of_month is None or not 1 <= self.day_of_month <= 31:
+                raise DomainError("nth day recurrence requires day_of_month 1..31")
+        elif self.day_of_month is not None:
+            raise DomainError("day_of_month is only valid for nth day recurrence")
+
     def occurs_on(self, day: date) -> bool:
         if self.kind == RecurrenceKind.DAILY:
             return True
@@ -91,4 +103,3 @@ class DomainEvent:
 
 class DomainError(ValueError):
     pass
-

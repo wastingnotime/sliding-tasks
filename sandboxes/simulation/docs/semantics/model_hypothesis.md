@@ -18,6 +18,12 @@ card decisions, factual history, and basic derived metrics. It excludes UI,
 persistence, authentication, scheduling infrastructure, external enrichment,
 and production technology choices.
 
+Task activation/deactivation is recorded as an explicit lifecycle fact. A task
+created while a day is open generates a card immediately when its recurrence
+matches the active date; otherwise it begins on the next eligible date.
+Recurrence parameters are validated at construction time so invalid rules do
+not enter the model.
+
 ## Simulation forces
 
 - **Planner** configures intentions and opens the initial board.

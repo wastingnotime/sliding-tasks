@@ -116,6 +116,17 @@ def test_one_time_task_added_during_today_is_immediately_actionable() -> None:
     assert cards[0].task_id == task.id
 
 
+def test_eligible_regular_task_added_during_today_is_immediately_actionable() -> None:
+    env = simulation()
+    env.open_day(DAY_ONE)
+
+    task = env.create_task("same-day practice", TaskType.SKILL, TaskSubtype.REGULAR, DAILY)
+
+    cards = env.get_today_cards()
+    assert [card.title_snapshot for card in cards] == ["same-day practice"]
+    assert event_types(env, task.id) == ["TaskCreated", "CardGenerated"]
+
+
 def test_resolved_card_rejects_later_outcome() -> None:
     env = simulation()
     env.create_task("lunch", TaskType.REQUIRED, TaskSubtype.REGULAR, DAILY)
@@ -301,7 +312,7 @@ def test_task_deactivation_preserves_today_and_controls_future_generation() -> N
     env.deactivate_task(task.id)
     assert env.get_today_cards()[0].id == today_card.id
     assert event_types(env, task.id).count("CardGenerated") == 1
-    assert event_types(env, task.id)[-1] == "TaskUpdated"
+    assert event_types(env, task.id)[-2:] == ["TaskUpdated", "TaskDeactivated"]
     env.close_day()
     assert env.open_day(date(2026, 9, 15)) == ()
     env.close_day()
@@ -309,6 +320,17 @@ def test_task_deactivation_preserves_today_and_controls_future_generation() -> N
     next_card = env.open_day(date(2026, 9, 16))[0]
     assert next_card.id != today_card.id
     assert next_card.title_snapshot == "wellbeing"
+
+
+def test_recurrence_rules_reject_invalid_parameters() -> None:
+    with pytest.raises(DomainError):
+        Recurrence(RecurrenceKind.SPECIFIC_WEEKDAYS)
+    with pytest.raises(DomainError):
+        Recurrence(RecurrenceKind.SPECIFIC_WEEKDAYS, frozenset({7}))
+    with pytest.raises(DomainError):
+        Recurrence(RecurrenceKind.NTH_DAY_OF_MONTH, day_of_month=0)
+    with pytest.raises(DomainError):
+        Recurrence(RecurrenceKind.DAILY, weekdays=frozenset({0}))
 
 
 def test_sequence_activity_pairs_raw_navigation_counts_with_outcome() -> None:

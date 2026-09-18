@@ -72,7 +72,7 @@ class SlidingTasksSimulation:
         )
         self.tasks[task.id] = task
         self._record("TaskCreated", task.id, payload=self._task_payload(task))
-        if self.today is not None and subtype == TaskSubtype.ONE_TIME:
+        if self.today is not None and self._eligible(task, self.today):
             self._generate_card(task, self.today)
         return task
 
@@ -82,11 +82,14 @@ class SlidingTasksSimulation:
         unknown = set(changes) - allowed
         if unknown:
             raise DomainError(f"unsupported task fields: {sorted(unknown)}")
+        was_active = task.active
         for name, value in changes.items():
             setattr(task, name, value)
         if task.subtype == TaskSubtype.REGULAR and task.recurrence is None:
             raise DomainError("regular tasks require recurrence")
         self._record("TaskUpdated", task.id, payload=self._task_payload(task))
+        if was_active != task.active:
+            self._record("TaskActivated" if task.active else "TaskDeactivated", task.id, payload={"active": task.active})
         return task
 
     def deactivate_task(self, task_id: str) -> None:

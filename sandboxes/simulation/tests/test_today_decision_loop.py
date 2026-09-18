@@ -290,4 +290,4 @@ def test_recurrence_rules_drive_end_to_end_board_generation() -> None:
     env.close_day()
     assert {card.task_id for card in env.open_day(date(2026, 9, 16))} == {weekday.id, wednesday.id}
     env.close_day()
-    assert {card.task_id for card in env.open_day(date(2026, 9, 30))} == {weekday.id, month_end.id}
+    assert {card.task_id for card in env.open_day(date(2026, 9, 30))} == {weekday.id, wednesday.id, month_end.id}

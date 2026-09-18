@@ -89,3 +89,11 @@ default resolves a dismissed one-time intention, while the alternate mode keeps
 the Task eligible for tomorrow. Both paths preserve the same factual card
 event. This exposes the product choice for evaluation without changing the
 default model.
+
+## Refinement update — dismissal-policy isolation
+
+The alternate policy replay now verifies that the switch affects only
+`CardDismissed` eligibility. Explicit `CardDone` still resolves a one-time
+Task in both modes, so the experiment does not blur decision semantics. Current
+evidence supports retaining the default-resolves assumption while gathering
+user-behavior evidence before selecting a final product policy.

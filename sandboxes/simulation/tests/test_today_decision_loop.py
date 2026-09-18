@@ -266,3 +266,13 @@ def test_one_time_dismissal_experiment_can_carry_intention_forward() -> None:
     next_day = env.open_day(date(2026, 9, 15))
     assert len(next_day) == 1
     assert next_day[0].title_snapshot == "mount wardrobe"
+
+
+def test_dismissal_policy_switch_does_not_change_one_time_done() -> None:
+    env = SlidingTasksSimulation(datetime(2026, 9, 14, 6, 0), one_time_dismissal_resolves=False)
+    task = env.create_task("mount wardrobe", TaskType.CHORE, TaskSubtype.ONE_TIME)
+    card = env.open_day(DAY_ONE)[0]
+    env.done_card(card.id)
+    env.close_day()
+    assert env.open_day(date(2026, 9, 15)) == ()
+    assert event_types(env, task.id)[-1] == "CardDone"

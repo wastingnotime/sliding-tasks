@@ -4,7 +4,7 @@
 
 - 31 deterministic tests passed.
 - All model-EGD checks passed.
-- Runtime replay produced 81 observations, including explicit actors, beams,
+- Runtime replay produced 84 observations, including explicit actors, beams,
   application use cases, lifecycle facts, domain events, and analytics.
 - Contract boundary is documented under `contracts/`.
 

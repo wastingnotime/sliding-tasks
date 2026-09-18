@@ -23,12 +23,10 @@ notifications, or scheduling infrastructure.
 
 ## Commands
 
-`CreateTask`, `OpenDay`, `CloseDay`, `TouchCard`, `CompleteCard`,
+`CreateTask`, `UpdateTask`, `OpenDay`, `CloseDay`, `TouchCard`, `CompleteCard`,
 `DismissCard`, `ReorderCard`, `JumpToCard`, and `GetAnalytics` are the current
-runtime application boundary. Task updates and activation changes are domain
-operations in the current simulation and remain a release-candidate extension
-until exposed through an actor-driven application use case. Commands are
-validated against the active-day and card state rules.
+runtime application boundary. Commands are actor-driven and validated against
+the active-day and card state rules.
 
 ## Event vocabulary
 

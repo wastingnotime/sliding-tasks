@@ -26,7 +26,8 @@ def _setup_day_one(subject: SimulationSubject, context: object, actor: str) -> N
     subject.bind(context)
     daily = Recurrence(RecurrenceKind.DAILY)
     subject.use_cases.create_task.execute(actor, title="pushups", task_type=TaskType.SKILL, subtype=TaskSubtype.REGULAR, recurrence=daily)
-    subject.use_cases.create_task.execute(actor, title="housekeeping", task_type=TaskType.CHORE, subtype=TaskSubtype.REGULAR, recurrence=daily)
+    housekeeping = subject.use_cases.create_task.execute(actor, title="housekeeping", task_type=TaskType.CHORE, subtype=TaskSubtype.REGULAR, recurrence=daily)
+    subject.use_cases.update_task.execute(actor, housekeeping.id, title="reset kitchen")
     subject.use_cases.create_task.execute(actor, title="play piano", task_type=TaskType.SKILL, subtype=TaskSubtype.REGULAR, recurrence=daily)
     subject.use_cases.create_task.execute(actor, title="mount wardrobe", task_type=TaskType.CHORE, subtype=TaskSubtype.ONE_TIME)
     subject.use_cases.open_day.execute(actor, date(2026, 9, 14))
@@ -35,7 +36,7 @@ def _setup_day_one(subject: SimulationSubject, context: object, actor: str) -> N
 def _act_day_one(subject: SimulationSubject, context: object, actor: str) -> None:
     subject.bind(context)
     subject.use_cases.complete_card.execute(actor, _card_id(subject, "pushups"))
-    subject.use_cases.dismiss_card.execute(actor, _card_id(subject, "housekeeping"))
+    subject.use_cases.dismiss_card.execute(actor, _card_id(subject, "reset kitchen"))
     piano = _card_id(subject, "play piano")
     subject.use_cases.touch_card.execute(actor, piano)
     subject.use_cases.touch_card.execute(actor, piano)
@@ -112,13 +113,14 @@ def create_simulation() -> Scenario:
         invariants=[Invariant("cards have consistent terminal outcomes", lambda _: _outcomes_are_consistent(subject))],
         observatory_nodes=[
             *(ObservatoryNode(actor.name, actor.name, "actor", -12, description="External role that drives a deterministic behavior beam.", badge="ACTOR") for actor in actors),
-            *(ObservatoryNode(name, name.replace("_", " ").title(), "use_case", "use_cases", domain="board", description="Application boundary invoked by an actor intention.", badge="USE CASE") for name in ("create_task", "open_day", "close_day", "touch_card", "complete_card", "dismiss_card", "reorder_card", "jump_to_card", "get_analytics")),
+            *(ObservatoryNode(name, name.replace("_", " ").title(), "use_case", "use_cases", domain="board", description="Application boundary invoked by an actor intention.", badge="USE CASE") for name in ("create_task", "update_task", "open_day", "close_day", "touch_card", "complete_card", "dismiss_card", "reorder_card", "jump_to_card", "get_analytics")),
             ObservatoryNode("SlidingTasksSimulation", "Task/Card Aggregate", "aggregate", "domain_model", domain="board", description="Authoritative task and card state; receives use-case decisions and emits domain events.", badge="AGGREGATE"),
             *(ObservatoryNode(name, name, "event", "domain_events", domain="board", description="Recorded domain fact emitted by the aggregate.", badge="EVENT") for name in ("TaskCreated", "CardGenerated", "CardTouched", "CardDone", "CardDismissed", "CardMissed", "CardReordered", "CardJumped")),
             ObservatoryNode("AnalyticsProjection", "Analytics Projection", "projection", "projections", domain="analytics", description="Read model assembled from the simulation history.", badge="PROJECTION"),
         ],
         observatory_edges=[
             ObservatoryEdge("Planner", "create_task", "intends", "route"),
+            ObservatoryEdge("Planner", "update_task", "intends", "route"),
             ObservatoryEdge("Planner", "open_day", "intends", "route"),
             ObservatoryEdge("User", "touch_card", "intends", "route"),
             ObservatoryEdge("User", "complete_card", "intends", "route"),
@@ -128,7 +130,7 @@ def create_simulation() -> Scenario:
             ObservatoryEdge("DayBoundary", "open_day", "intends", "route"),
             ObservatoryEdge("DayBoundary", "close_day", "intends", "route"),
             ObservatoryEdge("Analyst", "get_analytics", "intends", "route"),
-            *(ObservatoryEdge(name, "SlidingTasksSimulation", "commands", "command") for name in ("create_task", "open_day", "close_day", "touch_card", "complete_card", "dismiss_card", "reorder_card", "jump_to_card")),
+            *(ObservatoryEdge(name, "SlidingTasksSimulation", "commands", "command") for name in ("create_task", "update_task", "open_day", "close_day", "touch_card", "complete_card", "dismiss_card", "reorder_card", "jump_to_card")),
             *(ObservatoryEdge("SlidingTasksSimulation", name, "emits", "event") for name in ("TaskCreated", "CardGenerated", "CardTouched", "CardDone", "CardDismissed", "CardMissed", "CardReordered", "CardJumped")),
             ObservatoryEdge("get_analytics", "AnalyticsProjection", "projects", "route"),
         ],

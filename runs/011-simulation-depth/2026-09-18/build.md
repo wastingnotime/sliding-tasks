@@ -15,4 +15,7 @@
   carry-forward/expire policy; the default path emits `TaskCarriedForward` and
   the expire experiment emits `TaskExpired`.
 - Validation after policy refinement: 31 tests passed; model checks passed;
-  runtime observations increased to 81 because carry-forward is now recorded.
+  runtime observations were 81 after carry-forward was recorded.
+- Public-boundary refinement: `UpdateTask` is now an explicit application use
+  case, exercised by the Planner beam and declared in the observatory; replay
+  evidence now contains 84 observations.

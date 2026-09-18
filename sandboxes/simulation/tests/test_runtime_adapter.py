@@ -30,7 +30,7 @@ def test_runtime_scenario_emits_domain_evidence_and_finishes() -> None:
     decisions = [o for o in observations if o.type == "use_case_decision"]
     assert decisions
     assert all(o.name == "SlidingTasksSimulation" for o in decisions)
-    assert all(o.source in {"create_task", "open_day", "close_day", "touch_card", "complete_card", "dismiss_card", "reorder_card", "jump_to_card", "get_analytics"} for o in decisions)
+    assert all(o.source in {"create_task", "update_task", "open_day", "close_day", "touch_card", "complete_card", "dismiss_card", "reorder_card", "jump_to_card", "get_analytics"} for o in decisions)
     assert all("use_case_id" not in o.payload for o in decisions)
 
 
@@ -39,7 +39,7 @@ def test_runtime_log_tool_writes_parseable_jsonl(tmp_path: Path) -> None:
     tool = Path(__file__).parents[1] / "tools" / "write_runtime_log.py"
     subprocess.run([sys.executable, str(tool), "--output", str(output)], check=True)
     log = ObservationLog.from_jsonl(output.read_text(encoding="utf-8"))
-    assert len(log.observations) == 81
+    assert len(log.observations) == 84
     assert log.observations[0].name == "sliding-tasks-shared-environment"
 
 
@@ -58,7 +58,7 @@ def test_observatory_declares_unique_beam_and_effect_endpoints() -> None:
     node_ids = [node.id for node in scenario.observatory_nodes]
     assert len(node_ids) == len(set(node_ids))
     assert not any(node.kind == "inbound_adapter" for node in scenario.observatory_nodes)
-    assert {"create_task", "open_day", "close_day", "complete_card", "get_analytics"} <= set(node_ids)
+    assert {"create_task", "update_task", "open_day", "close_day", "complete_card", "get_analytics"} <= set(node_ids)
     assert {"CardGenerated", "CardDone", "CardMissed", "AnalyticsProjection"} <= set(node_ids)
     assert all(edge.from_node in node_ids and edge.to_node in node_ids for edge in scenario.observatory_edges)
     layers = {node.id: node.layer for node in scenario.observatory_nodes}

@@ -40,6 +40,13 @@ class CreateTask(UseCase):
         return self._run(actor, {"title": title, "task_type": task_type.value, "subtype": subtype.value}, lambda: self.environment.create_task(title, task_type, subtype, recurrence))  # type: ignore[return-value]
 
 
+class UpdateTask(UseCase):
+    name = "update_task"
+
+    def execute(self, actor: str, task_id: str, **changes: object) -> Task:
+        return self._run(actor, {"task_id": task_id, **changes}, lambda: self.environment.update_task(task_id, **changes))  # type: ignore[return-value]
+
+
 class OpenDay(UseCase):
     name = "open_day"
 
@@ -99,6 +106,7 @@ class GetAnalytics(UseCase):
 @dataclass(frozen=True)
 class SlidingTasksUseCases:
     create_task: CreateTask
+    update_task: UpdateTask
     open_day: OpenDay
     close_day: CloseDay
     touch_card: TouchCard
@@ -110,4 +118,4 @@ class SlidingTasksUseCases:
 
     @classmethod
     def build(cls, environment: SlidingTasksSimulation, observe: Observer) -> SlidingTasksUseCases:
-        return cls(*(use_case(environment, observe) for use_case in (CreateTask, OpenDay, CloseDay, TouchCard, CompleteCard, DismissCard, ReorderCard, JumpToCard, GetAnalytics)))
+        return cls(*(use_case(environment, observe) for use_case in (CreateTask, UpdateTask, OpenDay, CloseDay, TouchCard, CompleteCard, DismissCard, ReorderCard, JumpToCard, GetAnalytics)))

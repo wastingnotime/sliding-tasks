@@ -28,7 +28,8 @@ and the prior domain suite remains green.
 
 ## Observatory topology
 
-Actors, behavior beams, individual use cases, the Task/Card aggregate, domain
-event types, and analytics projection are declared as distinct ranked nodes.
-Actor intentions carry explicit use-case targets, so runtime effect beams can
-traverse declared structural paths instead of being discarded by the UI.
+Actors, individual use cases, the Task/Card aggregate, domain event types, and
+the analytics projection are declared as distinct ranked nodes. Behavior beams
+are runtime flows, not inbound-adapter nodes. Actor intentions target use cases;
+use-case decisions target the aggregate; domain events target event nodes.
+Those observations render as effect beams along declared structural paths.

@@ -12,7 +12,8 @@ from app.domain.model import Card, Recurrence, Task, TaskSubtype, TaskType
 class ApplicationObservation:
     type: str
     name: str
-    actor: str
+    actor: str | None
+    source: str
     payload: dict[str, object]
 
 
@@ -27,10 +28,9 @@ class UseCase:
         self.observe = observe
 
     def _run(self, actor: str, payload: dict[str, object], operation: Callable[[], object]) -> object:
-        self.observe(ApplicationObservation("command", self.name, actor, payload))
-        result = operation()
-        self.observe(ApplicationObservation("use_case", self.name, actor, payload))
-        return result
+        self.observe(ApplicationObservation("command", self.name, actor, actor, payload))
+        self.observe(ApplicationObservation("use_case_decision", "SlidingTasksSimulation", None, self.name, {"use_case_id": self.name, **payload}))
+        return operation()
 
 
 class CreateTask(UseCase):
@@ -111,4 +111,3 @@ class SlidingTasksUseCases:
     @classmethod
     def build(cls, environment: SlidingTasksSimulation, observe: Observer) -> SlidingTasksUseCases:
         return cls(*(use_case(environment, observe) for use_case in (CreateTask, OpenDay, CloseDay, TouchCard, CompleteCard, DismissCard, ReorderCard, JumpToCard, GetAnalytics)))
-

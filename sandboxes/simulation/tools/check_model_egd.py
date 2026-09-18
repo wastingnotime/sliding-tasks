@@ -37,7 +37,7 @@ def main() -> int:
         "runtime_jsonl_serializable": _is_json_serializable(records),
         "runtime_actors_present": {actor.name for actor in scenario.actors} == {"Planner", "User", "DayBoundary", "Analyst"},
         "behavior_beams_present": sum(observation.type == "beam" for observation in observations) == 4,
-        "explicit_use_case_flow": {"actor_intention", "command", "use_case", "domain_event"} <= {observation.type for observation in observations},
+        "explicit_use_case_flow": {"actor_intention", "command", "use_case_decision", "domain_event"} <= {observation.type for observation in observations},
     }
     for name, passed in checks.items():
         print(f"{name}: {'PASS' if passed else 'FAIL'}")

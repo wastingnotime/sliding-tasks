@@ -22,7 +22,7 @@ class SimulationSubject:
     def _observe_application(self, observation: ApplicationObservation) -> None:
         if self.context is None:
             return
-        self.context.emit(observation.type, observation.name, source=type(observation).__name__, actor=observation.actor, payload=observation.payload)
+        self.context.emit(observation.type, observation.name, source=observation.source, actor=observation.actor, payload=observation.payload)
 
     def _observe_domain(self, event: object) -> None:
         if self.context is None:

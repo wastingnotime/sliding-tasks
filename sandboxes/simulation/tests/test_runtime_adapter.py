@@ -22,7 +22,7 @@ def test_runtime_scenario_emits_domain_evidence_and_finishes() -> None:
     assert "CardJumped" in names
     assert "basic_analytics" in names
     assert observations[-1].name == "sliding-tasks-shared-environment"
-    assert {o.type for o in observations} >= {"beam", "actor_intention", "command", "use_case", "domain_event"}
+    assert {o.type for o in observations} >= {"beam", "actor_intention", "command", "use_case_decision", "domain_event"}
     assert {o.actor for o in observations if o.actor} >= {"Planner", "User", "DayBoundary", "Analyst"}
     invariant_results = [o for o in observations if o.type == "invariant_result"]
     assert invariant_results
@@ -52,9 +52,9 @@ def test_observatory_declares_unique_beam_and_effect_endpoints() -> None:
     scenario = create_simulation()
     node_ids = [node.id for node in scenario.observatory_nodes]
     assert len(node_ids) == len(set(node_ids))
-    assert {"planning-beam", "daily-life-beam", "day-boundary-beam", "analytics-beam"} <= set(node_ids)
+    assert not any(node.kind == "inbound_adapter" for node in scenario.observatory_nodes)
     assert {"create_task", "open_day", "close_day", "complete_card", "get_analytics"} <= set(node_ids)
     assert {"CardGenerated", "CardDone", "CardMissed", "AnalyticsProjection"} <= set(node_ids)
     assert all(edge.from_node in node_ids and edge.to_node in node_ids for edge in scenario.observatory_edges)
     layers = {node.id: node.layer for node in scenario.observatory_nodes}
-    assert all(layers[actor] < layers[beam] for actor, beam in (("Planner", "planning-beam"), ("User", "daily-life-beam"), ("DayBoundary", "day-boundary-beam"), ("Analyst", "analytics-beam")))
+    assert all(layers[actor] < 0 for actor in ("Planner", "User", "DayBoundary", "Analyst"))

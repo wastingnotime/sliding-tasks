@@ -19,9 +19,10 @@ them, and state and analytics are projections of those events. Time and IDs are
 deterministic.
 
 The shared environment is driven by four runtime-visible actors—Planner, User,
-DayBoundary, and Analyst. Each actor activates a repository-owned behavior beam
-that schedules independent intentions. Explicit application use cases translate
-those intentions into domain behavior and observations.
+DayBoundary, and Analyst. Each actor activates a repository-owned behavior flow
+that schedules independent intentions. In the observatory, beams are the
+animated connections between actors, explicit application use cases, the
+aggregate, and emitted events; they are not architectural adapter nodes.
 
 Run the executable examples:
 

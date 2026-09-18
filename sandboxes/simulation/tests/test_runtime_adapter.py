@@ -56,3 +56,5 @@ def test_observatory_declares_unique_beam_and_effect_endpoints() -> None:
     assert {"create_task", "open_day", "close_day", "complete_card", "get_analytics"} <= set(node_ids)
     assert {"CardGenerated", "CardDone", "CardMissed", "AnalyticsProjection"} <= set(node_ids)
     assert all(edge.from_node in node_ids and edge.to_node in node_ids for edge in scenario.observatory_edges)
+    layers = {node.id: node.layer for node in scenario.observatory_nodes}
+    assert all(layers[actor] < layers[beam] for actor, beam in (("Planner", "planning-beam"), ("User", "daily-life-beam"), ("DayBoundary", "day-boundary-beam"), ("Analyst", "analytics-beam")))

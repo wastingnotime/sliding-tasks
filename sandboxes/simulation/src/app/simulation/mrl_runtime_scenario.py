@@ -111,8 +111,8 @@ def create_simulation() -> Scenario:
         actors=actors,
         invariants=[Invariant("cards have consistent terminal outcomes", lambda _: _outcomes_are_consistent(subject))],
         observatory_nodes=[
-            *(ObservatoryNode(actor.name, actor.name, "actor", "actors") for actor in actors),
-            *(ObservatoryNode(beam.name, beam.name.replace("-", " ").title(), "inbound_adapter", "inbound_adapters", realm="simulation") for beam in (planning, daily_life, boundary, analytics)),
+            *(ObservatoryNode(actor.name, actor.name, "actor", -12) for actor in actors),
+            *(ObservatoryNode(beam.name, beam.name.replace("-", " ").title(), "inbound_adapter", -6, realm="simulation") for beam in (planning, daily_life, boundary, analytics)),
             *(ObservatoryNode(name, name.replace("_", " ").title(), "use_case", "use_cases", domain="board") for name in ("create_task", "open_day", "close_day", "touch_card", "complete_card", "dismiss_card", "reorder_card", "jump_to_card", "get_analytics")),
             ObservatoryNode("SlidingTasksSimulation", "Task/Card Aggregate", "aggregate", "domain_model", domain="board"),
             *(ObservatoryNode(name, name, "event", "domain_events", domain="board") for name in ("TaskCreated", "CardGenerated", "CardTouched", "CardDone", "CardDismissed", "CardMissed", "CardReordered", "CardJumped")),

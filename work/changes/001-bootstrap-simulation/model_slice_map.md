@@ -27,5 +27,9 @@ The next built slice is `task-lifecycle`, documented at
 `sandboxes/simulation/docs/slices/007-task-lifecycle.md`. It validates active
 rule changes against today's immutable generated cards.
 
+The next built slice is `sequence-signal-projection`, documented at
+`sandboxes/simulation/docs/slices/008-sequence-signal-projection.md`. It pairs
+raw reorder/jump counts with card outcomes without interpretation.
+
 Later candidates are model release adapter contracts. They remain gated on
 further refinement and model EGD.

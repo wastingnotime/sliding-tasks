@@ -309,3 +309,15 @@ def test_task_deactivation_preserves_today_and_controls_future_generation() -> N
     next_card = env.open_day(date(2026, 9, 16))[0]
     assert next_card.id != today_card.id
     assert next_card.title_snapshot == "wellbeing"
+
+
+def test_sequence_activity_pairs_raw_navigation_counts_with_outcome() -> None:
+    env = simulation()
+    task = env.create_task("third", TaskType.TASK, TaskSubtype.REGULAR, DAILY)
+    card = env.open_day(DAY_ONE)[0]
+    env.reorder_today_cards(card.id, 0)
+    env.jump_to_card(card.id)
+    env.done_card(card.id)
+
+    assert env.sequence_activity() == {card.id: {"reordered": 1, "jumped": 1, "outcome": "done"}}
+    assert task.id == card.task_id

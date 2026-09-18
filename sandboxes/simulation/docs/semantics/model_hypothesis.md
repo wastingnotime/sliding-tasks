@@ -52,6 +52,8 @@ and nth day of month. Frequency targets are deliberately excluded.
    board generation; frequency targets remain excluded.
 7. **Task lifecycle eligibility** — built: active changes affect future
    generation and never rewrite today's generated occurrence.
+8. **Sequence signal projection** — built: reorder/jump counts are paired with
+   factual card outcomes without interpretation.
 4. **Model release adapters** — gated: define mobile/API-facing contracts only
    after model EGD accepts the domain.
 

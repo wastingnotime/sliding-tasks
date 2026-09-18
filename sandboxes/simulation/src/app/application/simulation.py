@@ -215,6 +215,21 @@ class SlidingTasksSimulation:
                 resolved.add(event.card_id)
         return touches
 
+    def sequence_activity(self) -> dict[str, dict[str, object]]:
+        activity: dict[str, dict[str, object]] = {}
+        outcomes = {"CardDone": "done", "CardDismissed": "dismissed", "CardMissed": "missed"}
+        for event in self.events():
+            if event.card_id is None:
+                continue
+            record = activity.setdefault(event.card_id, {"reordered": 0, "jumped": 0, "outcome": None})
+            if event.event_type == "CardReordered":
+                record["reordered"] = int(record["reordered"]) + 1
+            elif event.event_type == "CardJumped":
+                record["jumped"] = int(record["jumped"]) + 1
+            elif event.event_type in outcomes:
+                record["outcome"] = outcomes[event.event_type]
+        return activity
+
     def _metric_record(self, task_id: str, title: str, task_type: str) -> dict[str, object]:
         metric = self.analytics(task_id=task_id)
         return {"title": title, "task_type": task_type, "generated": metric.generated, "touched": metric.touched, "done": metric.done, "dismissed": metric.dismissed, "missed": metric.missed, "completion_rate": metric.completion_rate}

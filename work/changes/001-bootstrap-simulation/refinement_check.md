@@ -125,3 +125,9 @@ present-only board boundary while keeping Task rules configurable.
 The lifecycle replay confirms deactivation is represented only as a Task rule
 update. It does not mutate today's Card or emit a synthetic generation event;
 future eligibility changes occur only when the next controlled day opens.
+
+## Build update — sequence signal projection
+
+Sequence activity is now projected as per-card reorder and jump counts paired
+with the eventual factual outcome. The projection makes comparisons possible
+without assigning behavioral meaning or causality to navigation.

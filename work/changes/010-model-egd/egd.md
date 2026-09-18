@@ -15,10 +15,11 @@
 - Recurrence and active eligibility are deterministic date predicates.
 - Historical card/type snapshots protect analytics from later task edits.
 - Runtime adapter and evidence writer remain thin non-domain boundaries.
+- Runtime observations satisfy the stable JSONL field and serialization
+  contract.
 
 ## Current result
 
 The model is coherent enough for an EGD review. The checker is evidence
 preparation, not a release decision. Release remains deferred until the open
 policy and usefulness questions are explicitly accepted.
-

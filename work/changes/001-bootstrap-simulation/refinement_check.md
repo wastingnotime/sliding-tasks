@@ -160,3 +160,9 @@ The repository now has a lightweight checker that validates required domain
 events, runtime invariants, and analytics projections against the current
 scenario. It prepares model EGD evidence while leaving the release decision
 explicitly deferred.
+
+## Refinement update — runtime contract checks
+
+The EGD checker now validates not only semantic coverage but also the runtime
+observation envelope: every record has `sim_time`, `type`, `name`, and `payload`
+and the complete observation set serializes as JSONL-compatible data.

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import sys
 
 SIMULATION_ROOT = Path(__file__).resolve().parents[1]
@@ -23,12 +24,16 @@ def main() -> int:
     names = {observation.name for observation in observations}
     invariant_results = [observation.payload.get("passed") for observation in observations if observation.type == "invariant_result"]
     analytics = next(observation for observation in observations if observation.name == "basic_analytics")
+    records = [observation.to_record() for observation in observations]
+    stable_fields = {"sim_time", "type", "name", "payload"}
     checks = {
         "required_domain_events": REQUIRED_EVENTS <= names,
         "invariants_pass": all(invariant_results),
         "analytics_by_task": "by_task" in analytics.payload,
         "analytics_by_type": "by_type" in analytics.payload,
         "sequence_activity": "sequence_activity" in analytics.payload,
+        "runtime_record_shape": all(stable_fields <= set(record) for record in records),
+        "runtime_jsonl_serializable": _is_json_serializable(records),
     }
     for name, passed in checks.items():
         print(f"{name}: {'PASS' if passed else 'FAIL'}")
@@ -36,6 +41,13 @@ def main() -> int:
     return 0 if all(checks.values()) else 1
 
 
+def _is_json_serializable(records: list[dict[str, object]]) -> bool:
+    try:
+        json.dumps(records)
+    except TypeError:
+        return False
+    return True
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
-

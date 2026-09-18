@@ -97,3 +97,10 @@ The alternate policy replay now verifies that the switch affects only
 Task in both modes, so the experiment does not blur decision semantics. Current
 evidence supports retaining the default-resolves assumption while gathering
 user-behavior evidence before selecting a final product policy.
+
+## Build update — recurrence sufficiency
+
+The deterministic recurrence vocabulary is now exercised through controlled
+board generation across weekday, weekend, specific-weekday, and nth-day dates.
+No scheduling policy or frequency target was introduced; recurrence remains a
+date eligibility predicate for today's board.

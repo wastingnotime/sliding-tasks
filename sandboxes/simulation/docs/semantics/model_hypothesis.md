@@ -48,6 +48,8 @@ and nth day of month. Frequency targets are deliberately excluded.
    card snapshot when task classification changes.
 5. **One-time dismissal policy** — built as a controlled experiment; default
    behavior resolves the intention, alternate behavior carries it forward.
+6. **Recurrence sufficiency** — built: deterministic date predicates drive
+   board generation; frequency targets remain excluded.
 4. **Model release adapters** — gated: define mobile/API-facing contracts only
    after model EGD accepts the domain.
 

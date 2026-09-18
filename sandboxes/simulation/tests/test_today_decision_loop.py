@@ -276,3 +276,18 @@ def test_dismissal_policy_switch_does_not_change_one_time_done() -> None:
     env.close_day()
     assert env.open_day(date(2026, 9, 15)) == ()
     assert event_types(env, task.id)[-1] == "CardDone"
+
+
+def test_recurrence_rules_drive_end_to_end_board_generation() -> None:
+    env = simulation()
+    weekday = env.create_task("weekday", TaskType.TASK, TaskSubtype.REGULAR, Recurrence(RecurrenceKind.WEEKDAYS))
+    weekend = env.create_task("weekend", TaskType.TASK, TaskSubtype.REGULAR, Recurrence(RecurrenceKind.WEEKENDS))
+    wednesday = env.create_task("wednesday", TaskType.TASK, TaskSubtype.REGULAR, Recurrence(RecurrenceKind.SPECIFIC_WEEKDAYS, frozenset({2})))
+    month_end = env.create_task("month day", TaskType.TASK, TaskSubtype.REGULAR, Recurrence(RecurrenceKind.NTH_DAY_OF_MONTH, day_of_month=30))
+    assert {card.task_id for card in env.open_day(date(2026, 9, 14))} == {weekday.id}
+    env.close_day()
+    assert {card.task_id for card in env.open_day(date(2026, 9, 19))} == {weekend.id}
+    env.close_day()
+    assert {card.task_id for card in env.open_day(date(2026, 9, 16))} == {weekday.id, wednesday.id}
+    env.close_day()
+    assert {card.task_id for card in env.open_day(date(2026, 9, 30))} == {weekday.id, month_end.id}

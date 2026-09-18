@@ -19,5 +19,9 @@ The next built slice is `one-time-dismissal-policy`, documented at
 `sandboxes/simulation/docs/slices/005-one-time-dismissal-policy.md`. It makes
 the current dismissal assumption comparable with carry-forward behavior.
 
+The next built slice is `recurrence-sufficiency`, documented at
+`sandboxes/simulation/docs/slices/006-recurrence-sufficiency.md`. It validates
+deterministic recurrence rules through end-to-end board generation.
+
 Later candidates are model release adapter contracts. They remain gated on
 further refinement and model EGD.

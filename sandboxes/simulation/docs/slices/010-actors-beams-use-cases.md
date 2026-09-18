@@ -26,3 +26,9 @@ No initial scripted actions exist on the Scenario. Actors schedule all behavior,
 control state exposes each actor, the event flow includes every semantic layer,
 and the prior domain suite remains green.
 
+## Observatory topology
+
+Actors, behavior beams, individual use cases, the Task/Card aggregate, domain
+event types, and analytics projection are declared as distinct ranked nodes.
+Actor intentions carry explicit use-case targets, so runtime effect beams can
+traverse declared structural paths instead of being discarded by the UI.

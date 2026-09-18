@@ -46,3 +46,13 @@ def test_runtime_control_exposes_actor_driven_beams() -> None:
     assert state.active_actors == ("Planner", "User", "DayBoundary", "Analyst")
     assert set(state.selected_actor_behaviors.values()) == {"BeamActorBehavior"}
     assert state.next_scheduled_event_time == scenario.initial_time
+
+
+def test_observatory_declares_unique_beam_and_effect_endpoints() -> None:
+    scenario = create_simulation()
+    node_ids = [node.id for node in scenario.observatory_nodes]
+    assert len(node_ids) == len(set(node_ids))
+    assert {"planning-beam", "daily-life-beam", "day-boundary-beam", "analytics-beam"} <= set(node_ids)
+    assert {"create_task", "open_day", "close_day", "complete_card", "get_analytics"} <= set(node_ids)
+    assert {"CardGenerated", "CardDone", "CardMissed", "AnalyticsProjection"} <= set(node_ids)
+    assert all(edge.from_node in node_ids and edge.to_node in node_ids for edge in scenario.observatory_edges)

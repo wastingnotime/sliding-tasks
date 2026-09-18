@@ -85,18 +85,18 @@ def _outcomes_are_consistent(subject: SimulationSubject) -> bool:
 
 def create_simulation() -> Scenario:
     subject = SimulationSubject(INITIAL_TIME)
-    planning = BehaviorBeam("planning-beam", (BeamAction(_at(14, 6), "configure intentions and open today", _action(subject, _setup_day_one)),))
+    planning = BehaviorBeam("planning-beam", (BeamAction(_at(14, 6), "configure intentions and open today", "create_task", _action(subject, _setup_day_one)),))
     daily_life = BehaviorBeam("daily-life-beam", (
-        BeamAction(_at(14, 8), "act on morning cards", _action(subject, _act_day_one)),
-        BeamAction(_at(15, 7), "navigate today's sequence", _action(subject, _navigate_day_two)),
-        BeamAction(_at(15, 18), "complete carried intention", _action(subject, _complete_one_time)),
+        BeamAction(_at(14, 8), "act on morning cards", "complete_card", _action(subject, _act_day_one)),
+        BeamAction(_at(15, 7), "navigate today's sequence", "reorder_card", _action(subject, _navigate_day_two)),
+        BeamAction(_at(15, 18), "complete carried intention", "complete_card", _action(subject, _complete_one_time)),
     ))
     boundary = BehaviorBeam("day-boundary-beam", (
-        BeamAction(_at(14, 23, 59), "close first day", _action(subject, _close_day)),
-        BeamAction(_at(15, 6), "open second day", _action(subject, _open_day_two)),
-        BeamAction(_at(15, 23, 59), "close second day", _action(subject, _close_day)),
+        BeamAction(_at(14, 23, 59), "close first day", "close_day", _action(subject, _close_day)),
+        BeamAction(_at(15, 6), "open second day", "open_day", _action(subject, _open_day_two)),
+        BeamAction(_at(15, 23, 59), "close second day", "close_day", _action(subject, _close_day)),
     ))
-    analytics = BehaviorBeam("analytics-beam", (BeamAction(_at(15, 23, 59), "inspect behavioral history", _action(subject, _observe_analytics)),))
+    analytics = BehaviorBeam("analytics-beam", (BeamAction(_at(15, 23, 59), "inspect behavioral history", "get_analytics", _action(subject, _observe_analytics)),))
     actors = [
         Actor("Planner", BeamActorBehavior("Planner", planning)),
         Actor("User", BeamActorBehavior("User", daily_life)),
@@ -112,15 +112,29 @@ def create_simulation() -> Scenario:
         invariants=[Invariant("cards have consistent terminal outcomes", lambda _: _outcomes_are_consistent(subject))],
         observatory_nodes=[
             *(ObservatoryNode(actor.name, actor.name, "actor", "actors") for actor in actors),
-            ObservatoryNode("use-cases", "Application use cases", "use_case", "use_cases"),
-            ObservatoryNode("domain", "Task/Card domain", "domain", "model"),
-            ObservatoryNode("events", "Event history", "event_store", "infrastructure"),
-            ObservatoryNode("analytics", "Analytics", "projection", "model"),
+            *(ObservatoryNode(beam.name, beam.name.replace("-", " ").title(), "inbound_adapter", "inbound_adapters", realm="simulation") for beam in (planning, daily_life, boundary, analytics)),
+            *(ObservatoryNode(name, name.replace("_", " ").title(), "use_case", "use_cases", domain="board") for name in ("create_task", "open_day", "close_day", "touch_card", "complete_card", "dismiss_card", "reorder_card", "jump_to_card", "get_analytics")),
+            ObservatoryNode("SlidingTasksSimulation", "Task/Card Aggregate", "aggregate", "domain_model", domain="board"),
+            *(ObservatoryNode(name, name, "event", "domain_events", domain="board") for name in ("TaskCreated", "CardGenerated", "CardTouched", "CardDone", "CardDismissed", "CardMissed", "CardReordered", "CardJumped")),
+            ObservatoryNode("AnalyticsProjection", "Analytics Projection", "projection", "projections", domain="analytics"),
         ],
         observatory_edges=[
-            *(ObservatoryEdge(actor.name, "use-cases", "intends") for actor in actors),
-            ObservatoryEdge("use-cases", "domain", "commands"),
-            ObservatoryEdge("domain", "events", "emits"),
-            ObservatoryEdge("events", "analytics", "projects"),
+            ObservatoryEdge("Planner", "planning-beam", "activates"),
+            ObservatoryEdge("User", "daily-life-beam", "activates"),
+            ObservatoryEdge("DayBoundary", "day-boundary-beam", "activates"),
+            ObservatoryEdge("Analyst", "analytics-beam", "activates"),
+            ObservatoryEdge("planning-beam", "create_task", "drives"),
+            ObservatoryEdge("planning-beam", "open_day", "drives"),
+            ObservatoryEdge("daily-life-beam", "touch_card", "drives"),
+            ObservatoryEdge("daily-life-beam", "complete_card", "drives"),
+            ObservatoryEdge("daily-life-beam", "dismiss_card", "drives"),
+            ObservatoryEdge("daily-life-beam", "reorder_card", "drives"),
+            ObservatoryEdge("daily-life-beam", "jump_to_card", "drives"),
+            ObservatoryEdge("day-boundary-beam", "open_day", "drives"),
+            ObservatoryEdge("day-boundary-beam", "close_day", "drives"),
+            ObservatoryEdge("analytics-beam", "get_analytics", "drives"),
+            *(ObservatoryEdge(name, "SlidingTasksSimulation", "commands") for name in ("create_task", "open_day", "close_day", "touch_card", "complete_card", "dismiss_card", "reorder_card", "jump_to_card")),
+            *(ObservatoryEdge("SlidingTasksSimulation", name, "emits") for name in ("TaskCreated", "CardGenerated", "CardTouched", "CardDone", "CardDismissed", "CardMissed", "CardReordered", "CardJumped")),
+            ObservatoryEdge("get_analytics", "AnalyticsProjection", "projects"),
         ],
     )

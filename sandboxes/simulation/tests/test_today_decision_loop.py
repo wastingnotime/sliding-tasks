@@ -321,3 +321,15 @@ def test_sequence_activity_pairs_raw_navigation_counts_with_outcome() -> None:
 
     assert env.sequence_activity() == {card.id: {"reordered": 1, "jumped": 1, "outcome": "done"}}
     assert task.id == card.task_id
+
+
+def test_sequence_activity_keeps_untouched_card_as_zero_activity_baseline() -> None:
+    env = simulation()
+    env.create_task("acted", TaskType.TASK, TaskSubtype.REGULAR, DAILY)
+    env.create_task("untouched", TaskType.TASK, TaskSubtype.REGULAR, DAILY)
+    acted, untouched = env.open_day(DAY_ONE)
+    env.reorder_today_cards(acted.id, 1)
+    env.done_card(acted.id)
+    env.close_day()
+
+    assert env.sequence_activity()[untouched.id] == {"reordered": 0, "jumped": 0, "outcome": "missed"}

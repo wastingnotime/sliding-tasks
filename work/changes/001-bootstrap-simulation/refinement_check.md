@@ -131,3 +131,11 @@ future eligibility changes occur only when the next controlled day opens.
 Sequence activity is now projected as per-card reorder and jump counts paired
 with the eventual factual outcome. The projection makes comparisons possible
 without assigning behavioral meaning or causality to navigation.
+
+## Refinement update — sequence baseline
+
+The projection now has an explicit untouched-card baseline: cards with no
+reorder or jump activity remain visible with zero counts and their factual
+outcome. This makes comparisons possible while preserving the rule that
+navigation is observed, not interpreted. Retain the raw events and projection
+for further history-based evaluation; do not add causal metrics yet.

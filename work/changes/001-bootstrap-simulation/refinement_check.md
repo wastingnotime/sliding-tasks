@@ -153,3 +153,10 @@ The evidence writer now has a command-level round-trip test: it executes as a
 standalone process, writes JSONL, and the WNT observation model parses all 35
 observations. This confirms the tool remains a thin evidence boundary rather
 than an alternate simulation implementation.
+
+## Build update — model EGD preparation
+
+The repository now has a lightweight checker that validates required domain
+events, runtime invariants, and analytics projections against the current
+scenario. It prepares model EGD evidence while leaving the release decision
+explicitly deferred.

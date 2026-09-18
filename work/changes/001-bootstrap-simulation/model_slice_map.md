@@ -35,5 +35,9 @@ The next built slice is `runtime-evidence-packet`, documented at
 `sandboxes/simulation/docs/slices/009-runtime-evidence-packet.md`. It provides
 replayable JSONL evidence from the standard runtime adapter.
 
+The next built support boundary is the model-EGD checker documented in
+`work/changes/010-model-egd/egd.md`. It prepares release evidence but does not
+release the model.
+
 Later candidates are model release adapter contracts. They remain gated on
 further refinement and model EGD.

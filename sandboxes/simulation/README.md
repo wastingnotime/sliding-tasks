@@ -36,5 +36,11 @@ Write replayable JSONL evidence when needed:
 python3 sandboxes/simulation/tools/write_runtime_log.py --output /tmp/sliding-tasks-runtime.jsonl
 ```
 
+Run the lightweight model-EGD checks:
+
+```bash
+python3 sandboxes/simulation/tools/check_model_egd.py
+```
+
 The runtime adapter is intentionally thin. Domain code does not import the WNT
 runtime.

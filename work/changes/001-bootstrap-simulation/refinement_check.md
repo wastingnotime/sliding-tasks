@@ -55,3 +55,12 @@ missed outcomes by task and task type, and retains touch counts per card until
 first resolution. A multi-day deterministic replay makes the comparisons
 observable without adding journaling or behavioral labels. Weekly targets,
 forecasting, and inferred interpretation remain intentionally out of scope.
+
+## Refinement update — historical metric labels
+
+Review of the multi-day projection found that task metrics used the current
+Task title/type, which could rewrite historical meaning after a task edit. Task
+metrics now label themselves from the first immutable `CardGenerated` snapshot;
+the edit scenario verifies that old history remains attributable to its
+original classification while later cards use the new definition. Per-period
+type transitions remain an open experiment before model EGD.

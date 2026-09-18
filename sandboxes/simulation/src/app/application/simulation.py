@@ -173,7 +173,15 @@ class SlidingTasksSimulation:
     def metrics_by_task(self) -> dict[str, dict[str, object]]:
         result: dict[str, dict[str, object]] = {}
         for task in self.tasks.values():
-            metric = self._metric_record(task.id, task.title, task.task_type.value)
+            snapshot = next(
+                (event.payload for event in self.events() if event.task_id == task.id and event.event_type == "CardGenerated"),
+                {"title_snapshot": task.title, "task_type_snapshot": task.task_type.value},
+            )
+            metric = self._metric_record(
+                task.id,
+                str(snapshot["title_snapshot"]),
+                str(snapshot["task_type_snapshot"]),
+            )
             if metric["generated"]:
                 result[task.id] = metric
         return result

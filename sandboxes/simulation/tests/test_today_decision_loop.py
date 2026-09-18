@@ -211,3 +211,20 @@ def test_touches_before_resolution_preserves_per_card_signal() -> None:
     env.touch_card(card.id)
     env.done_card(card.id)
     assert env.touches_before_resolution(task_id=task.id) == {card.id: 2}
+
+
+def test_metric_labels_keep_first_occurrence_snapshot_after_task_edit() -> None:
+    env = simulation()
+    task = env.create_task("old title", TaskType.CHORE, TaskSubtype.REGULAR, DAILY)
+    card = env.open_day(DAY_ONE)[0]
+    env.done_card(card.id)
+    env.close_day()
+
+    env.update_task(task.id, title="new title", task_type=TaskType.SKILL)
+    next_card = env.open_day(date(2026, 9, 15))[0]
+    env.close_day()
+
+    metric = env.metrics_by_task()[task.id]
+    assert metric["title"] == "old title"
+    assert metric["task_type"] == "chore"
+    assert next_card.title_snapshot == "new title"

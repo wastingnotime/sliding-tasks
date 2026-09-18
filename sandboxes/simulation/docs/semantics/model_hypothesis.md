@@ -44,8 +44,10 @@ pending --close day-> missed
 pending --touch-----> pending
 ```
 
-A one-time task becomes resolved only on explicit done or dismiss. A missed
-one-time card closes that occurrence but leaves the task eligible tomorrow.
+A one-time task becomes resolved on explicit done or dismiss. Missed one-time
+cards follow an explicit policy: the default carries the intention forward and
+records `TaskCarriedForward`; the opt-in expire policy records `TaskExpired` and
+ends eligibility.
 
 ## Current recurrence hypothesis
 

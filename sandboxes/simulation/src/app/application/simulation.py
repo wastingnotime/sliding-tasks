@@ -10,6 +10,7 @@ from app.domain.model import (
     CardStatus,
     DomainError,
     DomainEvent,
+    OneTimeMissedPolicy,
     Recurrence,
     Task,
     TaskSubtype,
@@ -34,7 +35,7 @@ EventListener = Callable[[DomainEvent], None]
 class SlidingTasksSimulation:
     """One deterministic, event-recording Sliding Tasks environment."""
 
-    def __init__(self, initial_time: datetime, *, one_time_dismissal_resolves: bool = True) -> None:
+    def __init__(self, initial_time: datetime, *, one_time_dismissal_resolves: bool = True, one_time_missed_policy: OneTimeMissedPolicy = OneTimeMissedPolicy.CARRY_FORWARD) -> None:
         self.clock = DeterministicClock(initial_time)
         self.ids = SequentialIds()
         self.store = InMemoryEventStore()
@@ -43,6 +44,7 @@ class SlidingTasksSimulation:
         self.card_order: list[str] = []
         self.today: date | None = None
         self.one_time_dismissal_resolves = one_time_dismissal_resolves
+        self.one_time_missed_policy = one_time_missed_policy
         self._listeners: list[EventListener] = []
 
     def listen(self, listener: EventListener) -> None:
@@ -113,6 +115,13 @@ class SlidingTasksSimulation:
         for card in self.get_today_cards(include_resolved=True):
             if card.status == CardStatus.PENDING:
                 self._resolve(card, CardStatus.MISSED, "CardMissed")
+                task = self._task(card.task_id)
+                if task.subtype == TaskSubtype.ONE_TIME:
+                    if self.one_time_missed_policy == OneTimeMissedPolicy.EXPIRE:
+                        task.resolved = True
+                        self._record("TaskExpired", task.id, payload={"reason": "missed_one_time_card"})
+                    else:
+                        self._record("TaskCarriedForward", task.id, card.id, {"reason": "missed_one_time_card"})
         self.today = None
         self.card_order = []
 

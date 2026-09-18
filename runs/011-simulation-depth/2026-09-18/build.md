@@ -11,3 +11,8 @@
   supervision started successfully on port 8766 for an isolated smoke run.
 - The existing observatory remains supervised on port 8765, so the default
   port was intentionally not interrupted during this build.
+- Domain refinement: missed one-time cards now expose an explicit
+  carry-forward/expire policy; the default path emits `TaskCarriedForward` and
+  the expire experiment emits `TaskExpired`.
+- Validation after policy refinement: 31 tests passed; model checks passed;
+  runtime observations increased to 81 because carry-forward is now recorded.

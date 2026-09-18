@@ -33,6 +33,11 @@ class RecurrenceKind(str, Enum):
     NTH_DAY_OF_MONTH = "nth_day_of_month"
 
 
+class OneTimeMissedPolicy(str, Enum):
+    CARRY_FORWARD = "carry_forward"
+    EXPIRE = "expire"
+
+
 @dataclass(frozen=True)
 class Recurrence:
     kind: RecurrenceKind

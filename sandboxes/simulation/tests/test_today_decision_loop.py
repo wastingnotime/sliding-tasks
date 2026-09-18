@@ -6,6 +6,7 @@ from app.application.simulation import SlidingTasksSimulation
 from app.domain.model import (
     CardStatus,
     DomainError,
+    OneTimeMissedPolicy,
     Recurrence,
     RecurrenceKind,
     TaskSubtype,
@@ -90,7 +91,18 @@ def test_unresolved_one_time_task_carries_forward_until_explicit_done() -> None:
 
     assert day_one_card.id != day_two_card.id != day_three_card.id
     assert event_types(env, task.id).count("CardMissed") == 2
+    assert event_types(env, task.id).count("TaskCarriedForward") == 2
     assert event_types(env, task.id).count("CardDone") == 1
+
+
+def test_one_time_missed_policy_can_expire_the_intention() -> None:
+    env = SlidingTasksSimulation(datetime(2026, 9, 14, 6, 0), one_time_missed_policy=OneTimeMissedPolicy.EXPIRE)
+    task = env.create_task("mount wardrobe", TaskType.CHORE, TaskSubtype.ONE_TIME)
+    env.open_day(DAY_ONE)
+    env.close_day()
+
+    assert event_types(env, task.id)[-2:] == ["CardMissed", "TaskExpired"]
+    assert env.open_day(date(2026, 9, 15)) == ()
 
 
 def test_regular_rule_change_does_not_rewrite_today_snapshot() -> None:

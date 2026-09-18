@@ -39,7 +39,7 @@ def test_runtime_log_tool_writes_parseable_jsonl(tmp_path: Path) -> None:
     tool = Path(__file__).parents[1] / "tools" / "write_runtime_log.py"
     subprocess.run([sys.executable, str(tool), "--output", str(output)], check=True)
     log = ObservationLog.from_jsonl(output.read_text(encoding="utf-8"))
-    assert len(log.observations) == 80
+    assert len(log.observations) == 81
     assert log.observations[0].name == "sliding-tasks-shared-environment"
 
 

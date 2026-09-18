@@ -13,6 +13,10 @@ alternate experiment where dismissal closes only today's Card and the Task is
 eligible tomorrow. Both modes retain the same `CardDismissed` event and do not
 rewrite history.
 
+Missed one-time cards use a separate explicit policy. The default carries the
+intention forward and records `TaskCarriedForward`; an expire experiment records
+`TaskExpired` and ends future eligibility.
+
 ## Done criteria
 
 The default mode produces no next-day card after dismissal. The alternate mode
@@ -22,4 +26,3 @@ produces a fresh next-day occurrence, making the policy difference observable.
 
 User-facing settings, automatic policy selection, snooze semantics, and
 multi-dismissal limits.
-

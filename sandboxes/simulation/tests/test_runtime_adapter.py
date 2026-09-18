@@ -27,6 +27,11 @@ def test_runtime_scenario_emits_domain_evidence_and_finishes() -> None:
     invariant_results = [o for o in observations if o.type == "invariant_result"]
     assert invariant_results
     assert all(o.payload["passed"] for o in invariant_results)
+    decisions = [o for o in observations if o.type == "use_case_decision"]
+    assert decisions
+    assert all(o.name == "SlidingTasksSimulation" for o in decisions)
+    assert all(o.source in {"create_task", "open_day", "close_day", "touch_card", "complete_card", "dismiss_card", "reorder_card", "jump_to_card", "get_analytics"} for o in decisions)
+    assert all("use_case_id" not in o.payload for o in decisions)
 
 
 def test_runtime_log_tool_writes_parseable_jsonl(tmp_path: Path) -> None:

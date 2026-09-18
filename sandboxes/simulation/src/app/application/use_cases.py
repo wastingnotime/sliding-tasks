@@ -29,7 +29,7 @@ class UseCase:
 
     def _run(self, actor: str, payload: dict[str, object], operation: Callable[[], object]) -> object:
         self.observe(ApplicationObservation("command", self.name, actor, actor, payload))
-        self.observe(ApplicationObservation("use_case_decision", "SlidingTasksSimulation", None, self.name, {"use_case_id": self.name, **payload}))
+        self.observe(ApplicationObservation("use_case_decision", "SlidingTasksSimulation", None, self.name, payload))
         return operation()
 
 

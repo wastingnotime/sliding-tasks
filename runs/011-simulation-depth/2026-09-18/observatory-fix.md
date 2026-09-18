@@ -14,3 +14,5 @@
   case and the aggregate.
 - Browser playback confirmed actor → use case, use case → aggregate, and
   aggregate → event effect beams with no inbound-adapter beam nodes.
+- Removed `use_case_id` from decision observations because the observatory
+  interpreted it as a self-target and discarded the use case → aggregate beam.

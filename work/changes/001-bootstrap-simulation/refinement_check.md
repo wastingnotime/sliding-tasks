@@ -139,3 +139,10 @@ reorder or jump activity remain visible with zero counts and their factual
 outcome. This makes comparisons possible while preserving the rule that
 navigation is observed, not interpreted. Retain the raw events and projection
 for further history-based evaluation; do not add causal metrics yet.
+
+## Build update — runtime evidence packet
+
+The repository now has a narrow tool for writing the standard runtime
+observation log as JSONL. It keeps the adapter boundary intact and creates
+replayable evidence for inspection or future model EGD without making runtime
+infrastructure part of the domain surface.

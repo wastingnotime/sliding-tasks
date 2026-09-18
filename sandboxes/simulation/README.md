@@ -30,6 +30,11 @@ Run the repository scenario through the WNT MRL Runtime:
 mrl-simulation supervise --once
 ```
 
+Write replayable JSONL evidence when needed:
+
+```bash
+python3 sandboxes/simulation/tools/write_runtime_log.py --output /tmp/sliding-tasks-runtime.jsonl
+```
+
 The runtime adapter is intentionally thin. Domain code does not import the WNT
 runtime.
-

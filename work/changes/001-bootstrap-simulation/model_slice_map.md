@@ -43,7 +43,7 @@ Slice `010-actors-beams-use-cases` replaces the shallow scripted orchestration
 with explicit use cases, runtime actors, and deterministic behavior beams. It
 invalidates the prior EGD result until this deeper shape is refined.
 
-The current model-EGD and release-boundary candidate is documented under
+The accepted model-EGD and release-boundary contract is documented under
 `work/changes/012-model-egd-release/` with the contract candidate under
-`contracts/sliding-tasks-model.md`. Production technology adapters remain
-gated on explicit contract acceptance.
+`contracts/sliding-tasks-model.md`. Production technology adapters may now
+synchronize from that accepted contract.

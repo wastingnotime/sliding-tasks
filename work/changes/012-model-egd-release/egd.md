@@ -18,7 +18,7 @@
 - Card snapshots preserve historical analytics after task edits.
 - Runtime observations remain JSONL-serializable and invariant-backed.
 
-## Release gate
+## Release decision
 
-The model is ready for contract review. Production mobile/API adapters remain
-gated until the contract is explicitly accepted.
+The model was accepted by the repository owner on 2026-09-18. Production
+mobile/API adapters may now synchronize from the accepted contract.

@@ -1,6 +1,6 @@
 # Sliding Tasks model contract
 
-Status: release candidate; gated on model-EGD acceptance.
+Status: accepted model contract (2026-09-18).
 
 ## Owned boundary
 
@@ -62,7 +62,7 @@ fields are derived and may evolve without changing event meaning.
 
 ## Stability classification
 
-- **Stable candidate:** Task/Card/Event boundary, event vocabulary, command
+- **Stable:** Task/Card/Event boundary, event vocabulary, command
   names, recurrence validation, terminal-card invariant, and missed-task
   policy names.
 - **Experimental:** analytics usefulness, sequence interpretation, default

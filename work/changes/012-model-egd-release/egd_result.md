@@ -10,6 +10,6 @@
 
 ## Disposition
 
-**Pass with release gate.** The simulation model and contract candidate are
-coherent. The next action requires explicit acceptance of the contract before
-production technology adapters are synchronized.
+**Accepted.** The simulation model and contract are coherent. Production
+technology adapters may synchronize from the accepted contract; experimental
+projection fields remain subject to later refinement.

@@ -47,3 +47,11 @@ analytics projection intentionally counts neither as an interpretation. Keep
 both events in the raw history for now, but defer navigation-specific metrics
 until a longer multi-day replay can show whether they explain outcomes or
 change user understanding. No new domain boundary was discovered.
+
+## Build update — metric usefulness
+
+The shared projection now compares generated, touched, done, dismissed, and
+missed outcomes by task and task type, and retains touch counts per card until
+first resolution. A multi-day deterministic replay makes the comparisons
+observable without adding journaling or behavioral labels. Weekly targets,
+forecasting, and inferred interpretation remain intentionally out of scope.

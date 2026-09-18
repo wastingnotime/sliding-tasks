@@ -82,7 +82,7 @@ def _finish_day_two(context: SimulationContext) -> None:
         "projection",
         "basic_analytics",
         source="AnalyticsProjection",
-        payload=metrics.__dict__,
+        payload={**metrics.__dict__, "by_task": env.metrics_by_task(), "by_type": env.metrics_by_type(), "touches_before_resolution": env.touches_before_resolution()},
     )
 
 

@@ -180,3 +180,34 @@ def test_basic_analytics_are_derived_from_factual_events() -> None:
     assert metrics.done == 1
     assert metrics.missed == 1
     assert metrics.completion_rate == 0.5
+
+
+def test_longer_history_projects_metrics_by_task_and_type() -> None:
+    env = simulation()
+    pushups = env.create_task("pushups", TaskType.SKILL, TaskSubtype.REGULAR, DAILY)
+    chores = env.create_task("dishes", TaskType.CHORE, TaskSubtype.REGULAR, DAILY)
+    first = env.open_day(DAY_ONE)
+    env.touch_card(first[0].id)
+    env.done_card(first[0].id)
+    env.close_day()
+    env.open_day(date(2026, 9, 15))
+    env.dismiss_card(env.get_today_cards()[1].id)
+    env.close_day()
+
+    by_task = env.metrics_by_task()
+    assert by_task[pushups.id]["generated"] == 2
+    assert by_task[pushups.id]["done"] == 1
+    assert by_task[pushups.id]["missed"] == 1
+    assert by_task[chores.id]["dismissed"] == 1
+    assert env.metrics_by_type()["skill"]["done"] == 1
+    assert env.metrics_by_type()["chore"]["dismissed"] == 1
+
+
+def test_touches_before_resolution_preserves_per_card_signal() -> None:
+    env = simulation()
+    task = env.create_task("piano", TaskType.SKILL, TaskSubtype.REGULAR, DAILY)
+    card = env.open_day(DAY_ONE)[0]
+    env.touch_card(card.id)
+    env.touch_card(card.id)
+    env.done_card(card.id)
+    assert env.touches_before_resolution(task_id=task.id) == {card.id: 2}

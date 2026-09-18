@@ -170,6 +170,41 @@ class SlidingTasksSimulation:
             completion_rate=(counts["CardDone"] / generated if generated else 0.0),
         )
 
+    def metrics_by_task(self) -> dict[str, dict[str, object]]:
+        result: dict[str, dict[str, object]] = {}
+        for task in self.tasks.values():
+            metric = self._metric_record(task.id, task.title, task.task_type.value)
+            if metric["generated"]:
+                result[task.id] = metric
+        return result
+
+    def metrics_by_type(self) -> dict[str, dict[str, object]]:
+        grouped: dict[str, dict[str, object]] = {}
+        for task_id, metric in self.metrics_by_task().items():
+            task_type = self.tasks[task_id].task_type.value
+            bucket = grouped.setdefault(task_type, {"generated": 0, "touched": 0, "done": 0, "dismissed": 0, "missed": 0})
+            for key in bucket:
+                bucket[key] = int(bucket[key]) + int(metric[key])
+        for bucket in grouped.values():
+            bucket["completion_rate"] = bucket["done"] / bucket["generated"] if bucket["generated"] else 0.0
+        return grouped
+
+    def touches_before_resolution(self, *, task_id: str | None = None) -> dict[str, int]:
+        touches: dict[str, int] = {}
+        resolved: set[str] = set()
+        for event in self.events():
+            if event.card_id is None or (task_id is not None and event.task_id != task_id):
+                continue
+            if event.event_type == "CardTouched" and event.card_id not in resolved:
+                touches[event.card_id] = touches.get(event.card_id, 0) + 1
+            elif event.event_type in {"CardDone", "CardDismissed", "CardMissed"}:
+                resolved.add(event.card_id)
+        return touches
+
+    def _metric_record(self, task_id: str, title: str, task_type: str) -> dict[str, object]:
+        metric = self.analytics(task_id=task_id)
+        return {"title": title, "task_type": task_type, "generated": metric.generated, "touched": metric.touched, "done": metric.done, "dismissed": metric.dismissed, "missed": metric.missed, "completion_rate": metric.completion_rate}
+
     def _eligible(self, task: Task, day: date) -> bool:
         if not task.active or task.resolved:
             return False

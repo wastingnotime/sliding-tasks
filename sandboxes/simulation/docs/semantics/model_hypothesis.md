@@ -41,8 +41,9 @@ and nth day of month. Frequency targets are deliberately excluded.
    carry-forward, event-derived analytics, runtime observation.
 2. **Sequence experiment** — built: explicit reorder and jump observations are
    factual, non-resolving actions; usefulness remains under evaluation.
-3. **Metric usefulness** — candidate: use longer deterministic histories to
-   select metrics that change user understanding.
+3. **Metric usefulness** — built: task/type groupings and touches before
+   resolution are derived from longer deterministic histories; usefulness is
+   still evaluated before release.
 4. **Model release adapters** — gated: define mobile/API-facing contracts only
    after model EGD accepts the domain.
 

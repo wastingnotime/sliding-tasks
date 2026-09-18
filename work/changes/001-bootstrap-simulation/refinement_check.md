@@ -64,3 +64,10 @@ metrics now label themselves from the first immutable `CardGenerated` snapshot;
 the edit scenario verifies that old history remains attributable to its
 original classification while later cards use the new definition. Per-period
 type transitions remain an open experiment before model EGD.
+
+## Build update — type-transition projection
+
+The open type-transition question is now executable. Type analytics classify
+each occurrence from its card-generation snapshot, so a later task edit splits
+old and new outcomes into their respective buckets without rewriting history.
+Taxonomy migration and naming policy remain out of scope.

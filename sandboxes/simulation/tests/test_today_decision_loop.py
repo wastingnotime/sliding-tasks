@@ -228,3 +228,21 @@ def test_metric_labels_keep_first_occurrence_snapshot_after_task_edit() -> None:
     assert metric["title"] == "old title"
     assert metric["task_type"] == "chore"
     assert next_card.title_snapshot == "new title"
+
+
+def test_type_metrics_follow_each_occurrence_snapshot_across_task_edit() -> None:
+    env = simulation()
+    task = env.create_task("practice", TaskType.CHORE, TaskSubtype.REGULAR, DAILY)
+    first = env.open_day(DAY_ONE)[0]
+    env.done_card(first.id)
+    env.close_day()
+
+    env.update_task(task.id, task_type=TaskType.SKILL)
+    second = env.open_day(date(2026, 9, 15))[0]
+    env.dismiss_card(second.id)
+    env.close_day()
+
+    assert env.metrics_by_type()["chore"]["done"] == 1
+    assert env.metrics_by_type()["chore"]["generated"] == 1
+    assert env.metrics_by_type()["skill"]["dismissed"] == 1
+    assert env.metrics_by_type()["skill"]["generated"] == 1

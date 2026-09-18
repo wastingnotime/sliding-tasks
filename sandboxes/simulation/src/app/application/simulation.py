@@ -188,11 +188,16 @@ class SlidingTasksSimulation:
 
     def metrics_by_type(self) -> dict[str, dict[str, object]]:
         grouped: dict[str, dict[str, object]] = {}
-        for task_id, metric in self.metrics_by_task().items():
-            task_type = self.tasks[task_id].task_type.value
-            bucket = grouped.setdefault(task_type, {"generated": 0, "touched": 0, "done": 0, "dismissed": 0, "missed": 0})
-            for key in bucket:
-                bucket[key] = int(bucket[key]) + int(metric[key])
+        card_types: dict[str, str] = {}
+        for event in self.events():
+            if event.event_type == "CardGenerated" and event.card_id:
+                task_type = str(event.payload.get("task_type_snapshot", self.tasks[event.task_id].task_type.value))
+                card_types[event.card_id] = task_type
+                grouped.setdefault(task_type, {"generated": 0, "touched": 0, "done": 0, "dismissed": 0, "missed": 0})["generated"] += 1
+            elif event.card_id and event.card_id in card_types:
+                event_type = {"CardTouched": "touched", "CardDone": "done", "CardDismissed": "dismissed", "CardMissed": "missed"}.get(event.event_type)
+                if event_type:
+                    grouped[card_types[event.card_id]][event_type] += 1
         for bucket in grouped.values():
             bucket["completion_rate"] = bucket["done"] / bucket["generated"] if bucket["generated"] else 0.0
         return grouped

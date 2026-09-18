@@ -44,6 +44,8 @@ and nth day of month. Frequency targets are deliberately excluded.
 3. **Metric usefulness** — built: task/type groupings and touches before
    resolution are derived from longer deterministic histories; usefulness is
    still evaluated before release.
+4. **Type-transition projection** — built: type metrics use each occurrence's
+   card snapshot when task classification changes.
 4. **Model release adapters** — gated: define mobile/API-facing contracts only
    after model EGD accepts the domain.
 

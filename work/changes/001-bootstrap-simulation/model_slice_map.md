@@ -11,5 +11,9 @@ The next built slice is `metric-usefulness`, documented at
 `sandboxes/simulation/docs/slices/003-metric-usefulness.md`. It projects
 longer-history comparisons by task/type and touches before resolution.
 
+The next built slice is `type-transition-projection`, documented at
+`sandboxes/simulation/docs/slices/004-type-transition-projection.md`. It keeps
+type analytics stable per occurrence when task classification changes.
+
 Later candidates are model release adapter contracts. They remain gated on
 further refinement and model EGD.

@@ -119,3 +119,9 @@ Task activation is now exercised end to end. Deactivation leaves today's
 already-generated Card actionable and stable, suppresses future generation,
 and reactivation creates a fresh later occurrence. This preserves the
 present-only board boundary while keeping Task rules configurable.
+
+## Refinement update — lifecycle event boundary
+
+The lifecycle replay confirms deactivation is represented only as a Task rule
+update. It does not mutate today's Card or emit a synthetic generation event;
+future eligibility changes occur only when the next controlled day opens.

@@ -12,3 +12,7 @@ mobile-build:
 .PHONY: mobile-apk
 mobile-apk:
 	cd apps/mobile && ./gradlew --no-daemon testDebugUnitTest assembleDebug
+
+.PHONY: mobile-run
+mobile-run:
+	MOBILE_AVD="$(MOBILE_AVD)" apps/mobile/tools/run-emulator.sh

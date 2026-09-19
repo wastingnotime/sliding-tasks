@@ -25,6 +25,23 @@ The first vertical slice renders today's ordered pending cards and translates
 Done and Not today interactions into `Complete` and `Dismiss` command intents.
 The sample board is intentionally local until the API transport contract exists.
 
+## Run on an emulator
+
+Create at least one Android Virtual Device in Android Studio, then run from the
+repository root:
+
+```bash
+make mobile-run
+```
+
+The command reuses a running emulator or starts the first configured AVD, waits
+for it to boot, builds and installs the debug APK, and launches the app. Select
+a specific AVD when needed:
+
+```bash
+make mobile-run MOBILE_AVD=Pixel_8
+```
+
 ## Validation
 
 ```bash

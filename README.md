@@ -1,8 +1,8 @@
 # Sliding Tasks
 
 Sliding Tasks explores a present-focused task board whose ordinary interactions
-produce useful behavioral history. The repository currently contains an MRL
-simulation, not a production application.
+produce useful behavioral history. The repository contains the released MRL
+simulation and a native Android client scaffold.
 
 The governing product principle is:
 
@@ -22,3 +22,13 @@ mrl-simulation supervise --once
 Source evidence and active MRL artifacts are retained under `work/`; validation
 receipts belong under `runs/`.
 
+## Mobile
+
+The Kotlin and Jetpack Compose client lives in [`apps/mobile`](apps/mobile/README.md).
+It currently implements a local today-board vertical slice while the product API
+transport remains to be defined.
+
+```bash
+make mobile-test
+make mobile-apk
+```

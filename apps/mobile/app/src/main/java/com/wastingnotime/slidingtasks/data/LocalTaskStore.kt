@@ -74,7 +74,7 @@ class LocalTaskStore(context: Context) {
             PlannedTask(
                 id = json.getString("id"),
                 title = json.getString("title"),
-                type = TaskType.valueOf(json.getString("type")),
+                type = decodeTaskType(json.getString("type")),
                 recurrence = Recurrence.valueOf(json.getString("recurrence")),
                 active = json.getBoolean("active"),
                 createdOn = LocalDate.parse(json.getString("createdOn")),
@@ -87,7 +87,7 @@ class LocalTaskStore(context: Context) {
                 taskId = json.getString("taskId"),
                 boardDate = LocalDate.parse(json.getString("boardDate")),
                 title = json.getString("title"),
-                type = TaskType.valueOf(json.getString("type")),
+                type = decodeTaskType(json.getString("type")),
                 status = CardStatus.valueOf(json.getString("status")),
                 touches = json.optInt("touches"),
             )
@@ -106,6 +106,11 @@ class LocalTaskStore(context: Context) {
 
     private fun <T> JSONArray.mapObjects(transform: (JSONObject) -> T): List<T> =
         (0 until length()).map { transform(getJSONObject(it)) }
+
+    private fun decodeTaskType(value: String): TaskType = when (value) {
+        "FOCUS" -> TaskType.ROUTINE
+        else -> TaskType.valueOf(value)
+    }
 
     private companion object {
         const val KEY_STATE = "state-v1"

@@ -6,7 +6,6 @@ import java.time.LocalDate
 import java.util.UUID
 
 enum class TaskType(val label: String) {
-    FOCUS("Focus"),
     ROUTINE("Routine"),
     ONE_TIME("One-time"),
 }

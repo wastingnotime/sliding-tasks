@@ -18,7 +18,7 @@ class SlidingTasksEngineTest {
     @Test
     fun task_created_during_open_day_generates_a_persistable_card_and_events() {
         val opened = engine.openDay(SlidingTasksState(), friday)
-        val state = engine.createTask(opened, "Write brief", TaskType.FOCUS, Recurrence.DAILY, friday)
+        val state = engine.createTask(opened, "Write brief", TaskType.ROUTINE, Recurrence.DAILY, friday)
 
         assertEquals(listOf("Write brief"), engine.pendingCards(state).map { it.title })
         assertEquals(listOf("TaskCreated", "CardGenerated"), state.events.map { it.type })

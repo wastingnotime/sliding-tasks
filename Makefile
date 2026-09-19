@@ -16,3 +16,7 @@ mobile-apk:
 .PHONY: mobile-run
 mobile-run:
 	MOBILE_AVD="$(MOBILE_AVD)" apps/mobile/tools/run-emulator.sh
+
+.PHONY: mobile-install
+mobile-install:
+	DEVICE_SERIAL="$(DEVICE_SERIAL)" apps/mobile/tools/install-device.sh

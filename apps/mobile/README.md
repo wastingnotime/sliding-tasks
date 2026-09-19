@@ -26,6 +26,8 @@ transport contract. Planning may gain optional synchronization later.
 Use the bottom navigation to create recurring or one-time tasks in **Plan**, act
 on generated cards in **Today**, and inspect the local event stream in
 **History**. Recurring tasks currently support daily, weekdays, and weekends.
+Routine and one-time are the only task types in Milestone 1; the earlier Focus
+label had no distinct behavior and stored Focus tasks migrate to Routine.
 
 Cards remain visible in a vertical list. Slide any card right to mark it done,
 slide it left for not today, or release before the threshold to return it to its
@@ -48,6 +50,21 @@ a specific AVD when needed:
 
 ```bash
 make mobile-run MOBILE_AVD=Pixel_8
+```
+
+## Install on a physical device
+
+Enable USB debugging, connect and authorize the Android device, then run:
+
+```bash
+make mobile-install
+```
+
+The command ignores running emulators. If multiple physical devices are
+connected, select one explicitly:
+
+```bash
+make mobile-install DEVICE_SERIAL=<adb-serial>
 ```
 
 ## Validation

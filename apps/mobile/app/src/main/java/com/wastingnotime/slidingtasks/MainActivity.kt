@@ -21,12 +21,9 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +41,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -130,24 +130,35 @@ private fun SwipeableTaskCard(card: TodayCard, onCommand: (CardCommand) -> Unit)
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                "NOT TODAY",
-                color = Accent,
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.alpha((-progress).coerceAtLeast(0f)),
-            )
-            Text(
                 "DONE",
                 color = Color(0xFF377A45),
                 fontWeight = FontWeight.Black,
                 modifier = Modifier.alpha(progress.coerceAtLeast(0f)),
             )
+            Text(
+                "NOT TODAY",
+                color = Accent,
+                fontWeight = FontWeight.Black,
+                modifier = Modifier.alpha((-progress).coerceAtLeast(0f)),
+            )
         }
 
         TaskCard(
             card = card,
-            onCommand = onCommand,
             modifier = Modifier
                 .testTag("card-${card.id}")
+                .semantics {
+                    customActions = listOf(
+                        CustomAccessibilityAction("Mark done") {
+                            onCommand(CardCommand.Complete(card.id))
+                            true
+                        },
+                        CustomAccessibilityAction("Not today") {
+                            onCommand(CardCommand.Dismiss(card.id))
+                            true
+                        },
+                    )
+                }
                 .onSizeChanged { cardWidth = it.width.toFloat() }
                 .graphicsLayer {
                     translationX = offsetX
@@ -196,7 +207,6 @@ private fun SwipeableTaskCard(card: TodayCard, onCommand: (CardCommand) -> Unit)
 @Composable
 private fun TaskCard(
     card: TodayCard,
-    onCommand: (CardCommand) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -228,15 +238,6 @@ private fun TaskCard(
                 fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(onClick = { onCommand(CardCommand.Dismiss(card.id)) }) {
-                    Text("Not today", color = Ink)
-                }
-                Button(
-                    onClick = { onCommand(CardCommand.Complete(card.id)) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Ink),
-                ) { Text("Done") }
-            }
         }
     }
 }

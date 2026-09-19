@@ -27,8 +27,9 @@ The sample board is intentionally local until the API transport contract exists.
 
 Cards remain visible in a vertical list. Slide any card right to mark it done,
 slide it left for not today, or release before the threshold to return it to its
-list position. Cards translate horizontally without rotation. The buttons
-provide equivalent non-gesture controls.
+list position. Cards translate horizontally without rotation. Persistent action
+buttons are intentionally omitted; assistive technologies receive equivalent
+Mark done and Not today actions from each card.
 
 ## Run on an emulator
 

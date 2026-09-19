@@ -31,8 +31,9 @@ Cards remain independently visible in a vertical list. A horizontal slide on
 any card records a touch when dragging begins. Crossing 28% of the card width
 and releasing maps right to `CompleteCard` and left to `DismissCard`; a shorter
 slide snaps back without resolving the card. Sliding uses horizontal translation
-only, without rotation. Visible buttons expose the same outcomes for
-accessibility and non-gesture input.
+only, without rotation. Moving right exposes `DONE` on the left; moving left
+exposes `NOT TODAY` on the right. The card exposes equivalent custom
+accessibility actions without persistent outcome buttons.
 
 Transport routes, DTO field names, and authentication are unresolved API
 contract gaps; they must be added here before real network wiring.

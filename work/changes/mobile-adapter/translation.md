@@ -24,7 +24,7 @@ directly into mobile code; translate released semantics into adapter behavior.
 - Native project: Kotlin, Jetpack Compose, Android API 26+.
 - Implemented: independently sliding cards in the today list,
   right-to-complete and left-to-dismiss thresholds with snap-back and no
-  rotation, accessible outcome buttons, empty state,
+  rotation, card-level accessibility actions, empty state,
   configurable emulator/physical-device API base URL, unit tests, debug APK CI.
 - Temporary: sample state in `MainActivity`; it is not domain authority.
 - Blocked on released API behavior: network routes, DTOs, auth, freshness token,

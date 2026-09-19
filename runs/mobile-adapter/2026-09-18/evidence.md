@@ -12,7 +12,7 @@ Date: 2026-09-18
 
 - `make mobile-test`: passed locally (3 unit tests)
 - `make mobile-build`: passed locally
-- `make mobile-apk`: passed locally; `app-debug.apk` is 11,630,153 bytes
+- `make mobile-apk`: passed locally; `app-debug.apk` is 11,628,340 bytes
 - `./gradlew connectedDebugAndroidTest`: passed on Pixel Android 14 AVD;
   right swipe advanced the stack from three cards to two
 - CI workflow: `.github/workflows/build-mobile-apk.yml`

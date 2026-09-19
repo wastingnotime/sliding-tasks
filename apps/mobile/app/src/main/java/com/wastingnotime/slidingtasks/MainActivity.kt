@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -104,38 +106,12 @@ private fun TodayScreen(board: TodayBoard, onCommand: (CardCommand) -> Unit) {
                 fontSize = 14.sp,
             )
             Spacer(Modifier.height(14.dp))
-            SlidingCardStack(cards = board.cards, onCommand = onCommand)
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                items(board.cards, key = { it.id }) { card ->
+                    SwipeableTaskCard(card = card, onCommand = onCommand)
+                }
+            }
         }
-    }
-}
-
-@Composable
-private fun SlidingCardStack(cards: List<TodayCard>, onCommand: (CardCommand) -> Unit) {
-    Box(
-        contentAlignment = Alignment.TopCenter,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        cards.getOrNull(2)?.let { card ->
-            TaskCard(
-                card = card,
-                onCommand = onCommand,
-                modifier = Modifier
-                    .padding(top = 24.dp, start = 20.dp, end = 20.dp)
-                    .alpha(.42f),
-                interactive = false,
-            )
-        }
-        cards.getOrNull(1)?.let { card ->
-            TaskCard(
-                card = card,
-                onCommand = onCommand,
-                modifier = Modifier
-                    .padding(top = 12.dp, start = 10.dp, end = 10.dp)
-                    .alpha(.72f),
-                interactive = false,
-            )
-        }
-        SwipeableTaskCard(card = cards.first(), onCommand = onCommand)
     }
 }
 
@@ -171,11 +147,10 @@ private fun SwipeableTaskCard(card: TodayCard, onCommand: (CardCommand) -> Unit)
             card = card,
             onCommand = onCommand,
             modifier = Modifier
-                .testTag("active-card")
+                .testTag("card-${card.id}")
                 .onSizeChanged { cardWidth = it.width.toFloat() }
                 .graphicsLayer {
                     translationX = offsetX
-                    rotationZ = progress * 5f
                 }
                 .pointerInput(card.id, cardWidth) {
                     detectHorizontalDragGestures(
@@ -223,7 +198,6 @@ private fun TaskCard(
     card: TodayCard,
     onCommand: (CardCommand) -> Unit,
     modifier: Modifier = Modifier,
-    interactive: Boolean = true,
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -254,16 +228,14 @@ private fun TaskCard(
                 fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold,
             )
-            if (interactive) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedButton(onClick = { onCommand(CardCommand.Dismiss(card.id)) }) {
-                        Text("Not today", color = Ink)
-                    }
-                    Button(
-                        onClick = { onCommand(CardCommand.Complete(card.id)) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Ink),
-                    ) { Text("Done") }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedButton(onClick = { onCommand(CardCommand.Dismiss(card.id)) }) {
+                    Text("Not today", color = Ink)
                 }
+                Button(
+                    onClick = { onCommand(CardCommand.Complete(card.id)) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Ink),
+                ) { Text("Done") }
             }
         }
     }

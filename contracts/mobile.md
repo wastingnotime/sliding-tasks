@@ -27,10 +27,11 @@ User actions map to released commands:
 | Not today | `DismissCard` | Card leaves the pending board |
 | Focus/view a card | `TouchCard` | Board order is unchanged |
 
-The active card is the front of a visual stack. A horizontal slide records a
-touch when dragging begins. Crossing 28% of the card width and releasing maps
-right to `CompleteCard` and left to `DismissCard`; a shorter slide snaps back
-without resolving the card. Visible buttons expose the same outcomes for
+Cards remain independently visible in a vertical list. A horizontal slide on
+any card records a touch when dragging begins. Crossing 28% of the card width
+and releasing maps right to `CompleteCard` and left to `DismissCard`; a shorter
+slide snaps back without resolving the card. Sliding uses horizontal translation
+only, without rotation. Visible buttons expose the same outcomes for
 accessibility and non-gesture input.
 
 Transport routes, DTO field names, and authentication are unresolved API

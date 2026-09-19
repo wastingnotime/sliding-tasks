@@ -25,9 +25,10 @@ The first vertical slice renders today's ordered pending cards and translates
 Done and Not today interactions into `Complete` and `Dismiss` command intents.
 The sample board is intentionally local until the API transport contract exists.
 
-The active card sits at the front of the stack. Slide it right to mark it done,
-slide it left for not today, or release before the threshold to return it to the
-stack. The buttons provide equivalent non-gesture controls.
+Cards remain visible in a vertical list. Slide any card right to mark it done,
+slide it left for not today, or release before the threshold to return it to its
+list position. Cards translate horizontally without rotation. The buttons
+provide equivalent non-gesture controls.
 
 ## Run on an emulator
 

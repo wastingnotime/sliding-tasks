@@ -15,7 +15,7 @@ class SlidingCardTest {
 
     @Test
     fun sliding_the_active_card_right_completes_it_and_advances_the_stack() {
-        composeRule.onNodeWithTag("active-card").performTouchInput { swipeRight(durationMillis = 500) }
+        composeRule.onNodeWithTag("card-card-1").performTouchInput { swipeRight(durationMillis = 500) }
 
         composeRule.waitUntil(timeoutMillis = 2_000) {
             composeRule.onAllNodesWithText("2 cards left").fetchSemanticsNodes().isNotEmpty()

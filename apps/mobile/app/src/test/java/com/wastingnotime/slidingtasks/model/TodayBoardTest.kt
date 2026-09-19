@@ -32,4 +32,16 @@ class TodayBoardTest {
 
         assertEquals(board, result)
     }
+
+    @Test
+    fun a_slide_past_the_threshold_selects_an_outcome() {
+        assertEquals(SlideDecision.COMPLETE, slideDecision(offsetX = 120f, containerWidth = 400f))
+        assertEquals(SlideDecision.DISMISS, slideDecision(offsetX = -120f, containerWidth = 400f))
+    }
+
+    @Test
+    fun a_short_slide_snaps_back_without_an_outcome() {
+        assertEquals(null, slideDecision(offsetX = 100f, containerWidth = 400f))
+        assertEquals(null, slideDecision(offsetX = -100f, containerWidth = 400f))
+    }
 }

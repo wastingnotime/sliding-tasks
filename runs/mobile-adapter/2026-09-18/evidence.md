@@ -12,7 +12,9 @@ Date: 2026-09-18
 
 - `make mobile-test`: passed locally (3 unit tests)
 - `make mobile-build`: passed locally
-- `make mobile-apk`: passed locally; `app-debug.apk` is 11,596,772 bytes
+- `make mobile-apk`: passed locally; `app-debug.apk` is 11,629,860 bytes
+- `./gradlew connectedDebugAndroidTest`: passed on Pixel Android 14 AVD;
+  right swipe advanced the stack from three cards to two
 - CI workflow: `.github/workflows/build-mobile-apk.yml`
 
 ## Runtime
@@ -22,7 +24,8 @@ Date: 2026-09-18
 
 ## Contract Coverage
 
-- Today decision loop: ordered pending-card and empty-board UI states.
+- Today decision loop: ordered pending-card stack, slide threshold, snap-back,
+  and empty-board UI states.
 - Task lifecycle: complete intent removes the resolved card after success.
 - One-time dismissal policy: dismiss intent removes the resolved card after success.
 - Runtime evidence: touch intent preserves board contents and order.

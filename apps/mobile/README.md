@@ -25,6 +25,10 @@ The first vertical slice renders today's ordered pending cards and translates
 Done and Not today interactions into `Complete` and `Dismiss` command intents.
 The sample board is intentionally local until the API transport contract exists.
 
+The active card sits at the front of the stack. Slide it right to mark it done,
+slide it left for not today, or release before the threshold to return it to the
+stack. The buttons provide equivalent non-gesture controls.
+
 ## Run on an emulator
 
 Create at least one Android Virtual Device in Android Studio, then run from the
@@ -48,6 +52,13 @@ make mobile-run MOBILE_AVD=Pixel_8
 make mobile-test
 make mobile-build
 make mobile-apk
+```
+
+With an emulator running, validate the gesture itself with:
+
+```bash
+cd apps/mobile
+./gradlew connectedDebugAndroidTest
 ```
 
 GitHub Actions should build the debug APK and upload it as an artifact from

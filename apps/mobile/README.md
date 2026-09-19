@@ -31,6 +31,7 @@ label had no distinct behavior and stored Focus tasks migrate to Routine.
 Planned tasks can be moved up or down or removed with confirmation. Reordering
 controls future board order; removal preserves cards and history already
 recorded.
+The app follows the Android system light or dark appearance setting.
 
 Cards remain visible in a vertical list. Slide any card right to mark it done,
 slide it left for not today, or release before the threshold to return it to its

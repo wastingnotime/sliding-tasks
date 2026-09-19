@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -46,10 +47,29 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private val Ink = Color(0xFF231F20)
-private val Paper = Color(0xFFFFF8F3)
-private val Accent = Color(0xFFE85D3F)
-private val SoftGreen = Color(0xFFDDE9D7)
+private val LightColors = lightColorScheme(
+    primary = Color(0xFFE85D3F),
+    onPrimary = Color.White,
+    secondary = Color(0xFF377A45),
+    background = Color(0xFFFFF8F3),
+    onBackground = Color(0xFF231F20),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF231F20),
+    surfaceVariant = Color(0xFFDDE9D7),
+    onSurfaceVariant = Color(0xFF263528),
+)
+
+private val DarkColors = darkColorScheme(
+    primary = Color(0xFFFFB4A2),
+    onPrimary = Color(0xFF5F1607),
+    secondary = Color(0xFFA2D5AA),
+    background = Color(0xFF181211),
+    onBackground = Color(0xFFF1DFDB),
+    surface = Color(0xFF241C1A),
+    onSurface = Color(0xFFF1DFDB),
+    surfaceVariant = Color(0xFF243127),
+    onSurfaceVariant = Color(0xFFD4E8D6),
+)
 private enum class AppSection(val label: String) { TODAY("Today"), PLAN("Plan"), HISTORY("History") }
 
 @Composable
@@ -69,11 +89,11 @@ fun SlidingTasksApp() {
     }
     LaunchedEffect(Unit) { commit(state) }
 
-    MaterialTheme {
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors) {
         Scaffold(
-            containerColor = Paper,
+            containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
-                NavigationBar(containerColor = Color.White) {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     AppSection.entries.forEach { item ->
                         NavigationBarItem(
                             selected = section == item,
@@ -87,7 +107,7 @@ fun SlidingTasksApp() {
             },
         ) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
-                saveError?.let { Text(it, color = Accent, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
+                saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
                 when (section) {
                     AppSection.TODAY -> TodayScreen(today, engine.pendingCards(state)) { commit(engine.apply(state, it)) }
                     AppSection.PLAN -> PlanScreen(
@@ -106,11 +126,11 @@ fun SlidingTasksApp() {
 
 @Composable
 private fun PageHeader(kicker: String, title: String, subtitle: String, subtitleTag: String? = null) {
-    Text(kicker, color = Accent, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-    Text(title, color = Ink, fontSize = 30.sp, lineHeight = 34.sp, fontWeight = FontWeight.Black)
+    Text(kicker, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+    Text(title, color = MaterialTheme.colorScheme.onBackground, fontSize = 30.sp, lineHeight = 34.sp, fontWeight = FontWeight.Black)
     Text(
         subtitle,
-        color = Ink.copy(alpha = .58f),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f),
         fontSize = 16.sp,
         modifier = if (subtitleTag == null) Modifier else Modifier.testTag(subtitleTag),
     )
@@ -123,7 +143,7 @@ private fun TodayScreen(date: LocalDate, cards: List<TaskCard>, onCommand: (Card
         PageHeader("TODAY", date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), count, "remaining-count")
         Spacer(Modifier.height(24.dp))
         if (cards.isEmpty()) EmptyBoard() else {
-            Text("Slide left for not today · right for done", color = Ink.copy(alpha = .55f), fontSize = 14.sp)
+            Text("Slide left for not today · right for done", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f), fontSize = 14.sp)
             Spacer(Modifier.height(14.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 items(cards, key = { it.id }) { card -> SwipeableTaskCard(card, onCommand) }
@@ -151,7 +171,7 @@ private fun PlanScreen(
             title = { Text("Remove from plan?") },
             text = { Text("${task.title} will stop appearing on future days. Existing cards and history are preserved.") },
             confirmButton = {
-                TextButton(onClick = { onRemove(task.id); pendingRemoval = null }) { Text("Remove", color = Accent) }
+                TextButton(onClick = { onRemove(task.id); pendingRemoval = null }) { Text("Remove", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = { TextButton(onClick = { pendingRemoval = null }) { Text("Cancel") } },
         )
@@ -194,12 +214,12 @@ private fun PlanScreen(
             modifier = Modifier.fillMaxWidth().testTag("add-task"),
         ) { Text("Add to plan") }
         Spacer(Modifier.height(18.dp))
-        Text("PLANNED", color = Accent, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Text("PLANNED", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         Spacer(Modifier.height(8.dp))
-        if (tasks.isEmpty()) Text("No tasks yet.", color = Ink.copy(alpha = .6f)) else {
+        if (tasks.isEmpty()) Text("No tasks yet.", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f)) else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 itemsIndexed(tasks, key = { _, task -> task.id }) { index, task ->
-                    Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                         Column(Modifier.fillMaxWidth().padding(16.dp)) {
                             Row(
                                 Modifier.fillMaxWidth(),
@@ -207,8 +227,8 @@ private fun PlanScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Column(Modifier.weight(1f)) {
-                                    Text(task.title, color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-                                    Text("${task.type.label} · ${task.recurrence.label}${if (task.resolved) " · Resolved" else ""}", color = Ink.copy(alpha = .58f))
+                                    Text(task.title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                                    Text("${task.type.label} · ${task.recurrence.label}${if (task.resolved) " · Resolved" else ""}", color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f))
                                 }
                                 Switch(checked = task.active, enabled = !task.resolved, onCheckedChange = { onSetActive(task.id, it) })
                             }
@@ -226,7 +246,7 @@ private fun PlanScreen(
                                 TextButton(
                                     onClick = { pendingRemoval = task },
                                     modifier = Modifier.testTag("remove-${task.id}"),
-                                ) { Text("Remove", color = Accent) }
+                                ) { Text("Remove", color = MaterialTheme.colorScheme.error) }
                             }
                         }
                     }
@@ -243,7 +263,7 @@ private fun HistoryScreen(state: SlidingTasksState) {
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
         PageHeader("HISTORY", "$done done", "$resolved resolved cards · ${state.events.size} recorded events")
         Spacer(Modifier.height(20.dp))
-        if (state.events.isEmpty()) Text("Your decisions will appear here.", color = Ink.copy(alpha = .6f)) else {
+        if (state.events.isEmpty()) Text("Your decisions will appear here.", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f)) else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(state.events.asReversed(), key = { it.id }) { event -> EventRow(event) }
             }
@@ -254,11 +274,11 @@ private fun HistoryScreen(state: SlidingTasksState) {
 @Composable
 private fun EventRow(event: TaskEvent) {
     val time = event.occurredAt.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("MMM d, HH:mm"))
-    Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
-            Text(event.type.eventLabel(), color = Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Text(event.title, color = Ink, fontWeight = FontWeight.SemiBold)
-            Text(time, color = Ink.copy(alpha = .5f), fontSize = 13.sp)
+            Text(event.type.eventLabel(), color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(event.title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
+            Text(time, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f), fontSize = 13.sp)
         }
     }
 }
@@ -286,8 +306,8 @@ private fun SwipeableTaskCard(card: TaskCard, onCommand: (CardCommand) -> Unit) 
     val progress = if (cardWidth == 0f) 0f else (offsetX / (cardWidth * .28f)).coerceIn(-1f, 1f)
     Box(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("DONE", color = Color(0xFF377A45), fontWeight = FontWeight.Black, modifier = Modifier.alpha(progress.coerceAtLeast(0f)))
-            Text("NOT TODAY", color = Accent, fontWeight = FontWeight.Black, modifier = Modifier.alpha((-progress).coerceAtLeast(0f)))
+            Text("DONE", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Black, modifier = Modifier.alpha(progress.coerceAtLeast(0f)))
+            Text("NOT TODAY", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, modifier = Modifier.alpha((-progress).coerceAtLeast(0f)))
         }
         TaskCardView(
             card,
@@ -325,27 +345,27 @@ private fun SwipeableTaskCard(card: TaskCard, onCommand: (CardCommand) -> Unit) 
 @Composable
 private fun TaskCardView(card: TaskCard, modifier: Modifier = Modifier) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(22.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(9.dp).background(Accent, RoundedCornerShape(50)))
-                Text(card.type.label.uppercase(), Modifier.padding(start = 8.dp), color = Ink.copy(alpha = .55f), fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
+                Box(Modifier.size(9.dp).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50)))
+                Text(card.type.label.uppercase(), Modifier.padding(start = 8.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
             }
-            Text(card.title, Modifier.padding(vertical = 18.dp), color = Ink, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+            Text(card.title, Modifier.padding(vertical = 18.dp), color = MaterialTheme.colorScheme.onSurface, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
 @Composable
 private fun EmptyBoard() {
-    Box(Modifier.fillMaxWidth().background(SoftGreen, RoundedCornerShape(24.dp)).padding(28.dp)) {
+    Box(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(24.dp)).padding(28.dp)) {
         Column {
-            Text("All clear.", color = Ink, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            Text("The present is handled.", color = Ink.copy(alpha = .65f), fontSize = 17.sp)
+            Text("All clear.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text("The present is handled.", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f), fontSize = 17.sp)
         }
     }
 }

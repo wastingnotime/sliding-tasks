@@ -2,23 +2,36 @@
 
 ## Purpose
 
-The Sliding Tasks mobile app is the native Android consumer of the product API.
-It does not own lifecycle policy, persistence, or projection semantics.
+For Milestone 1, the Sliding Tasks mobile app is the autonomous planning and
+daily-use product. It owns the local operational state needed to plan tasks,
+generate and use the today board, record decisions, and preserve history
+without a network service.
 
 ## Boundary
 
-Adapter authority: `direct-api`.
+Authority: `local-first-mobile`.
 
-The app will consume the product API directly. There is no mobile BFF and the
-client does not own an offline-sync authority. Until an API transport contract
-is released, the executable scaffold uses local sample state only.
+In Milestone 1, mobile does not depend on an API for task planning or ordinary
+operation. Its local store and application layer implement the released model
+semantics. A future API may receive immutable events emitted by mobile and may
+support optional planning synchronization, but it must not be on the critical
+path for daily user actions.
+
+Offline-capable daily operation is a durable product invariant. Mobile-only
+planning is a milestone choice, not a permanent product constraint; later
+milestones may extend planning across devices while preserving local-first
+behavior.
+
+A future web surface may derive full analytics from received events. Event
+ingestion, planning synchronization, and web analytics are explicitly deferred
+and must not block the Milestone 1 mobile product.
 
 ## Today board
 
 The first app-facing boundary is an ordered list of pending cards for the active
 board date. Each visible card needs `id`, title snapshot, and task-type label.
 
-User actions map to released commands:
+User actions map to locally executed released commands:
 
 | Mobile action | Command intent | Visible result after success |
 | --- | --- | --- |
@@ -35,33 +48,44 @@ only, without rotation. Moving right exposes `DONE` on the left; moving left
 exposes `NOT TODAY` on the right. The card exposes equivalent custom
 accessibility actions without persistent outcome buttons.
 
-Transport routes, DTO field names, and authentication are unresolved API
-contract gaps; they must be added here before real network wiring.
+Local persistence, task planning, and board generation are required Milestone 1
+mobile capabilities. Synchronization semantics, event transport routes, DTO
+field names, delivery guarantees, identity, and authentication remain deferred
+contract gaps.
 
 ## Failure and freshness states
 
 - A missing active board is shown as an explicit unavailable state, not as an
   empty successful board.
-- A stale server revision keeps the card visible and asks the user to refresh.
-- Transport failures preserve the last visible board and expose retry.
-- Command failures do not optimistically remove a card unless rollback is
-  implemented and tested.
+- Local command or persistence failures preserve a recoverable board state and
+  expose retry where appropriate.
+- Failure to emit an event to the future receiver does not prevent planning or
+  card actions. Pending delivery must be durable and retryable once event
+  ingestion exists.
 
 ## Expected Mapping
 
 Translate released simulation behavior through this chain:
 
 ```text
-simulation slice -> released API behavior -> mobile use case -> UI state -> test evidence
+simulation slice -> mobile use case -> local persistence -> UI state -> test evidence
+```
+
+The deferred reporting path is separate:
+
+```text
+mobile event history -> event receiver API -> web analytics projection
 ```
 
 ## Runtime Assumptions
 
-- emulator API base URL: `http://10.0.2.2:18080`
-- physical device API base URL: override through Gradle or platform config
-- auth: `none yet`
+- product API: not required for mobile operation
+- event receiver: deferred and undefined
+- planning synchronization: deferred and optional
+- event receiver auth: deferred and undefined
 - notifications: not implemented; no scheduling assumptions are made
-- telemetry: not implemented; no user interaction leaves the device yet
+- telemetry/event upload: not implemented; no user interaction leaves the
+  device yet
 
 ## APK CI
 

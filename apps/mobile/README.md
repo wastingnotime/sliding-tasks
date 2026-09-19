@@ -1,29 +1,31 @@
 # Sliding Tasks Mobile
 
-Native Android client for the Sliding Tasks product API.
+Native Android app for local-first Sliding Tasks planning and daily use.
 
 ## Scope
 
 - implements the native mobile experience;
-- consumes the selected adapter boundary: `direct-api`;
-- keeps domain authority in the backend or released adapter contract;
-- records runtime assumptions before device-specific work starts.
+- owns task planning and operational state locally for Milestone 1;
+- remains usable without a network service;
+- may later emit immutable events to a receive-only API;
+- may later synchronize planning across devices without requiring connectivity
+  for daily operation;
+- leaves full analytics to a deferred web surface.
 
 ## Development
 
 Open `apps/mobile` in Android Studio, or use the Gradle wrapper from that
 directory.
 
-The default emulator base URL is `http://10.0.2.2:18080`.
-Override it without editing source:
-
-```bash
-./gradlew assembleDebug -PSLIDING_TASKS_API_URL=http://192.168.1.20:18080
-```
-
 The first vertical slice renders today's ordered pending cards and translates
 Done and Not today interactions into `Complete` and `Dismiss` command intents.
-The sample board is intentionally local until the API transport contract exists.
+Milestone 1 stores planned tasks, generated cards, decisions, and immutable
+event history on the device. Daily mobile operation does not wait for an API
+transport contract. Planning may gain optional synchronization later.
+
+Use the bottom navigation to create recurring or one-time tasks in **Plan**, act
+on generated cards in **Today**, and inspect the local event stream in
+**History**. Recurring tasks currently support daily, weekdays, and weekends.
 
 Cards remain visible in a vertical list. Slide any card right to mark it done,
 slide it left for not today, or release before the threshold to return it to its

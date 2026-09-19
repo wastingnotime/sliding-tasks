@@ -1,38 +1,19 @@
 package com.wastingnotime.slidingtasks
 
 import android.os.Bundle
-import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.tween
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -40,21 +21,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wastingnotime.slidingtasks.model.CardCommand
-import com.wastingnotime.slidingtasks.model.TodayBoard
-import com.wastingnotime.slidingtasks.model.TodayCard
-import com.wastingnotime.slidingtasks.model.SlideDecision
-import com.wastingnotime.slidingtasks.model.after
-import com.wastingnotime.slidingtasks.model.slideDecision
+import com.wastingnotime.slidingtasks.data.LocalTaskStore
+import com.wastingnotime.slidingtasks.model.*
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,47 +49,52 @@ private val Ink = Color(0xFF231F20)
 private val Paper = Color(0xFFFFF8F3)
 private val Accent = Color(0xFFE85D3F)
 private val SoftGreen = Color(0xFFDDE9D7)
+private enum class AppSection(val label: String) { TODAY("Today"), PLAN("Plan"), HISTORY("History") }
 
 @Composable
 fun SlidingTasksApp() {
-    var board by remember { mutableStateOf(sampleBoard()) }
+    val context = LocalContext.current
+    val store = remember { LocalTaskStore(context.applicationContext) }
+    val engine = remember { SlidingTasksEngine() }
+    val today = remember { LocalDate.now() }
+    var state by remember { mutableStateOf(engine.openDay(store.load(), today)) }
+    var section by remember { mutableStateOf(AppSection.TODAY) }
+    var saveError by remember { mutableStateOf<String?>(null) }
+
+    fun commit(next: SlidingTasksState) {
+        runCatching { store.save(next) }
+            .onSuccess { state = next; saveError = null }
+            .onFailure { saveError = "Could not save that change. Please try again." }
+    }
+    LaunchedEffect(Unit) { commit(state) }
 
     MaterialTheme {
-        Surface(color = Paper, modifier = Modifier.fillMaxSize()) {
-            TodayScreen(board = board, onCommand = { board = board.after(it) })
-        }
-    }
-}
-
-@Composable
-private fun TodayScreen(board: TodayBoard, onCommand: (CardCommand) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 48.dp),
-    ) {
-        Text("TODAY", color = Accent, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-        Text(board.dateLabel, color = Ink, fontSize = 34.sp, fontWeight = FontWeight.Black)
-        Text(
-            "${board.cards.size} ${if (board.cards.size == 1) "card" else "cards"} left",
-            modifier = Modifier.testTag("remaining-count"),
-            color = Ink.copy(alpha = .58f),
-            fontSize = 16.sp,
-        )
-        Spacer(Modifier.height(28.dp))
-
-        if (board.cards.isEmpty()) {
-            EmptyBoard()
-        } else {
-            Text(
-                "Slide left for not today · right for done",
-                color = Ink.copy(alpha = .55f),
-                fontSize = 14.sp,
-            )
-            Spacer(Modifier.height(14.dp))
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                items(board.cards, key = { it.id }) { card ->
-                    SwipeableTaskCard(card = card, onCommand = onCommand)
+        Scaffold(
+            containerColor = Paper,
+            bottomBar = {
+                NavigationBar(containerColor = Color.White) {
+                    AppSection.entries.forEach { item ->
+                        NavigationBarItem(
+                            selected = section == item,
+                            onClick = { section = item },
+                            icon = { Text(item.label.take(1), fontWeight = FontWeight.Black) },
+                            label = { Text(item.label) },
+                            modifier = Modifier.testTag("nav-${item.name.lowercase()}"),
+                        )
+                    }
+                }
+            },
+        ) { padding ->
+            Column(Modifier.padding(padding).fillMaxSize()) {
+                saveError?.let { Text(it, color = Accent, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
+                when (section) {
+                    AppSection.TODAY -> TodayScreen(today, engine.pendingCards(state)) { commit(engine.apply(state, it)) }
+                    AppSection.PLAN -> PlanScreen(
+                        tasks = state.tasks,
+                        onCreate = { title, type, recurrence -> commit(engine.createTask(state, title, type, recurrence, today)) },
+                        onSetActive = { id, active -> commit(engine.setTaskActive(state, id, active)) },
+                    )
+                    AppSection.HISTORY -> HistoryScreen(state)
                 }
             }
         }
@@ -116,85 +102,179 @@ private fun TodayScreen(board: TodayBoard, onCommand: (CardCommand) -> Unit) {
 }
 
 @Composable
-private fun SwipeableTaskCard(card: TodayCard, onCommand: (CardCommand) -> Unit) {
+private fun PageHeader(kicker: String, title: String, subtitle: String, subtitleTag: String? = null) {
+    Text(kicker, color = Accent, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+    Text(title, color = Ink, fontSize = 30.sp, lineHeight = 34.sp, fontWeight = FontWeight.Black)
+    Text(
+        subtitle,
+        color = Ink.copy(alpha = .58f),
+        fontSize = 16.sp,
+        modifier = if (subtitleTag == null) Modifier else Modifier.testTag(subtitleTag),
+    )
+}
+
+@Composable
+private fun TodayScreen(date: LocalDate, cards: List<TaskCard>, onCommand: (CardCommand) -> Unit) {
+    val count = "${cards.size} ${if (cards.size == 1) "card" else "cards"} left"
+    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
+        PageHeader("TODAY", date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), count, "remaining-count")
+        Spacer(Modifier.height(24.dp))
+        if (cards.isEmpty()) EmptyBoard() else {
+            Text("Slide left for not today · right for done", color = Ink.copy(alpha = .55f), fontSize = 14.sp)
+            Spacer(Modifier.height(14.dp))
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                items(cards, key = { it.id }) { card -> SwipeableTaskCard(card, onCommand) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlanScreen(
+    tasks: List<PlannedTask>,
+    onCreate: (String, TaskType, Recurrence) -> Unit,
+    onSetActive: (String, Boolean) -> Unit,
+) {
+    var title by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf(TaskType.ROUTINE) }
+    var recurrence by remember { mutableStateOf(Recurrence.DAILY) }
+    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
+        PageHeader("PLAN", "Your intentions", "Create locally. Change them anytime.")
+        Spacer(Modifier.height(20.dp))
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("What do you want to do?") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().testTag("task-title"),
+        )
+        Text("Type", modifier = Modifier.padding(top = 14.dp), fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TaskType.entries.forEach { candidate ->
+                FilterChip(
+                    selected = type == candidate,
+                    onClick = {
+                        type = candidate
+                        recurrence = if (candidate == TaskType.ONE_TIME) Recurrence.ONCE else Recurrence.DAILY
+                    },
+                    label = { Text(candidate.label) },
+                    modifier = Modifier.testTag("type-${candidate.name.lowercase()}"),
+                )
+            }
+        }
+        if (type != TaskType.ONE_TIME) {
+            Text("Repeat", fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Recurrence.entries.filter { it != Recurrence.ONCE }.forEach { candidate ->
+                    FilterChip(selected = recurrence == candidate, onClick = { recurrence = candidate }, label = { Text(candidate.label) })
+                }
+            }
+        }
+        Button(
+            onClick = { onCreate(title, type, recurrence); title = "" },
+            enabled = title.isNotBlank(),
+            modifier = Modifier.fillMaxWidth().testTag("add-task"),
+        ) { Text("Add to plan") }
+        Spacer(Modifier.height(18.dp))
+        Text("PLANNED", color = Accent, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Spacer(Modifier.height(8.dp))
+        if (tasks.isEmpty()) Text("No tasks yet.", color = Ink.copy(alpha = .6f)) else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(tasks, key = { it.id }) { task ->
+                    Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(task.title, color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                                Text("${task.type.label} · ${task.recurrence.label}${if (task.resolved) " · Resolved" else ""}", color = Ink.copy(alpha = .58f))
+                            }
+                            Switch(checked = task.active, enabled = !task.resolved, onCheckedChange = { onSetActive(task.id, it) })
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HistoryScreen(state: SlidingTasksState) {
+    val resolved = state.cards.count { it.status != CardStatus.PENDING }
+    val done = state.cards.count { it.status == CardStatus.DONE }
+    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
+        PageHeader("HISTORY", "$done done", "$resolved resolved cards · ${state.events.size} recorded events")
+        Spacer(Modifier.height(20.dp))
+        if (state.events.isEmpty()) Text("Your decisions will appear here.", color = Ink.copy(alpha = .6f)) else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(state.events.asReversed(), key = { it.id }) { event -> EventRow(event) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EventRow(event: TaskEvent) {
+    val time = event.occurredAt.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("MMM d, HH:mm"))
+    Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+            Text(event.type.eventLabel(), color = Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(event.title, color = Ink, fontWeight = FontWeight.SemiBold)
+            Text(time, color = Ink.copy(alpha = .5f), fontSize = 13.sp)
+        }
+    }
+}
+
+private fun String.eventLabel() = when (this) {
+    "TaskCreated" -> "PLANNED"
+    "TaskActivated" -> "ACTIVATED"
+    "TaskDeactivated" -> "PAUSED"
+    "CardGenerated" -> "ADDED TO DAY"
+    "CardTouched" -> "TOUCHED"
+    "CardDone" -> "DONE"
+    "CardDismissed" -> "NOT TODAY"
+    "CardMissed" -> "MISSED"
+    else -> uppercase()
+}
+
+@Composable
+private fun SwipeableTaskCard(card: TaskCard, onCommand: (CardCommand) -> Unit) {
     var offsetX by remember(card.id) { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
-    var cardWidth by remember(card.id) { mutableStateOf(0f) }
+    val currentOnCommand by rememberUpdatedState(onCommand)
+    var cardWidth by remember(card.id) { mutableFloatStateOf(0f) }
     val progress = if (cardWidth == 0f) 0f else (offsetX / (cardWidth * .28f)).coerceIn(-1f, 1f)
-
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                "DONE",
-                color = Color(0xFF377A45),
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.alpha(progress.coerceAtLeast(0f)),
-            )
-            Text(
-                "NOT TODAY",
-                color = Accent,
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.alpha((-progress).coerceAtLeast(0f)),
-            )
+    Box(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("DONE", color = Color(0xFF377A45), fontWeight = FontWeight.Black, modifier = Modifier.alpha(progress.coerceAtLeast(0f)))
+            Text("NOT TODAY", color = Accent, fontWeight = FontWeight.Black, modifier = Modifier.alpha((-progress).coerceAtLeast(0f)))
         }
-
-        TaskCard(
-            card = card,
-            modifier = Modifier
-                .testTag("card-${card.id}")
+        TaskCardView(
+            card,
+            Modifier.testTag("card-${card.id}")
                 .semantics {
                     customActions = listOf(
-                        CustomAccessibilityAction("Mark done") {
-                            onCommand(CardCommand.Complete(card.id))
-                            true
-                        },
-                        CustomAccessibilityAction("Not today") {
-                            onCommand(CardCommand.Dismiss(card.id))
-                            true
-                        },
+                        CustomAccessibilityAction("Mark done") { currentOnCommand(CardCommand.Complete(card.id)); true },
+                        CustomAccessibilityAction("Not today") { currentOnCommand(CardCommand.Dismiss(card.id)); true },
                     )
                 }
                 .onSizeChanged { cardWidth = it.width.toFloat() }
-                .graphicsLayer {
-                    translationX = offsetX
-                }
+                .graphicsLayer { translationX = offsetX }
                 .pointerInput(card.id, cardWidth) {
                     detectHorizontalDragGestures(
-                        onDragStart = { onCommand(CardCommand.Touch(card.id)) },
-                        onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            offsetX += dragAmount
-                        },
-                        onDragCancel = {
-                            scope.launch {
-                                animate(offsetX, 0f, animationSpec = tween(180)) { value, _ ->
-                                    offsetX = value
-                                }
-                            }
-                        },
+                        onDragStart = { currentOnCommand(CardCommand.Touch(card.id)) },
+                        onHorizontalDrag = { change, amount -> change.consume(); offsetX += amount },
+                        onDragCancel = { scope.launch { animate(offsetX, 0f, animationSpec = tween(180)) { value, _ -> offsetX = value } } },
                         onDragEnd = {
                             scope.launch {
-                                when (slideDecision(offsetX, cardWidth)) {
-                                    SlideDecision.COMPLETE -> {
-                                        animate(offsetX, cardWidth * 1.25f, animationSpec = tween(180)) { value, _ ->
-                                            offsetX = value
-                                        }
-                                        onCommand(CardCommand.Complete(card.id))
-                                    }
-                                    SlideDecision.DISMISS -> {
-                                        animate(offsetX, -cardWidth * 1.25f, animationSpec = tween(180)) { value, _ ->
-                                            offsetX = value
-                                        }
-                                        onCommand(CardCommand.Dismiss(card.id))
-                                    }
-                                    null -> animate(offsetX, 0f, animationSpec = tween(180)) { value, _ ->
-                                        offsetX = value
-                                    }
+                                val decision = slideDecision(offsetX, cardWidth)
+                                if (decision == null) animate(offsetX, 0f, animationSpec = tween(180)) { value, _ -> offsetX = value }
+                                else {
+                                    val target = if (decision == SlideDecision.COMPLETE) cardWidth * 1.25f else -cardWidth * 1.25f
+                                    animate(offsetX, target, animationSpec = tween(180)) { value, _ -> offsetX = value }
+                                    currentOnCommand(if (decision == SlideDecision.COMPLETE) CardCommand.Complete(card.id) else CardCommand.Dismiss(card.id))
                                 }
                             }
                         },
@@ -205,10 +285,7 @@ private fun SwipeableTaskCard(card: TodayCard, onCommand: (CardCommand) -> Unit)
 }
 
 @Composable
-private fun TaskCard(
-    card: TodayCard,
-    modifier: Modifier = Modifier,
-) {
+private fun TaskCardView(card: TaskCard, modifier: Modifier = Modifier) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -217,55 +294,20 @@ private fun TaskCard(
     ) {
         Column(Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(9.dp)
-                        .background(Accent, RoundedCornerShape(50)),
-                )
-                Text(
-                    card.typeLabel.uppercase(),
-                    modifier = Modifier.padding(start = 8.dp),
-                    color = Ink.copy(alpha = .55f),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    letterSpacing = 1.sp,
-                )
+                Box(Modifier.size(9.dp).background(Accent, RoundedCornerShape(50)))
+                Text(card.type.label.uppercase(), Modifier.padding(start = 8.dp), color = Ink.copy(alpha = .55f), fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
             }
-            Text(
-                card.title,
-                modifier = Modifier.padding(vertical = 18.dp),
-                color = Ink,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Text(card.title, Modifier.padding(vertical = 18.dp), color = Ink, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
 @Composable
 private fun EmptyBoard() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(SoftGreen, RoundedCornerShape(24.dp))
-            .padding(28.dp),
-    ) {
+    Box(Modifier.fillMaxWidth().background(SoftGreen, RoundedCornerShape(24.dp)).padding(28.dp)) {
         Column {
             Text("All clear.", color = Ink, fontSize = 28.sp, fontWeight = FontWeight.Bold)
             Text("The present is handled.", color = Ink.copy(alpha = .65f), fontSize = 17.sp)
         }
     }
 }
-
-private fun sampleBoard() = TodayBoard(
-    dateLabel = "Friday, September 18",
-    cards = listOf(
-        TodayCard("card-1", "Write the project brief", "Focus"),
-        TodayCard("card-2", "Walk for twenty minutes", "Routine"),
-        TodayCard("card-3", "Call the dentist", "One-time"),
-    ),
-)
-
-@Preview(showBackground = true, widthDp = 390, heightDp = 844)
-@Composable
-private fun TodayPreview() = SlidingTasksApp()

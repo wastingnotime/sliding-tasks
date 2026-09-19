@@ -15,11 +15,9 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "API_BASE_URL", "\"${providers.gradleProperty("SLIDING_TASKS_API_URL").orNull ?: "http://10.0.2.2:18080"}\"")
     }
 
     buildFeatures {
-        buildConfig = true
         compose = true
     }
 

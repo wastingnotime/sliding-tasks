@@ -2,38 +2,37 @@
 
 ## Boundary Decision
 
-- adapter authority: `direct-api`
-- API name: `the product API`
-- emulator base URL: `http://10.0.2.2:18080`
-- auth strategy: `none yet`
+- adapter authority: `local-first-mobile`
+- Milestone 1 network dependency: none
+- future event receiver: deferred
+- future planning synchronization: optional and deferred
 
 ## Translation Chain
 
 Use this table before implementation starts. Do not translate simulation code
 directly into mobile code; translate released semantics into adapter behavior.
 
-| Simulation slice | Released API behavior | Mobile use case | UI state | Unit test | Instrumented test | Contract gap |
-| --- | --- | --- | --- | --- | --- | --- |
-| `001-today-decision-loop` | Read/open active board | View today | Loading, cards, empty, unavailable, stale, failure | reducer/state mapping | board renders ordered cards | API route and DTO pending |
-| `007-task-lifecycle` | Complete pending card | Mark done | Command pending, removed after success, failure | complete removes matching card | Done action dispatches command | API route/error mapping pending |
-| `005-one-time-dismissal-policy` | Dismiss pending card | Not today | Command pending, removed after success, failure | dismiss removes matching card | Dismiss action dispatches command | API route/error mapping pending |
-| `009-runtime-evidence-packet` | Record touch | Focus/view card | Board unchanged | touch preserves board | card focus dispatches touch | Trigger and API route pending |
+| Simulation slice | Local mobile behavior | Mobile use case | UI state | Evidence |
+| --- | --- | --- | --- | --- |
+| `001-today-decision-loop` | Open and persist active board | View today | Cards or empty | engine tests and APK build |
+| `006-recurrence-sufficiency` | Generate daily, weekday, and weekend cards | Plan recurrence | Task form and plan list | recurrence unit test |
+| `007-task-lifecycle` | Create, pause, and reactivate tasks | Manage plan | Active switch and resolved state | lifecycle unit test |
+| `005-one-time-dismissal-policy` | Resolve one-time task on done or dismiss | Decide card | Card leaves today | engine unit test |
+| `009-runtime-evidence-packet` | Append immutable local events | Review history | History event feed | engine and gesture tests |
 
 ## Implementation status
 
 - Native project: Kotlin, Jetpack Compose, Android API 26+.
-- Implemented: independently sliding cards in the today list,
-  right-to-complete and left-to-dismiss thresholds with snap-back and no
-  rotation, card-level accessibility actions, empty state,
-  configurable emulator/physical-device API base URL, unit tests, debug APK CI.
-- Temporary: sample state in `MainActivity`; it is not domain authority.
-- Blocked on released API behavior: network routes, DTOs, auth, freshness token,
-  and public transport errors.
+- Implemented: local task creation, task types, daily/weekday/weekend/one-time
+  recurrence, activation, day generation and rollover, durable device storage,
+  immutable event history, independently sliding today cards, accessibility
+  actions, unit tests, an instrumented planning-to-completion test, and debug
+  APK CI.
+- Deferred: event upload, synchronization, authentication, and web analytics.
 
 ## Checks
 
-- Adapter authority named before scaffolding.
-- Transport field mapping recorded.
-- Stale or missing records represented as user-visible state.
-- Runtime base URL works for Android emulator.
+- Local-first authority is explicit.
+- Daily operations have no transport dependency.
+- Failed local writes do not advance visible state.
 - APK CI runs unit tests before artifact upload.

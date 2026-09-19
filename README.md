@@ -25,10 +25,20 @@ receipts belong under `runs/`.
 ## Mobile
 
 The Kotlin and Jetpack Compose client lives in [`apps/mobile`](apps/mobile/README.md).
-It currently implements a local today-board vertical slice while the product API
-transport remains to be defined.
+For Milestone 1, mobile owns task planning, today's board, decisions, and local
+history without a product API. Daily operation must remain offline-capable in
+later milestones; planning may gain optional synchronization without making the
+API a runtime dependency.
 
 ```bash
 make mobile-test
 make mobile-apk
 ```
+
+## Deferred surfaces
+
+- A receive-only event API may later collect immutable events emitted by mobile.
+- Optional synchronization may later extend planning across devices.
+- A web application may later provide full analytics from those collected events.
+
+None of these surfaces is required for daily mobile operation.

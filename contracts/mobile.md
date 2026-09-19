@@ -53,6 +53,14 @@ mobile capabilities. Synchronization semantics, event transport routes, DTO
 field names, delivery guarantees, identity, and authentication remain deferred
 contract gaps.
 
+## Plan management
+
+- Planned tasks can be moved up or down. Plan order determines generation order
+  for future boards and does not rewrite an already-generated board.
+- Removing a task prevents future card generation. Existing cards and immutable
+  history remain available so removing a plan never rewrites past facts.
+- Removal and reordering record `TaskRemoved` and `TaskReordered` events.
+
 ## Failure and freshness states
 
 - A missing active board is shown as an explicit unavailable state, not as an

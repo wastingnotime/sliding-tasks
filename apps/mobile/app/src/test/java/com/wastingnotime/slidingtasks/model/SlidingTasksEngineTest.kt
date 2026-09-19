@@ -66,6 +66,34 @@ class SlidingTasksEngineTest {
     }
 
     @Test
+    fun removing_a_task_preserves_existing_card_and_history_but_stops_future_generation() {
+        var state = engine.openDay(SlidingTasksState(), friday)
+        state = engine.createTask(state, "Read", TaskType.ROUTINE, Recurrence.DAILY, friday)
+        val taskId = state.tasks.single().id
+
+        state = engine.removeTask(state, taskId)
+
+        assertTrue(state.tasks.isEmpty())
+        assertEquals(listOf("Read"), engine.pendingCards(state).map { it.title })
+        assertEquals("TaskRemoved", state.events.last().type)
+        state = engine.openDay(state, friday.plusDays(1))
+        assertTrue(engine.pendingCards(state).isEmpty())
+    }
+
+    @Test
+    fun reordered_plan_controls_future_card_order() {
+        var state = SlidingTasksState()
+        state = engine.createTask(state, "First", TaskType.ROUTINE, Recurrence.DAILY, friday)
+        state = engine.createTask(state, "Second", TaskType.ROUTINE, Recurrence.DAILY, friday)
+        state = engine.moveTask(state, state.tasks[1].id, -1)
+
+        assertEquals(listOf("Second", "First"), state.tasks.map { it.title })
+        state = engine.openDay(state, friday)
+        assertEquals(listOf("Second", "First"), engine.pendingCards(state).map { it.title })
+        assertEquals("TaskReordered", state.events.first { it.type == "TaskReordered" }.type)
+    }
+
+    @Test
     fun a_slide_past_threshold_selects_an_outcome() {
         assertEquals(SlideDecision.COMPLETE, slideDecision(120f, 400f))
         assertEquals(SlideDecision.DISMISS, slideDecision(-120f, 400f))

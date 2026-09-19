@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -93,6 +94,8 @@ fun SlidingTasksApp() {
                         tasks = state.tasks,
                         onCreate = { title, type, recurrence -> commit(engine.createTask(state, title, type, recurrence, today)) },
                         onSetActive = { id, active -> commit(engine.setTaskActive(state, id, active)) },
+                        onMove = { id, offset -> commit(engine.moveTask(state, id, offset)) },
+                        onRemove = { id -> commit(engine.removeTask(state, id)) },
                     )
                     AppSection.HISTORY -> HistoryScreen(state)
                 }
@@ -134,10 +137,25 @@ private fun PlanScreen(
     tasks: List<PlannedTask>,
     onCreate: (String, TaskType, Recurrence) -> Unit,
     onSetActive: (String, Boolean) -> Unit,
+    onMove: (String, Int) -> Unit,
+    onRemove: (String) -> Unit,
 ) {
     var title by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(TaskType.ROUTINE) }
     var recurrence by remember { mutableStateOf(Recurrence.DAILY) }
+    var pendingRemoval by remember { mutableStateOf<PlannedTask?>(null) }
+
+    pendingRemoval?.let { task ->
+        AlertDialog(
+            onDismissRequest = { pendingRemoval = null },
+            title = { Text("Remove from plan?") },
+            text = { Text("${task.title} will stop appearing on future days. Existing cards and history are preserved.") },
+            confirmButton = {
+                TextButton(onClick = { onRemove(task.id); pendingRemoval = null }) { Text("Remove", color = Accent) }
+            },
+            dismissButton = { TextButton(onClick = { pendingRemoval = null }) { Text("Cancel") } },
+        )
+    }
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
         PageHeader("PLAN", "Your intentions", "Create locally. Change them anytime.")
         Spacer(Modifier.height(20.dp))
@@ -180,18 +198,36 @@ private fun PlanScreen(
         Spacer(Modifier.height(8.dp))
         if (tasks.isEmpty()) Text("No tasks yet.", color = Ink.copy(alpha = .6f)) else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(tasks, key = { it.id }) { task ->
+                itemsIndexed(tasks, key = { _, task -> task.id }) { index, task ->
                     Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(task.title, color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-                                Text("${task.type.label} · ${task.recurrence.label}${if (task.resolved) " · Resolved" else ""}", color = Ink.copy(alpha = .58f))
+                        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(task.title, color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                                    Text("${task.type.label} · ${task.recurrence.label}${if (task.resolved) " · Resolved" else ""}", color = Ink.copy(alpha = .58f))
+                                }
+                                Switch(checked = task.active, enabled = !task.resolved, onCheckedChange = { onSetActive(task.id, it) })
                             }
-                            Switch(checked = task.active, enabled = !task.resolved, onCheckedChange = { onSetActive(task.id, it) })
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                TextButton(
+                                    onClick = { onMove(task.id, -1) },
+                                    enabled = index > 0,
+                                    modifier = Modifier.testTag("move-up-${task.id}"),
+                                ) { Text("Up") }
+                                TextButton(
+                                    onClick = { onMove(task.id, 1) },
+                                    enabled = index < tasks.lastIndex,
+                                    modifier = Modifier.testTag("move-down-${task.id}"),
+                                ) { Text("Down") }
+                                TextButton(
+                                    onClick = { pendingRemoval = task },
+                                    modifier = Modifier.testTag("remove-${task.id}"),
+                                ) { Text("Remove", color = Accent) }
+                            }
                         }
                     }
                 }
@@ -231,6 +267,8 @@ private fun String.eventLabel() = when (this) {
     "TaskCreated" -> "PLANNED"
     "TaskActivated" -> "ACTIVATED"
     "TaskDeactivated" -> "PAUSED"
+    "TaskRemoved" -> "REMOVED FROM PLAN"
+    "TaskReordered" -> "PLAN REORDERED"
     "CardGenerated" -> "ADDED TO DAY"
     "CardTouched" -> "TOUCHED"
     "CardDone" -> "DONE"

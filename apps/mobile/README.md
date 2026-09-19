@@ -28,6 +28,9 @@ on generated cards in **Today**, and inspect the local event stream in
 **History**. Recurring tasks currently support daily, weekdays, and weekends.
 Routine and one-time are the only task types in Milestone 1; the earlier Focus
 label had no distinct behavior and stored Focus tasks migrate to Routine.
+Planned tasks can be moved up or down or removed with confirmation. Reordering
+controls future board order; removal preserves cards and history already
+recorded.
 
 Cards remain visible in a vertical list. Slide any card right to mark it done,
 slide it left for not today, or release before the threshold to return it to its

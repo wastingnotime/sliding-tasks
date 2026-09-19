@@ -135,6 +135,23 @@ class SlidingTasksEngine(
             .withEvent(if (active) "TaskActivated" else "TaskDeactivated", updated)
     }
 
+    fun removeTask(state: SlidingTasksState, taskId: String): SlidingTasksState {
+        val task = state.tasks.firstOrNull { it.id == taskId } ?: return state
+        return state.copy(tasks = state.tasks.filterNot { it.id == taskId })
+            .withEvent("TaskRemoved", task)
+    }
+
+    fun moveTask(state: SlidingTasksState, taskId: String, offset: Int): SlidingTasksState {
+        val from = state.tasks.indexOfFirst { it.id == taskId }
+        if (from == -1) return state
+        val to = (from + offset).coerceIn(state.tasks.indices)
+        if (from == to) return state
+        val reordered = state.tasks.toMutableList().apply {
+            add(to, removeAt(from))
+        }
+        return state.copy(tasks = reordered).withEvent("TaskReordered", reordered[to])
+    }
+
     fun apply(state: SlidingTasksState, command: CardCommand): SlidingTasksState {
         val card = state.cards.firstOrNull { it.id == command.cardId } ?: return state
         if (card.status != CardStatus.PENDING || card.boardDate != state.activeDate) return state

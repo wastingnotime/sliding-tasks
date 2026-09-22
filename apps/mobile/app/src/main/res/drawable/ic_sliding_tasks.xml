@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Offset task cards stay inside the adaptive icon safe area. -->
+    <path android:fillColor="#377A45"
+        android:pathData="M34,29 L66,29 Q72,29 72,35 L72,67 Q72,73 66,73 L34,73 Q28,73 28,67 L28,35 Q28,29 34,29 Z" />
+    <path android:fillColor="#E85D3F"
+        android:pathData="M43,37 L75,37 Q81,37 81,43 L81,75 Q81,81 75,81 L43,81 Q37,81 37,75 L37,43 Q37,37 43,37 Z" />
+    <path android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF" android:strokeWidth="4"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M48,59 L56,67 L70,51" />
+</vector>

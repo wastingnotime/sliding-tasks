@@ -3,10 +3,13 @@
     <application
         android:allowBackup="false"
         android:label="Sliding Tasks"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.SlidingTasks">
         <activity
             android:name=".MainActivity"
+            android:theme="@style/Theme.SlidingTasks.Starting"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -3,4 +3,7 @@
     <style name="Theme.SlidingTasks" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
     </style>
+    <style name="Theme.SlidingTasks.Starting" parent="Theme.SlidingTasks">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
 </resources>

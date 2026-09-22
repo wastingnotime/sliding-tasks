@@ -39,6 +39,62 @@ class SlidingTasksEngineTest {
     }
 
     @Test
+    fun every_two_days_uses_the_chosen_first_day() {
+        val firstDay = friday.plusDays(1)
+        var state = engine.createTask(SlidingTasksState(), "Vitamin", TaskType.ROUTINE,
+            Recurrence.EVERY_TWO_DAYS, friday, startsOn = firstDay)
+
+        assertTrue(engine.pendingCards(engine.openDay(state, friday)).isEmpty())
+        state = engine.openDay(state, firstDay)
+        assertEquals(listOf("Vitamin"), engine.pendingCards(state).map { it.title })
+        assertTrue(engine.pendingCards(engine.openDay(state, firstDay.plusDays(1))).isEmpty())
+        assertEquals(listOf("Vitamin"), engine.pendingCards(engine.openDay(state, firstDay.plusDays(2))).map { it.title })
+    }
+
+    @Test
+    fun fortnightly_weekday_occurrence_waits_until_done_then_returns_next_fortnight() {
+        var state = engine.createTask(SlidingTasksState(), "Cut hair", TaskType.ROUTINE,
+            Recurrence.EVERY_TWO_WEEKS, friday, AvailableDays.WEEKDAYS)
+        state = engine.openDay(state, friday)
+        state = engine.openDay(state, friday.plusDays(3))
+        assertTrue(engine.pendingCards(state).isEmpty())
+        val nextMonday = friday.plusDays(10)
+        state = engine.openDay(state, nextMonday)
+        assertEquals(listOf("Cut hair"), engine.pendingCards(state).map { it.title })
+        state = engine.apply(state, CardCommand.Complete(engine.pendingCards(state).single().id))
+        assertTrue(engine.pendingCards(engine.openDay(state, nextMonday.plusDays(1))).isEmpty())
+        assertEquals(listOf("Cut hair"), engine.pendingCards(engine.openDay(state, nextMonday.plusWeeks(2))).map { it.title })
+    }
+
+    @Test
+    fun pickup_and_dropoff_can_share_one_alternating_weekend() {
+        var state = engine.createTask(SlidingTasksState(), "Pick up Saturday morning", TaskType.ROUTINE,
+            Recurrence.EVERY_TWO_WEEKS, friday, AvailableDays.SATURDAY)
+        state = engine.createTask(state, "Drop off Sunday night", TaskType.ROUTINE,
+            Recurrence.EVERY_TWO_WEEKS, friday, AvailableDays.SUNDAY)
+
+        state = engine.openDay(state, friday.plusDays(1))
+        assertEquals(listOf("Pick up Saturday morning"), engine.pendingCards(state).map { it.title })
+        state = engine.openDay(state, friday.plusDays(2))
+        assertEquals(listOf("Drop off Sunday night"), engine.pendingCards(state).map { it.title })
+        assertTrue(engine.pendingCards(engine.openDay(state, friday.plusDays(8))).isEmpty())
+        assertEquals(listOf("Pick up Saturday morning"), engine.pendingCards(engine.openDay(state, friday.plusDays(15))).map { it.title })
+    }
+
+    @Test
+    fun weekly_task_retries_after_dismissal_but_stops_after_completion_until_next_week() {
+        var state = engine.createTask(SlidingTasksState(), "Put trash out", TaskType.ROUTINE,
+            Recurrence.WEEKLY, friday)
+        state = engine.openDay(state, friday)
+        state = engine.apply(state, CardCommand.Dismiss(engine.pendingCards(state).single().id))
+        state = engine.openDay(state, friday.plusDays(1))
+        assertEquals(listOf("Put trash out"), engine.pendingCards(state).map { it.title })
+        state = engine.apply(state, CardCommand.Complete(engine.pendingCards(state).single().id))
+        assertTrue(engine.pendingCards(engine.openDay(state, friday.plusDays(2))).isEmpty())
+        assertEquals(listOf("Put trash out"), engine.pendingCards(engine.openDay(state, friday.plusDays(3))).map { it.title })
+    }
+
+    @Test
     fun completing_card_records_history_and_resolves_one_time_task() {
         var state = engine.openDay(SlidingTasksState(), friday)
         state = engine.createTask(state, "Call dentist", TaskType.ONE_TIME, Recurrence.ONCE, friday)

@@ -25,7 +25,18 @@ transport contract. Planning may gain optional synchronization later.
 
 Use the bottom navigation to create recurring or one-time tasks in **Plan**, act
 on generated cards in **Today**, and inspect the local event stream in
-**History**. Recurring tasks currently support daily, weekdays, and weekends.
+**History**. Routines support daily, weekdays, weekends, every two days, once
+per week, and once per two weeks. Weekly routines can be available any day,
+on weekdays, on Saturday, or on Sunday. A weekly card appears again on the
+next available day after **Not today** or a missed day; **Done** closes that
+week's occurrence. The next matching week starts a new occurrence. For two-week
+routines, choose a date in the first active week to align the alternating weeks.
+For every-two-days routines, choose the first active day.
+
+For example, plan a vitamin every two days; a haircut every two weeks on
+weekdays; separate Saturday pickup and Sunday drop-off routines anchored in the
+same two-week cycle; and trash once per week on any day. Morning and night can
+be included in the titles; the app does not schedule time-of-day reminders.
 Routine and one-time are the only task types in Milestone 1; the earlier Focus
 label had no distinct behavior and stored Focus tasks migrate to Routine.
 Planned tasks can be moved up or down or removed with confirmation. Reordering

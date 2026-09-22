@@ -1,12 +1,15 @@
 package com.wastingnotime.slidingtasks
 
 import android.os.Bundle
+import android.app.DatePickerDialog
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -112,7 +115,10 @@ fun SlidingTasksApp() {
                     AppSection.TODAY -> TodayScreen(today, engine.pendingCards(state)) { commit(engine.apply(state, it)) }
                     AppSection.PLAN -> PlanScreen(
                         tasks = state.tasks,
-                        onCreate = { title, type, recurrence -> commit(engine.createTask(state, title, type, recurrence, today)) },
+                        currentDate = today,
+                        onCreate = { title, type, recurrence, availableDays, startsOn ->
+                            commit(engine.createTask(state, title, type, recurrence, today, availableDays, startsOn))
+                        },
                         onSetActive = { id, active -> commit(engine.setTaskActive(state, id, active)) },
                         onMove = { id, offset -> commit(engine.moveTask(state, id, offset)) },
                         onRemove = { id -> commit(engine.removeTask(state, id)) },
@@ -155,7 +161,8 @@ private fun TodayScreen(date: LocalDate, cards: List<TaskCard>, onCommand: (Card
 @Composable
 private fun PlanScreen(
     tasks: List<PlannedTask>,
-    onCreate: (String, TaskType, Recurrence) -> Unit,
+    currentDate: LocalDate,
+    onCreate: (String, TaskType, Recurrence, AvailableDays, LocalDate) -> Unit,
     onSetActive: (String, Boolean) -> Unit,
     onMove: (String, Int) -> Unit,
     onRemove: (String) -> Unit,
@@ -163,6 +170,9 @@ private fun PlanScreen(
     var title by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(TaskType.ROUTINE) }
     var recurrence by remember { mutableStateOf(Recurrence.DAILY) }
+    var availableDays by remember { mutableStateOf(AvailableDays.ANY_DAY) }
+    var startsOn by remember { mutableStateOf(currentDate) }
+    val context = LocalContext.current
     var pendingRemoval by remember { mutableStateOf<PlannedTask?>(null) }
 
     pendingRemoval?.let { task ->
@@ -194,6 +204,8 @@ private fun PlanScreen(
                     onClick = {
                         type = candidate
                         recurrence = if (candidate == TaskType.ONE_TIME) Recurrence.ONCE else Recurrence.DAILY
+                        availableDays = AvailableDays.ANY_DAY
+                        startsOn = currentDate
                     },
                     label = { Text(candidate.label) },
                     modifier = Modifier.testTag("type-${candidate.name.lowercase()}"),
@@ -202,14 +214,36 @@ private fun PlanScreen(
         }
         if (type != TaskType.ONE_TIME) {
             Text("Repeat", fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Recurrence.entries.filter { it != Recurrence.ONCE }.forEach { candidate ->
-                    FilterChip(selected = recurrence == candidate, onClick = { recurrence = candidate }, label = { Text(candidate.label) })
+                    FilterChip(selected = recurrence == candidate, onClick = {
+                        recurrence = candidate
+                        availableDays = AvailableDays.ANY_DAY
+                        startsOn = currentDate
+                    }, label = { Text(candidate.label) }, modifier = Modifier.testTag("repeat-${candidate.name.lowercase()}"))
+                }
+            }
+            if (recurrence == Recurrence.WEEKLY || recurrence == Recurrence.EVERY_TWO_WEEKS) {
+                Text("Available", fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AvailableDays.entries.forEach { candidate ->
+                        FilterChip(selected = availableDays == candidate, onClick = { availableDays = candidate },
+                            label = { Text(candidate.label) }, modifier = Modifier.testTag("available-${candidate.name.lowercase()}"))
+                    }
+                }
+            }
+            if (recurrence == Recurrence.EVERY_TWO_DAYS || recurrence == Recurrence.EVERY_TWO_WEEKS) {
+                TextButton(onClick = {
+                    DatePickerDialog(context, { _, year, month, day ->
+                        startsOn = LocalDate.of(year, month + 1, day)
+                    }, startsOn.year, startsOn.monthValue - 1, startsOn.dayOfMonth).show()
+                }, modifier = Modifier.testTag("repeat-start")) {
+                    Text(if (recurrence == Recurrence.EVERY_TWO_WEEKS) "First active week: $startsOn" else "First day: $startsOn")
                 }
             }
         }
         Button(
-            onClick = { onCreate(title, type, recurrence); title = "" },
+            onClick = { onCreate(title, type, recurrence, availableDays, startsOn); title = ""; startsOn = currentDate },
             enabled = title.isNotBlank(),
             modifier = Modifier.fillMaxWidth().testTag("add-task"),
         ) { Text("Add to plan") }
@@ -228,7 +262,7 @@ private fun PlanScreen(
                             ) {
                                 Column(Modifier.weight(1f)) {
                                     Text(task.title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-                                    Text("${task.type.label} · ${task.recurrence.label}${if (task.resolved) " · Resolved" else ""}", color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f))
+                                    Text("${task.type.label} · ${task.recurrence.label}${if (task.recurrence == Recurrence.WEEKLY || task.recurrence == Recurrence.EVERY_TWO_WEEKS) " · ${task.availableDays.label}" else ""}${if (task.resolved) " · Resolved" else ""}", color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f))
                                 }
                                 Switch(checked = task.active, enabled = !task.resolved, onCheckedChange = { onSetActive(task.id, it) })
                             }

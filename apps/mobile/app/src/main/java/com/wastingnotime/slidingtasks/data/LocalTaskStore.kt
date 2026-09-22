@@ -2,6 +2,7 @@ package com.wastingnotime.slidingtasks.data
 
 import android.content.Context
 import com.wastingnotime.slidingtasks.model.CardStatus
+import com.wastingnotime.slidingtasks.model.AvailableDays
 import com.wastingnotime.slidingtasks.model.PlannedTask
 import com.wastingnotime.slidingtasks.model.Recurrence
 import com.wastingnotime.slidingtasks.model.SlidingTasksState
@@ -37,6 +38,8 @@ class LocalTaskStore(context: Context) {
                     put("recurrence", task.recurrence.name)
                     put("active", task.active)
                     put("createdOn", task.createdOn.toString())
+                    put("availableDays", task.availableDays.name)
+                    put("startsOn", task.startsOn.toString())
                     put("resolved", task.resolved)
                 })
             }
@@ -79,6 +82,8 @@ class LocalTaskStore(context: Context) {
                 active = json.getBoolean("active"),
                 createdOn = LocalDate.parse(json.getString("createdOn")),
                 resolved = json.optBoolean("resolved"),
+                availableDays = AvailableDays.valueOf(json.optString("availableDays", AvailableDays.ANY_DAY.name)),
+                startsOn = LocalDate.parse(json.optString("startsOn", json.getString("createdOn"))),
             )
         },
         cards = root.getJSONArray("cards").mapObjects { json ->

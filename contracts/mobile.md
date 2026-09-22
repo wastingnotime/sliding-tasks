@@ -55,6 +55,16 @@ contract gaps.
 
 ## Plan management
 
+- Mobile routines may repeat daily, on weekdays, on weekends, every two days,
+  once per week, or once per two weeks. Two-day intervals use a chosen first
+  day. Two-week intervals use the Monday–Sunday week containing the chosen
+  first date as their anchor; the selected week and every second week after it
+  are active.
+- Weekly and two-week routines have one occurrence per active week. Their
+  availability is any day, weekdays, Saturday, or Sunday. A dismissed or missed
+  card can recur on the next available day of that week. Completing a card
+  closes the occurrence until the next active week. Separate Saturday and
+  Sunday routines can share an anchor week for paired events.
 - Planned tasks can be moved up or down. Plan order determines generation order
   for future boards and does not rewrite an already-generated board.
 - Removing a task prevents future card generation. Existing cards and immutable

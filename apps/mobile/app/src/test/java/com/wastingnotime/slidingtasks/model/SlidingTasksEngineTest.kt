@@ -82,16 +82,38 @@ class SlidingTasksEngineTest {
     }
 
     @Test
-    fun weekly_task_retries_after_dismissal_but_stops_after_completion_until_next_week() {
+    fun weekly_dismissal_skips_the_rest_of_the_week() {
         var state = engine.createTask(SlidingTasksState(), "Put trash out", TaskType.ROUTINE,
             Recurrence.WEEKLY, friday)
         state = engine.openDay(state, friday)
         state = engine.apply(state, CardCommand.Dismiss(engine.pendingCards(state).single().id))
         state = engine.openDay(state, friday.plusDays(1))
+        assertTrue(engine.pendingCards(state).isEmpty())
+        state = engine.openDay(state, friday.plusDays(3))
         assertEquals(listOf("Put trash out"), engine.pendingCards(state).map { it.title })
         state = engine.apply(state, CardCommand.Complete(engine.pendingCards(state).single().id))
-        assertTrue(engine.pendingCards(engine.openDay(state, friday.plusDays(2))).isEmpty())
-        assertEquals(listOf("Put trash out"), engine.pendingCards(engine.openDay(state, friday.plusDays(3))).map { it.title })
+        assertTrue(engine.pendingCards(engine.openDay(state, friday.plusDays(4))).isEmpty())
+        assertEquals(listOf("Put trash out"), engine.pendingCards(engine.openDay(state, friday.plusDays(10))).map { it.title })
+    }
+
+    @Test
+    fun fortnightly_dismissal_waits_for_the_next_active_week() {
+        var state = engine.createTask(SlidingTasksState(), "Cut hair", TaskType.ROUTINE,
+            Recurrence.EVERY_TWO_WEEKS, friday, AvailableDays.WEEKDAYS)
+        state = engine.openDay(state, friday)
+        state = engine.apply(state, CardCommand.Dismiss(engine.pendingCards(state).single().id))
+        assertTrue(engine.pendingCards(engine.openDay(state, friday.plusDays(3))).isEmpty())
+        assertEquals(listOf("Cut hair"), engine.pendingCards(engine.openDay(state, friday.plusDays(10))).map { it.title })
+    }
+
+    @Test
+    fun missed_weekly_card_remains_available_in_its_week() {
+        var state = engine.createTask(SlidingTasksState(), "Put trash out", TaskType.ROUTINE,
+            Recurrence.WEEKLY, friday)
+        state = engine.openDay(state, friday)
+        state = engine.openDay(state, friday.plusDays(1))
+        assertEquals(CardStatus.MISSED, state.cards.first().status)
+        assertEquals(listOf("Put trash out"), engine.pendingCards(state).map { it.title })
     }
 
     @Test

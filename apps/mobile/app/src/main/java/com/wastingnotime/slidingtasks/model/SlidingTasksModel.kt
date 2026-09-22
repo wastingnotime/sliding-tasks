@@ -223,7 +223,7 @@ class SlidingTasksEngine(
                     AvailableDays.SUNDAY -> date.dayOfWeek == DayOfWeek.SUNDAY
                 }
                 matchingWeek && matchingDay && cards.none {
-                    it.taskId == id && it.status == CardStatus.DONE &&
+                    it.taskId == id && it.status in setOf(CardStatus.DONE, CardStatus.DISMISSED) &&
                         !it.boardDate.isBefore(currentWeek) && it.boardDate.isBefore(currentWeek.plusWeeks(1))
                 }
             }

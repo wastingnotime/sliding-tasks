@@ -27,9 +27,9 @@ Use the bottom navigation to create recurring or one-time tasks in **Plan**, act
 on generated cards in **Today**, and inspect the local event stream in
 **History**. Routines support daily, weekdays, weekends, every two days, once
 per week, and once per two weeks. Weekly routines can be available any day,
-on weekdays, on Saturday, or on Sunday. A weekly card appears again on the
-next available day after **Not today** or a missed day; **Done** closes that
-week's occurrence. The next matching week starts a new occurrence. For two-week
+on weekdays, on Saturday, or on Sunday. **Done** and **Not today** close that
+week's occurrence; a missed card appears again on the next available day.
+The next matching week starts a new occurrence. For two-week
 routines, choose a date in the first active week to align the alternating weeks.
 For every-two-days routines, choose the first active day.
 

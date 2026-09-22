@@ -61,9 +61,9 @@ contract gaps.
   first date as their anchor; the selected week and every second week after it
   are active.
 - Weekly and two-week routines have one occurrence per active week. Their
-  availability is any day, weekdays, Saturday, or Sunday. A dismissed or missed
-  card can recur on the next available day of that week. Completing a card
-  closes the occurrence until the next active week. Separate Saturday and
+  availability is any day, weekdays, Saturday, or Sunday. Dismissing or
+  completing a card closes the occurrence until the next active week. A missed
+  card can recur on the next available day of that week. Separate Saturday and
   Sunday routines can share an anchor week for paired events.
 - Planned tasks can be moved up or down. Plan order determines generation order
   for future boards and does not rewrite an already-generated board.

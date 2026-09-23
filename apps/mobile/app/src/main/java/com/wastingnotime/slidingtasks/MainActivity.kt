@@ -86,10 +86,11 @@ fun SlidingTasksApp() {
     var section by remember { mutableStateOf(AppSection.TODAY) }
     var saveError by remember { mutableStateOf<String?>(null) }
 
-    fun commit(next: SlidingTasksState) {
-        runCatching { store.save(next) }
+    fun commit(next: SlidingTasksState): Boolean {
+        return runCatching { store.save(next) }
             .onSuccess { state = next; saveError = null }
             .onFailure { saveError = "Could not save that change. Please try again." }
+            .isSuccess
     }
     LaunchedEffect(Unit) { commit(state) }
 
@@ -119,6 +120,9 @@ fun SlidingTasksApp() {
                         currentDate = today,
                         onCreate = { title, type, recurrence, availableDays, startsOn ->
                             commit(engine.createTask(state, title, type, recurrence, today, availableDays, startsOn))
+                        },
+                        onUpdate = { id, title, type, recurrence, availableDays, startsOn ->
+                            commit(engine.updateTask(state, id, title, type, recurrence, availableDays, startsOn))
                         },
                         onSetActive = { id, active -> commit(engine.setTaskActive(state, id, active)) },
                         onMove = { id, offset -> commit(engine.moveTask(state, id, offset)) },
@@ -163,7 +167,8 @@ private fun TodayScreen(date: LocalDate, cards: List<TaskCard>, onCommand: (Card
 private fun PlanScreen(
     tasks: List<PlannedTask>,
     currentDate: LocalDate,
-    onCreate: (String, TaskType, Recurrence, AvailableDays, LocalDate) -> Unit,
+    onCreate: (String, TaskType, Recurrence, AvailableDays, LocalDate) -> Boolean,
+    onUpdate: (String, String, TaskType, Recurrence, AvailableDays, LocalDate) -> Boolean,
     onSetActive: (String, Boolean) -> Unit,
     onMove: (String, Int) -> Unit,
     onRemove: (String) -> Unit,
@@ -173,8 +178,18 @@ private fun PlanScreen(
     var recurrence by remember { mutableStateOf(Recurrence.DAILY) }
     var availableDays by remember { mutableStateOf(AvailableDays.ANY_DAY) }
     var startsOn by remember { mutableStateOf(currentDate) }
+    var editingTaskId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     var pendingRemoval by remember { mutableStateOf<PlannedTask?>(null) }
+
+    fun resetForm() {
+        editingTaskId = null
+        title = ""
+        type = TaskType.ROUTINE
+        recurrence = Recurrence.DAILY
+        availableDays = AvailableDays.ANY_DAY
+        startsOn = currentDate
+    }
 
     pendingRemoval?.let { task ->
         AlertDialog(
@@ -182,7 +197,11 @@ private fun PlanScreen(
             title = { Text("Remove from plan?") },
             text = { Text("${task.title} will stop appearing on future days. Existing cards and history are preserved.") },
             confirmButton = {
-                TextButton(onClick = { onRemove(task.id); pendingRemoval = null }) { Text("Remove", color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = {
+                    onRemove(task.id)
+                    if (editingTaskId == task.id) resetForm()
+                    pendingRemoval = null
+                }) { Text("Remove", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = { TextButton(onClick = { pendingRemoval = null }) { Text("Cancel") } },
         )
@@ -190,6 +209,10 @@ private fun PlanScreen(
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
         PageHeader("PLAN", "Your intentions", "Create locally. Change them anytime.")
         Spacer(Modifier.height(20.dp))
+        if (editingTaskId != null) {
+            Text("Edit planned entry", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+        }
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
@@ -244,10 +267,20 @@ private fun PlanScreen(
             }
         }
         Button(
-            onClick = { onCreate(title, type, recurrence, availableDays, startsOn); title = ""; startsOn = currentDate },
+            onClick = {
+                val id = editingTaskId
+                val saved = if (id == null) onCreate(title, type, recurrence, availableDays, startsOn)
+                    else onUpdate(id, title, type, recurrence, availableDays, startsOn)
+                if (saved) resetForm()
+            },
             enabled = title.isNotBlank(),
-            modifier = Modifier.fillMaxWidth().testTag("add-task"),
-        ) { Text("Add to plan") }
+            modifier = Modifier.fillMaxWidth().testTag(if (editingTaskId == null) "add-task" else "save-task"),
+        ) { Text(if (editingTaskId == null) "Add to plan" else "Save changes") }
+        if (editingTaskId != null) {
+            TextButton(onClick = { resetForm() }, modifier = Modifier.fillMaxWidth().testTag("cancel-edit")) {
+                Text("Cancel edit")
+            }
+        }
         Spacer(Modifier.height(18.dp))
         Text("PLANNED", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         Spacer(Modifier.height(8.dp))
@@ -268,6 +301,17 @@ private fun PlanScreen(
                                 Switch(checked = task.active, enabled = !task.resolved, onCheckedChange = { onSetActive(task.id, it) })
                             }
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                TextButton(
+                                    onClick = {
+                                        editingTaskId = task.id
+                                        title = task.title
+                                        type = task.type
+                                        recurrence = task.recurrence
+                                        availableDays = task.availableDays
+                                        startsOn = task.startsOn
+                                    },
+                                    modifier = Modifier.testTag("edit-${task.id}"),
+                                ) { Text("Edit") }
                                 TextButton(
                                     onClick = { onMove(task.id, -1) },
                                     enabled = index > 0,
@@ -320,6 +364,7 @@ private fun EventRow(event: TaskEvent) {
 
 private fun String.eventLabel() = when (this) {
     "TaskCreated" -> "PLANNED"
+    "TaskUpdated" -> "PLAN UPDATED"
     "TaskActivated" -> "ACTIVATED"
     "TaskDeactivated" -> "PAUSED"
     "TaskRemoved" -> "REMOVED FROM PLAN"

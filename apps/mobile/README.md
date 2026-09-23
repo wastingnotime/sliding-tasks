@@ -39,9 +39,10 @@ same two-week cycle; and trash once per week on any day. Morning and night can
 be included in the titles; the app does not schedule time-of-day reminders.
 Routine and one-time are the only task types in Milestone 1; the earlier Focus
 label had no distinct behavior and stored Focus tasks migrate to Routine.
-Planned tasks can be moved up or down or removed with confirmation. Reordering
-controls future board order; removal preserves cards and history already
-recorded.
+Planned tasks can be edited, moved up or down, or removed with confirmation.
+Edits update future cards while keeping existing card snapshots and history.
+Reordering controls future board order; removal preserves cards and history
+already recorded.
 The app follows the Android system light or dark appearance setting.
 
 Cards remain visible in a vertical list. Slide any card right to mark it done,

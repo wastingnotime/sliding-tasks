@@ -67,6 +67,10 @@ contract gaps.
   Sunday routines can share an anchor week for paired events.
 - Planned tasks can be moved up or down. Plan order determines generation order
   for future boards and does not rewrite an already-generated board.
+- Planned entries can be edited in place. Title, type, recurrence, availability,
+  and first active date changes apply to future cards. An eligible edit may add
+  a card to the open day if that task has no card for the day. Existing card
+  snapshots and immutable history are preserved; changes record `TaskUpdated`.
 - Removing a task prevents future card generation. Existing cards and immutable
   history remain available so removing a plan never rewrites past facts.
 - Removal and reordering record `TaskRemoved` and `TaskReordered` events.

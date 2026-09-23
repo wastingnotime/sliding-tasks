@@ -3,7 +3,7 @@ set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 apk_path="$project_dir/app/build/outputs/apk/debug/app-debug.apk"
-package_name="com.wastingnotime.slidingtasks"
+package_name="org.wastingnotime.slidingtasks"
 activity_name="$package_name/.MainActivity"
 
 adb_bin="${ADB_BIN:-}"

@@ -1,4 +1,4 @@
-package com.wastingnotime.slidingtasks
+package org.wastingnotime.slidingtasks
 
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -54,5 +54,14 @@ class SlidingCardTest {
         composeRule.onNodeWithTag("nav-plan").performClick()
 
         composeRule.onAllNodesWithText("Persist this plan")[0].assertTextEquals("Persist this plan")
+    }
+
+    @Test
+    fun privacy_policy_is_available_offline_in_the_app() {
+        composeRule.onNodeWithTag("nav-privacy").performClick()
+        composeRule.onAllNodesWithText("Sliding Tasks is provided", substring = true)[0]
+            .assertExists()
+        composeRule.onAllNodesWithText("stored on this device", substring = true)[0]
+            .assertExists()
     }
 }

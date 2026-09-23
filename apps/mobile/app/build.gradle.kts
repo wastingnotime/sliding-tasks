@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.wastingnotime.slidingtasks"
+    namespace = "org.wastingnotime.slidingtasks"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.wastingnotime.slidingtasks"
+        applicationId = "org.wastingnotime.slidingtasks"
         minSdk = 26
         targetSdk = 37
         versionCode = 1

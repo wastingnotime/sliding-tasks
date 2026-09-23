@@ -35,6 +35,13 @@ make mobile-test
 make mobile-apk
 ```
 
+## Public site
+
+The static Sliding Tasks page and privacy policy live in
+[`apps/site`](apps/site/README.md). Their intended public path is
+`https://wastingnotime.org/sliding-tasks/`; infra-platform owns the route and
+immutable image selection.
+
 ## Deferred surfaces
 
 - A receive-only event API may later collect immutable events emitted by mobile.

@@ -1,4 +1,4 @@
-package com.wastingnotime.slidingtasks
+package org.wastingnotime.slidingtasks
 
 import android.os.Bundle
 import android.app.DatePickerDialog
@@ -42,8 +42,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
-import com.wastingnotime.slidingtasks.data.LocalTaskStore
-import com.wastingnotime.slidingtasks.model.*
+import org.wastingnotime.slidingtasks.data.LocalTaskStore
+import org.wastingnotime.slidingtasks.model.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import java.time.LocalDate
@@ -83,7 +83,7 @@ private val DarkColors = darkColorScheme(
     surfaceVariant = Color(0xFF243127),
     onSurfaceVariant = Color(0xFFD4E8D6),
 )
-private enum class AppSection(val label: String) { TODAY("Today"), PLAN("Plan"), REVIEW("Review") }
+private enum class AppSection(val label: String) { TODAY("Today"), PLAN("Plan"), REVIEW("Review"), PRIVACY("Privacy") }
 
 @Composable
 fun SlidingTasksApp() {
@@ -175,9 +175,26 @@ fun SlidingTasksApp() {
                         )
                     }
                     AppSection.REVIEW -> ReviewScreen(state, today)
+                    AppSection.PRIVACY -> PrivacyScreen()
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PrivacyScreen() {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        PageHeader("ABOUT", "Privacy", "Sliding Tasks · effective September 23, 2026")
+        Text("Sliding Tasks is provided by Wasting No Time. It works offline and does not require an account.")
+        Text("Your task titles, schedules, card decisions, and history are stored on this device. The current app does not send them to us or other companies. It has no ads, analytics, or sync service.")
+        Text("You can remove individual planned tasks in the app. To erase all Sliding Tasks data, use Android Settings → Apps → Sliding Tasks → Storage → Clear storage, or uninstall the app. Device backup is disabled for this app.")
+        Text("If the app later adds sync, analytics, or other data processing, this policy will be updated before those features are released.")
+        Text("Questions? Contact hriccio@wastingnotime.org.")
+        Text("Public policy: https://wastingnotime.org/sliding-tasks/privacy/", color = MaterialTheme.colorScheme.primary)
     }
 }
 

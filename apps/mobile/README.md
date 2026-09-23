@@ -51,6 +51,9 @@ Edits update future cards while keeping existing card snapshots and history.
 Reordering controls future board order; removal preserves cards and history
 already recorded.
 The app follows the Android system light or dark appearance setting.
+The **Privacy** tab provides the current privacy policy offline. The canonical
+repository copy is [`docs/privacy-policy.md`](../../docs/privacy-policy.md),
+with a public copy at `https://wastingnotime.org/sliding-tasks/privacy/`.
 
 Review uses only cards stored on the device. Missed means a card was still open
 when its day ended; Not today is an explicit choice. Pattern rankings use the

@@ -1,4 +1,4 @@
-package com.wastingnotime.slidingtasks.model
+package org.wastingnotime.slidingtasks.model
 
 import java.time.DayOfWeek
 import java.time.Instant

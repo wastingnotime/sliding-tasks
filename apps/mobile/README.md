@@ -17,6 +17,30 @@ Native Android app for local-first Sliding Tasks planning and daily use.
 Open `apps/mobile` in Android Studio, or use the Gradle wrapper from that
 directory.
 
+## Google Play upload bundle
+
+Run the **Build signed Sliding Tasks release bundle** workflow on `main` to
+produce a signed `.aab` artifact for Play Console internal testing. The workflow
+uses a dedicated upload key from GitHub Actions secrets, runs release unit
+tests, verifies the bundle signature, and records its SHA-256 digest. Download
+the artifact from the workflow run within seven days. The bundle uses package
+`org.wastingnotime.slidingtasks`, version code `1`, and version name `0.1.0`.
+
+The repository secrets are `SLIDING_TASKS_UPLOAD_KEYSTORE_BASE64`,
+`SLIDING_TASKS_UPLOAD_STORE_PASSWORD`, and
+`SLIDING_TASKS_UPLOAD_KEY_PASSWORD`. The alias is `sliding-tasks-upload`.
+Keep the original upload keystore and its password in private storage; GitHub
+secrets cannot be read back. Never commit the keystore or passwords. Google
+Play App Signing uses this as the upload key for the first release and future
+updates; if it is lost, request an upload key reset in Play Console.
+
+For a local signed build, set `SLIDING_TASKS_UPLOAD_KEYSTORE` to the absolute
+keystore path, `SLIDING_TASKS_UPLOAD_STORE_PASSWORD`,
+`SLIDING_TASKS_UPLOAD_KEY_PASSWORD`, and
+`SLIDING_TASKS_UPLOAD_KEY_ALIAS=sliding-tasks-upload`, then run
+`./gradlew testDebugUnitTest bundleRelease` from `apps/mobile`. The output is
+`app/build/outputs/bundle/release/app-release.aab`.
+
 The first vertical slice renders today's ordered pending cards and translates
 Done and Not today interactions into `Complete` and `Dismiss` command intents.
 Milestone 1 stores planned tasks, generated cards, decisions, and immutable

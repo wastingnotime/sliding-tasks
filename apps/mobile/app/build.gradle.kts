@@ -3,6 +3,17 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val uploadKeystore = System.getenv("SLIDING_TASKS_UPLOAD_KEYSTORE")
+val uploadStorePassword = System.getenv("SLIDING_TASKS_UPLOAD_STORE_PASSWORD")
+val uploadKeyPassword = System.getenv("SLIDING_TASKS_UPLOAD_KEY_PASSWORD")
+val uploadKeyAlias = System.getenv("SLIDING_TASKS_UPLOAD_KEY_ALIAS")
+val hasUploadSigning = listOf(
+    uploadKeystore,
+    uploadStorePassword,
+    uploadKeyPassword,
+    uploadKeyAlias,
+).all { !it.isNullOrBlank() }
+
 android {
     namespace = "org.wastingnotime.slidingtasks"
     compileSdk = 37
@@ -15,6 +26,25 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (hasUploadSigning) {
+            create("playUpload") {
+                storeFile = file(requireNotNull(uploadKeystore))
+                storePassword = uploadStorePassword
+                keyAlias = uploadKeyAlias
+                keyPassword = uploadKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            if (hasUploadSigning) {
+                signingConfig = signingConfigs.getByName("playUpload")
+            }
+        }
     }
 
     buildFeatures {

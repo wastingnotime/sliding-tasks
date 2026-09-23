@@ -1,4 +1,4 @@
-package com.wastingnotime.slidingtasks.model
+package org.wastingnotime.slidingtasks.model
 
 import java.time.DayOfWeek
 import java.time.Instant
@@ -145,6 +145,35 @@ class SlidingTasksEngine(
             availableDays = availableDays, startsOn = startsOn)
         val created = state.copy(tasks = state.tasks + task).withEvent("TaskCreated", task)
         return if (created.activeDate == date && task.isEligible(date, created.cards)) openDay(created, date) else created
+    }
+
+    fun updateTask(
+        state: SlidingTasksState,
+        taskId: String,
+        title: String,
+        type: TaskType,
+        recurrence: Recurrence,
+        availableDays: AvailableDays,
+        startsOn: LocalDate,
+    ): SlidingTasksState {
+        val task = state.tasks.firstOrNull { it.id == taskId } ?: return state
+        val cleanTitle = title.trim()
+        require(cleanTitle.isNotEmpty()) { "Task title cannot be empty" }
+        require((type == TaskType.ONE_TIME) == (recurrence == Recurrence.ONCE)) {
+            "One-time tasks use Once; recurring tasks require a recurrence"
+        }
+        require(recurrence in setOf(Recurrence.WEEKLY, Recurrence.EVERY_TWO_WEEKS) || availableDays == AvailableDays.ANY_DAY) {
+            "Day windows are only available for weekly routines"
+        }
+        val updated = task.copy(title = cleanTitle, type = type, recurrence = recurrence,
+            availableDays = availableDays, startsOn = startsOn)
+        if (updated == task) return state
+        val changed = state.copy(tasks = state.tasks.map { if (it.id == taskId) updated else it })
+            .withEvent("TaskUpdated", updated)
+        val activeDate = changed.activeDate
+        return if (activeDate != null && updated.isEligible(activeDate, changed.cards)) {
+            openDay(changed, activeDate)
+        } else changed
     }
 
     fun setTaskActive(state: SlidingTasksState, taskId: String, active: Boolean): SlidingTasksState {

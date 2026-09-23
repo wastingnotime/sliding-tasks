@@ -1,14 +1,14 @@
-package com.wastingnotime.slidingtasks.data
+package org.wastingnotime.slidingtasks.data
 
 import android.content.Context
-import com.wastingnotime.slidingtasks.model.CardStatus
-import com.wastingnotime.slidingtasks.model.AvailableDays
-import com.wastingnotime.slidingtasks.model.PlannedTask
-import com.wastingnotime.slidingtasks.model.Recurrence
-import com.wastingnotime.slidingtasks.model.SlidingTasksState
-import com.wastingnotime.slidingtasks.model.TaskCard
-import com.wastingnotime.slidingtasks.model.TaskEvent
-import com.wastingnotime.slidingtasks.model.TaskType
+import org.wastingnotime.slidingtasks.model.CardStatus
+import org.wastingnotime.slidingtasks.model.AvailableDays
+import org.wastingnotime.slidingtasks.model.PlannedTask
+import org.wastingnotime.slidingtasks.model.Recurrence
+import org.wastingnotime.slidingtasks.model.SlidingTasksState
+import org.wastingnotime.slidingtasks.model.TaskCard
+import org.wastingnotime.slidingtasks.model.TaskEvent
+import org.wastingnotime.slidingtasks.model.TaskType
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant

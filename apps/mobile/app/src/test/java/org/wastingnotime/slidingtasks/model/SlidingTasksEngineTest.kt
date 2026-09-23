@@ -1,4 +1,4 @@
-package com.wastingnotime.slidingtasks.model
+package org.wastingnotime.slidingtasks.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

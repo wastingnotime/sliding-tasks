@@ -55,6 +55,13 @@ contract gaps.
 
 ## Plan management
 
+- Today accepts an ad-hoc one-time title and immediately creates its pending
+  card on the open board. The local task record still supports carry-forward
+  after a missed day and preserves card history. One-time creation and management
+  do not require the Plan tab; older paused one-time entries can be resumed or
+  removed from Today.
+- Plan lists and creates recurring routines only. Its editor offers recurrence,
+  availability, and first active date; task type is fixed to Routine.
 - Mobile routines may repeat daily, on weekdays, on weekends, every two days,
   once per week, or once per two weeks. Two-day intervals use a chosen first
   day. Two-week intervals use the Monday–Sunday week containing the chosen
@@ -65,11 +72,32 @@ contract gaps.
   completing a card closes the occurrence until the next active week. A missed
   card can recur on the next available day of that week. Separate Saturday and
   Sunday routines can share an anchor week for paired events.
-- Planned tasks can be moved up or down. Plan order determines generation order
-  for future boards and does not rewrite an already-generated board.
+- Planned tasks can be reordered by dragging, with Move up and Move down
+  accessibility actions. Plan order determines generation order for future
+  boards and does not rewrite an already-generated board.
+- Planned routines can be edited in place. Title, recurrence, availability,
+  and first active date changes apply to future cards. An eligible edit may add
+  a card to the open day if that task has no card for the day. Existing card
+  snapshots and immutable history are preserved; changes record `TaskUpdated`.
 - Removing a task prevents future card generation. Existing cards and immutable
   history remain available so removing a plan never rewrites past facts.
 - Removal and reordering record `TaskRemoved` and `TaskReordered` events.
+
+## Local review
+
+- The device provides a short recent review from locally stored cards. It shows
+  this week's Done, Not today, Missed, and still-open counts; recent tasks most
+  often missed or marked Not today; a task completed consistently; and a
+  comparison of Done share across two complete seven-day windows when each has
+  enough closed cards.
+- Task patterns use the last 14 full days, excluding the current incomplete
+  day. Missed means a card remained pending when its day ended. Not today is an
+  explicit dismissal. Rankings count recorded card days, not inferred intent or
+  causes. The comparison is descriptive and does not claim that a changed rate
+  was caused by a particular behavior.
+- Recent days can be expanded to inspect their individual card outcomes. The
+  immutable event history remains stored locally for later web analytics, but
+  the device review does not expose the raw event stream as its primary view.
 
 ## Failure and freshness states
 

@@ -1,4 +1,4 @@
-package com.wastingnotime.slidingtasks
+package org.wastingnotime.slidingtasks
 
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -30,6 +30,7 @@ class SlidingCardTest {
     @Test
     fun planning_then_sliding_a_card_right_completes_it() {
         composeRule.onNodeWithTag("nav-plan").performClick()
+        composeRule.onNodeWithTag("add-entry").performClick()
         composeRule.onNodeWithTag("task-title").performTextInput("Write the project brief")
         composeRule.onNodeWithTag("add-task").performClick()
         composeRule.onNodeWithTag("nav-today").performClick()
@@ -45,6 +46,7 @@ class SlidingCardTest {
     @Test
     fun planned_task_survives_activity_recreation() {
         composeRule.onNodeWithTag("nav-plan").performClick()
+        composeRule.onNodeWithTag("add-entry").performClick()
         composeRule.onNodeWithTag("task-title").performTextInput("Persist this plan")
         composeRule.onNodeWithTag("add-task").performClick()
 
@@ -52,5 +54,14 @@ class SlidingCardTest {
         composeRule.onNodeWithTag("nav-plan").performClick()
 
         composeRule.onAllNodesWithText("Persist this plan")[0].assertTextEquals("Persist this plan")
+    }
+
+    @Test
+    fun privacy_policy_is_available_offline_in_the_app() {
+        composeRule.onNodeWithTag("nav-privacy").performClick()
+        composeRule.onAllNodesWithText("Sliding Tasks is provided", substring = true)[0]
+            .assertExists()
+        composeRule.onAllNodesWithText("stored on this device", substring = true)[0]
+            .assertExists()
     }
 }

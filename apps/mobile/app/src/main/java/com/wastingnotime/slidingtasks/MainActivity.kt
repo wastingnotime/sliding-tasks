@@ -126,29 +126,51 @@ fun SlidingTasksApp() {
             Column(Modifier.padding(padding).fillMaxSize()) {
                 saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
                 when (section) {
-                    AppSection.TODAY -> TodayScreen(today, engine.pendingCards(state)) { commit(engine.apply(state, it)) }
+                    AppSection.TODAY -> TodayScreen(
+                        date = today,
+                        cards = engine.pendingCards(state),
+                        pausedOneTimeTasks = state.tasks.filter { task ->
+                            task.type == TaskType.ONE_TIME && !task.active && !task.resolved &&
+                                state.cards.none { it.taskId == task.id && it.boardDate == today && it.status == CardStatus.PENDING }
+                        },
+                        onCommand = { commit(engine.apply(state, it)) },
+                        onCreateOneTime = { title ->
+                            commit(engine.createTask(state, title, TaskType.ONE_TIME, Recurrence.ONCE, today))
+                        },
+                        onResumeOneTime = { id -> commit(engine.openDay(engine.setTaskActive(state, id, true), today)) },
+                        onRemoveOneTime = { id -> commit(engine.removeTask(state, id)) },
+                    )
                     AppSection.PLAN -> if (planEditorOpen) {
                         PlanEditor(
                             task = planEditorTask,
                             currentDate = today,
                             onCancel = { planEditorOpen = false },
-                            onSave = { title, type, recurrence, availableDays, startsOn ->
+                            onSave = { title, recurrence, availableDays, startsOn ->
                                 val task = planEditorTask
                                 val saved = if (task == null) {
-                                    commit(engine.createTask(state, title, type, recurrence, today, availableDays, startsOn))
+                                    commit(engine.createTask(state, title, TaskType.ROUTINE, recurrence, today, availableDays, startsOn))
                                 } else {
-                                    commit(engine.updateTask(state, task.id, title, type, recurrence, availableDays, startsOn))
+                                    commit(engine.updateTask(state, task.id, title, TaskType.ROUTINE, recurrence, availableDays, startsOn))
                                 }
                                 if (saved) planEditorOpen = false
                             },
                         )
                     } else {
                         PlanScreen(
-                            tasks = state.tasks,
+                            tasks = state.tasks.filter { it.type == TaskType.ROUTINE },
                             onAdd = { planEditorTask = null; planEditorOpen = true },
                             onEdit = { planEditorTask = it; planEditorOpen = true },
                             onSetActive = { id, active -> commit(engine.setTaskActive(state, id, active)) },
-                            onMove = { id, offset -> commit(engine.moveTask(state, id, offset)) },
+                            onMove = { id, offset ->
+                                val routines = state.tasks.filter { it.type == TaskType.ROUTINE }
+                                val from = routines.indexOfFirst { it.id == id }
+                                if (from >= 0) {
+                                    val to = (from + offset).coerceIn(routines.indices)
+                                    val absoluteFrom = state.tasks.indexOfFirst { it.id == id }
+                                    val absoluteTo = state.tasks.indexOfFirst { it.id == routines[to].id }
+                                    commit(engine.moveTask(state, id, absoluteTo - absoluteFrom))
+                                }
+                            },
                             onRemove = { id -> commit(engine.removeTask(state, id)) },
                         )
                     }
@@ -172,17 +194,99 @@ private fun PageHeader(kicker: String, title: String, subtitle: String, subtitle
 }
 
 @Composable
-private fun TodayScreen(date: LocalDate, cards: List<TaskCard>, onCommand: (CardCommand) -> Unit) {
-    val count = "${cards.size} ${if (cards.size == 1) "card" else "cards"} left"
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
-        PageHeader("TODAY", date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), count, "remaining-count")
-        Spacer(Modifier.height(24.dp))
-        if (cards.isEmpty()) EmptyBoard() else {
-            Text("Slide left for not today · right for done", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f), fontSize = 14.sp)
-            Spacer(Modifier.height(14.dp))
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                items(cards, key = { it.id }) { card -> SwipeableTaskCard(card, onCommand) }
+private fun TodayScreen(
+    date: LocalDate,
+    cards: List<TaskCard>,
+    pausedOneTimeTasks: List<PlannedTask>,
+    onCommand: (CardCommand) -> Unit,
+    onCreateOneTime: (String) -> Boolean,
+    onResumeOneTime: (String) -> Unit,
+    onRemoveOneTime: (String) -> Unit,
+) {
+    val count = cards.size.toString() + " " + if (cards.size == 1) "card left" else "cards left"
+    var addingOneTime by remember { mutableStateOf(false) }
+    var oneTimeTitle by remember { mutableStateOf("") }
+    var pendingRemoval by remember { mutableStateOf<PlannedTask?>(null) }
+
+    if (addingOneTime) {
+        AlertDialog(
+            onDismissRequest = { addingOneTime = false },
+            title = { Text("Add for today") },
+            text = {
+                OutlinedTextField(
+                    value = oneTimeTitle,
+                    onValueChange = { oneTimeTitle = it },
+                    label = { Text("What needs doing?") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("one-time-title"),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (onCreateOneTime(oneTimeTitle)) {
+                            addingOneTime = false
+                            oneTimeTitle = ""
+                        }
+                    },
+                    enabled = oneTimeTitle.isNotBlank(),
+                    modifier = Modifier.testTag("save-one-time"),
+                ) { Text("Add") }
+            },
+            dismissButton = { TextButton(onClick = { addingOneTime = false }) { Text("Cancel") } },
+        )
+    }
+    pendingRemoval?.let { task ->
+        AlertDialog(
+            onDismissRequest = { pendingRemoval = null },
+            title = { Text("Remove one-time entry?") },
+            text = { Text(task.title + " will be removed. Existing cards and history are preserved.") },
+            confirmButton = {
+                TextButton(onClick = { onRemoveOneTime(task.id); pendingRemoval = null }) {
+                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { pendingRemoval = null }) { Text("Cancel") } },
+        )
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        item { PageHeader("TODAY", date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), count, "remaining-count") }
+        item {
+            OutlinedButton(
+                onClick = { oneTimeTitle = ""; addingOneTime = true },
+                modifier = Modifier.fillMaxWidth().testTag("add-one-time"),
+            ) { Text("Add one-time task") }
+        }
+        if (pausedOneTimeTasks.isNotEmpty()) {
+            item {
+                Text("PAUSED ONE-TIME ENTRIES", color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             }
+            items(pausedOneTimeTasks, key = { "paused-" + it.id }) { task ->
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(task.title, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                        TextButton(onClick = { onResumeOneTime(task.id) }) { Text("Resume") }
+                        TextButton(onClick = { pendingRemoval = task }) {
+                            Text("Remove", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            }
+        }
+        if (cards.isEmpty()) {
+            item { EmptyBoard() }
+        } else {
+            item {
+                Text("Slide left for not today · right for done",
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f), fontSize = 14.sp)
+            }
+            items(cards, key = { it.id }) { card -> SwipeableTaskCard(card, onCommand) }
         }
     }
 }
@@ -254,14 +358,14 @@ private fun PlanScreen(
     }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
-        PageHeader("PLAN", "Your intentions", tasks.size.toString() + " planned entries")
+        PageHeader("PLAN", "Your routines", tasks.size.toString() + " recurring entries")
         Spacer(Modifier.height(20.dp))
         Button(onClick = onAdd, modifier = Modifier.fillMaxWidth().testTag("add-entry")) {
-            Text("Add entry")
+            Text("Add routine")
         }
         Spacer(Modifier.height(12.dp))
         if (tasks.isEmpty()) {
-            Text("No tasks yet.", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
+            Text("No routines yet.", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
         } else {
             Text("Touch and hold an entry to reorder", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f), fontSize = 13.sp)
             Spacer(Modifier.height(8.dp))
@@ -359,8 +463,6 @@ private fun PlanScreen(
 }
 
 private fun PlannedTask.scheduleSummary() = buildString {
-    append(type.label)
-    append(" · ")
     append(recurrence.label)
     if (recurrence == Recurrence.WEEKLY || recurrence == Recurrence.EVERY_TWO_WEEKS) {
         append(" · ")
@@ -374,10 +476,9 @@ private fun PlanEditor(
     task: PlannedTask?,
     currentDate: LocalDate,
     onCancel: () -> Unit,
-    onSave: (String, TaskType, Recurrence, AvailableDays, LocalDate) -> Unit,
+    onSave: (String, Recurrence, AvailableDays, LocalDate) -> Unit,
 ) {
     var title by remember(task?.id) { mutableStateOf(task?.title ?: "") }
-    var type by remember(task?.id) { mutableStateOf(task?.type ?: TaskType.ROUTINE) }
     var recurrence by remember(task?.id) { mutableStateOf(task?.recurrence ?: Recurrence.DAILY) }
     var availableDays by remember(task?.id) { mutableStateOf(task?.availableDays ?: AvailableDays.ANY_DAY) }
     var startsOn by remember(task?.id) { mutableStateOf(task?.startsOn ?: currentDate) }
@@ -385,7 +486,7 @@ private fun PlanEditor(
 
     Column(Modifier.fillMaxSize().imePadding().padding(horizontal = 20.dp, vertical = 16.dp)) {
         TextButton(onClick = onCancel, modifier = Modifier.testTag("cancel-edit")) { Text("Cancel") }
-        PageHeader("PLAN", if (task == null) "New entry" else "Edit entry", "Set when this entry appears.")
+        PageHeader("PLAN", if (task == null) "New routine" else "Edit routine", "Set when this routine appears.")
         Spacer(Modifier.height(16.dp))
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             OutlinedTextField(
@@ -395,70 +496,52 @@ private fun PlanEditor(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("task-title"),
             )
-            Text("Type", modifier = Modifier.padding(top = 14.dp), fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TaskType.entries.forEach { candidate ->
+            Text("Repeat", modifier = Modifier.padding(top = 14.dp), fontWeight = FontWeight.Bold)
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Recurrence.entries.filter { it != Recurrence.ONCE }.forEach { candidate ->
                     FilterChip(
-                        selected = type == candidate,
+                        selected = recurrence == candidate,
                         onClick = {
-                            type = candidate
-                            recurrence = if (candidate == TaskType.ONE_TIME) Recurrence.ONCE else Recurrence.DAILY
+                            recurrence = candidate
                             availableDays = AvailableDays.ANY_DAY
                             startsOn = currentDate
                         },
                         label = { Text(candidate.label) },
-                        modifier = Modifier.testTag("type-" + candidate.name.lowercase()),
+                        modifier = Modifier.testTag("repeat-" + candidate.name.lowercase()),
                     )
                 }
             }
-            if (type != TaskType.ONE_TIME) {
-                Text("Repeat", fontWeight = FontWeight.Bold)
+            if (recurrence == Recurrence.WEEKLY || recurrence == Recurrence.EVERY_TWO_WEEKS) {
+                Text("Available", fontWeight = FontWeight.Bold)
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Recurrence.entries.filter { it != Recurrence.ONCE }.forEach { candidate ->
+                    AvailableDays.entries.forEach { candidate ->
                         FilterChip(
-                            selected = recurrence == candidate,
-                            onClick = {
-                                recurrence = candidate
-                                availableDays = AvailableDays.ANY_DAY
-                                startsOn = currentDate
-                            },
+                            selected = availableDays == candidate,
+                            onClick = { availableDays = candidate },
                             label = { Text(candidate.label) },
-                            modifier = Modifier.testTag("repeat-" + candidate.name.lowercase()),
+                            modifier = Modifier.testTag("available-" + candidate.name.lowercase()),
                         )
                     }
                 }
-                if (recurrence == Recurrence.WEEKLY || recurrence == Recurrence.EVERY_TWO_WEEKS) {
-                    Text("Available", fontWeight = FontWeight.Bold)
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        AvailableDays.entries.forEach { candidate ->
-                            FilterChip(
-                                selected = availableDays == candidate,
-                                onClick = { availableDays = candidate },
-                                label = { Text(candidate.label) },
-                                modifier = Modifier.testTag("available-" + candidate.name.lowercase()),
-                            )
-                        }
-                    }
-                }
-                if (recurrence == Recurrence.EVERY_TWO_DAYS || recurrence == Recurrence.EVERY_TWO_WEEKS) {
-                    TextButton(onClick = {
-                        DatePickerDialog(context, { _, year, month, day ->
-                            startsOn = LocalDate.of(year, month + 1, day)
-                        }, startsOn.year, startsOn.monthValue - 1, startsOn.dayOfMonth).show()
-                    }, modifier = Modifier.testTag("repeat-start")) {
-                        Text((if (recurrence == Recurrence.EVERY_TWO_WEEKS) "First active week: " else "First day: ") + startsOn)
-                    }
+            }
+            if (recurrence == Recurrence.EVERY_TWO_DAYS || recurrence == Recurrence.EVERY_TWO_WEEKS) {
+                TextButton(onClick = {
+                    DatePickerDialog(context, { _, year, month, day ->
+                        startsOn = LocalDate.of(year, month + 1, day)
+                    }, startsOn.year, startsOn.monthValue - 1, startsOn.dayOfMonth).show()
+                }, modifier = Modifier.testTag("repeat-start")) {
+                    Text((if (recurrence == Recurrence.EVERY_TWO_WEEKS) "First active week: " else "First day: ") + startsOn)
                 }
             }
         }
         Spacer(Modifier.height(12.dp))
         Button(
-            onClick = { onSave(title, type, recurrence, availableDays, startsOn) },
+            onClick = { onSave(title, recurrence, availableDays, startsOn) },
             enabled = title.isNotBlank(),
             modifier = Modifier.fillMaxWidth().testTag(if (task == null) "add-task" else "save-task"),
-        ) { Text(if (task == null) "Add to plan" else "Save changes") }
+        ) { Text(if (task == null) "Add routine" else "Save changes") }
     }
 }
 

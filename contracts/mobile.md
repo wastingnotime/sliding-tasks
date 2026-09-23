@@ -55,6 +55,13 @@ contract gaps.
 
 ## Plan management
 
+- Today accepts an ad-hoc one-time title and immediately creates its pending
+  card on the open board. The local task record still supports carry-forward
+  after a missed day and preserves card history. One-time creation and management
+  do not require the Plan tab; older paused one-time entries can be resumed or
+  removed from Today.
+- Plan lists and creates recurring routines only. Its editor offers recurrence,
+  availability, and first active date; task type is fixed to Routine.
 - Mobile routines may repeat daily, on weekdays, on weekends, every two days,
   once per week, or once per two weeks. Two-day intervals use a chosen first
   day. Two-week intervals use the Monday–Sunday week containing the chosen
@@ -68,7 +75,7 @@ contract gaps.
 - Planned tasks can be reordered by dragging, with Move up and Move down
   accessibility actions. Plan order determines generation order for future
   boards and does not rewrite an already-generated board.
-- Planned entries can be edited in place. Title, type, recurrence, availability,
+- Planned routines can be edited in place. Title, recurrence, availability,
   and first active date changes apply to future cards. An eligible edit may add
   a card to the open day if that task has no card for the day. Existing card
   snapshots and immutable history are preserved; changes record `TaskUpdated`.

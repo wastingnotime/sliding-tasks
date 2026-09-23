@@ -23,9 +23,10 @@ Milestone 1 stores planned tasks, generated cards, decisions, and immutable
 event history on the device. Daily mobile operation does not wait for an API
 transport contract. Planning may gain optional synchronization later.
 
-Use the bottom navigation to open **Plan**, where entries are listed first. Tap
-**Add entry** or an entry's **Edit** action to open the planning form. Act
-on generated cards in **Today**, and use **Review** for this week's outcomes,
+Use the bottom navigation to open **Plan**, where recurring routines are listed
+first. Tap **Add routine** or a routine's **Edit** action to open its form. In
+**Today**, tap **Add one-time task** for an ad-hoc card, then act on today's
+cards. Use **Review** for this week's outcomes,
 recent task patterns, a seven-day comparison, and expandable recent days.
 Routines support daily, weekdays, weekends, every two days, once
 per week, and once per two weeks. Weekly routines can be available any day,
@@ -41,6 +42,8 @@ same two-week cycle; and trash once per week on any day. Morning and night can
 be included in the titles; the app does not schedule time-of-day reminders.
 Routine and one-time are the only task types in Milestone 1; the earlier Focus
 label had no distinct behavior and stored Focus tasks migrate to Routine.
+One-time tasks are created on Today. Older paused one-time entries can be
+resumed or removed there; resolved ones remain in local history.
 Planned tasks can be edited, reordered by touching and holding an entry while
 dragging it, or removed with confirmation. Move up and Move down remain available
 as accessibility actions.

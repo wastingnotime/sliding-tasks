@@ -30,6 +30,7 @@ class SlidingCardTest {
     @Test
     fun planning_then_sliding_a_card_right_completes_it() {
         composeRule.onNodeWithTag("nav-plan").performClick()
+        composeRule.onNodeWithTag("add-entry").performClick()
         composeRule.onNodeWithTag("task-title").performTextInput("Write the project brief")
         composeRule.onNodeWithTag("add-task").performClick()
         composeRule.onNodeWithTag("nav-today").performClick()
@@ -45,6 +46,7 @@ class SlidingCardTest {
     @Test
     fun planned_task_survives_activity_recreation() {
         composeRule.onNodeWithTag("nav-plan").performClick()
+        composeRule.onNodeWithTag("add-entry").performClick()
         composeRule.onNodeWithTag("task-title").performTextInput("Persist this plan")
         composeRule.onNodeWithTag("add-task").performClick()
 

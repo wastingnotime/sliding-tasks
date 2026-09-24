@@ -83,7 +83,7 @@ private val DarkColors = darkColorScheme(
     surfaceVariant = Color(0xFF243127),
     onSurfaceVariant = Color(0xFFD4E8D6),
 )
-private enum class AppSection(val label: String) { TODAY("Today"), PLAN("Plan"), REVIEW("Review"), ABOUT("About") }
+private enum class AppSection(val label: String) { TODAY("Today"), PLAN("Plan"), REVIEW("Review") }
 
 @Composable
 fun SlidingTasksApp() {
@@ -95,6 +95,8 @@ fun SlidingTasksApp() {
     var section by remember { mutableStateOf(AppSection.TODAY) }
     var planEditorOpen by remember { mutableStateOf(false) }
     var planEditorTask by remember { mutableStateOf<PlannedTask?>(null) }
+    var aboutOpen by remember { mutableStateOf(false) }
+    var moreMenuOpen by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
 
     fun commit(next: SlidingTasksState): Boolean {
@@ -104,13 +106,43 @@ fun SlidingTasksApp() {
             .isSuccess
     }
     LaunchedEffect(Unit) { commit(state) }
-    BackHandler(enabled = planEditorOpen) { planEditorOpen = false }
+    BackHandler(enabled = planEditorOpen || aboutOpen) {
+        if (aboutOpen) aboutOpen = false else planEditorOpen = false
+    }
 
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+                if (!planEditorOpen) Row(
+                    Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    if (aboutOpen) {
+                        TextButton(onClick = { aboutOpen = false }) { Text("Back") }
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                        Box {
+                            TextButton(
+                                onClick = { moreMenuOpen = true },
+                                modifier = Modifier.testTag("more-options"),
+                            ) { Text("More") }
+                            DropdownMenu(
+                                expanded = moreMenuOpen,
+                                onDismissRequest = { moreMenuOpen = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("About") },
+                                    onClick = { moreMenuOpen = false; aboutOpen = true },
+                                    modifier = Modifier.testTag("about-menu-item"),
+                                )
+                            }
+                        }
+                    }
+                }
+            },
             bottomBar = {
-                if (!planEditorOpen) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                if (!planEditorOpen && !aboutOpen) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     AppSection.entries.forEach { item ->
                         NavigationBarItem(
                             selected = section == item,
@@ -125,7 +157,7 @@ fun SlidingTasksApp() {
         ) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
                 saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
-                when (section) {
+                if (aboutOpen) AboutScreen() else when (section) {
                     AppSection.TODAY -> TodayScreen(
                         date = today,
                         cards = engine.pendingCards(state),
@@ -175,7 +207,6 @@ fun SlidingTasksApp() {
                         )
                     }
                     AppSection.REVIEW -> ReviewScreen(state, today)
-                    AppSection.ABOUT -> AboutScreen()
                 }
             }
         }

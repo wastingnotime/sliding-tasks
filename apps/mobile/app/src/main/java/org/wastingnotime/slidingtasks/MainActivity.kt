@@ -10,6 +10,7 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -35,6 +36,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -239,10 +241,14 @@ private fun PageHeader(
             TextButton(onClick = onBack, modifier = Modifier.align(Alignment.TopEnd)) { Text("Back") }
         }
         if (onAbout != null) Box(Modifier.align(Alignment.TopEnd)) {
-            TextButton(
-                onClick = { moreMenuOpen = true },
-                modifier = Modifier.testTag("more-options").semantics { contentDescription = "More options" },
-            ) { Text("⋮", fontSize = 22.sp) }
+            Box(
+                Modifier.size(48.dp)
+                    .testTag("more-options")
+                    .semantics { contentDescription = "More options" }
+                    .clickable(role = Role.Button) { moreMenuOpen = true },
+            ) {
+                Text("⋮", modifier = Modifier.align(Alignment.TopCenter), fontSize = 22.sp)
+            }
             DropdownMenu(expanded = moreMenuOpen, onDismissRequest = { moreMenuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text("About") },

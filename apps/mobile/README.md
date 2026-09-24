@@ -17,6 +17,55 @@ Native Android app for local-first Sliding Tasks planning and daily use.
 Open `apps/mobile` in Android Studio, or use the Gradle wrapper from that
 directory.
 
+## Alpha distribution with Firebase
+
+Use Firebase App Distribution for the first private alpha with a small group
+of trusted Android testers. This repository's Firebase project is
+`sliding-tasks`; its Android app is registered as
+`org.wastingnotime.slidingtasks` (nickname **Sliding Tasks Android**). Firebase
+is used only to distribute builds; the app does not include the Firebase SDK.
+
+Build and upload the debug APK:
+
+```bash
+cd apps/mobile
+./gradlew assembleDebug
+```
+
+In the Firebase console, open **App Distribution** for **Sliding Tasks
+Android**, upload `app/build/outputs/apk/debug/app-debug.apk`, select the
+intended testers, add short release notes, and distribute. Firebase sends
+testers an invitation email. Release notes should say what to try and how to
+send feedback. Increment `versionCode` in `app/build.gradle.kts` for each new
+build testers should install as an update. Firebase App Distribution keeps
+releases for 150 days, so retain any build that needs longer-term archiving
+separately.
+
+The debug APK is signed with Android's debug key. A later build signed with the
+release key, or an install from Google Play, cannot update that installation in
+place; the tester must uninstall and reinstall, which erases tasks stored on
+that device. Use a consistent release signing key for successive Firebase
+release APKs once testers need in-place updates. Do not distribute the debug
+APK as a public release.
+
+## Play testing and production
+
+Use Play Console tracks as the tester group and launch readiness grow:
+
+1. **Internal testing** for a small, Play-installed group and quick checks.
+2. **Closed testing** for a broader, controlled beta.
+3. **Open testing** when public sign-up is appropriate and Play makes it
+   available for the account.
+4. **Production** for the public release.
+
+The Play Console workflow in this repository produces a signed Android App
+Bundle (`.aab`) for Play testing and release. For personal developer accounts
+created after November 13, 2023, Google currently requires a closed test with
+at least 12 continuously opted-in testers for 14 days before production access
+can be requested. Firebase alpha testers do not count toward that Play closed
+test requirement. See [Google Play's testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465)
+for current account and track rules.
+
 ## Google Play upload bundle
 
 Run the **Build signed Sliding Tasks release bundle** workflow on `main` to

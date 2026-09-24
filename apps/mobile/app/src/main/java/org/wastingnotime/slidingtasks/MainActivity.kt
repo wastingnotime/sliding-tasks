@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -96,7 +97,6 @@ fun SlidingTasksApp() {
     var planEditorOpen by remember { mutableStateOf(false) }
     var planEditorTask by remember { mutableStateOf<PlannedTask?>(null) }
     var aboutOpen by remember { mutableStateOf(false) }
-    var moreMenuOpen by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
 
     fun commit(next: SlidingTasksState): Boolean {
@@ -113,34 +113,6 @@ fun SlidingTasksApp() {
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
-            topBar = {
-                if (!planEditorOpen) Row(
-                    Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    if (aboutOpen) {
-                        TextButton(onClick = { aboutOpen = false }) { Text("Back") }
-                    } else {
-                        Spacer(Modifier.weight(1f))
-                        Box {
-                            TextButton(
-                                onClick = { moreMenuOpen = true },
-                                modifier = Modifier.testTag("more-options"),
-                            ) { Text("More") }
-                            DropdownMenu(
-                                expanded = moreMenuOpen,
-                                onDismissRequest = { moreMenuOpen = false },
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("About") },
-                                    onClick = { moreMenuOpen = false; aboutOpen = true },
-                                    modifier = Modifier.testTag("about-menu-item"),
-                                )
-                            }
-                        }
-                    }
-                }
-            },
             bottomBar = {
                 if (!planEditorOpen && !aboutOpen) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     AppSection.entries.forEach { item ->
@@ -157,10 +129,11 @@ fun SlidingTasksApp() {
         ) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
                 saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
-                if (aboutOpen) AboutScreen() else when (section) {
+                if (aboutOpen) AboutScreen(onBack = { aboutOpen = false }) else when (section) {
                     AppSection.TODAY -> TodayScreen(
                         date = today,
                         cards = engine.pendingCards(state),
+                        onAbout = { aboutOpen = true },
                         pausedOneTimeTasks = state.tasks.filter { task ->
                             task.type == TaskType.ONE_TIME && !task.active && !task.resolved &&
                                 state.cards.none { it.taskId == task.id && it.boardDate == today && it.status == CardStatus.PENDING }
@@ -190,6 +163,7 @@ fun SlidingTasksApp() {
                     } else {
                         PlanScreen(
                             tasks = state.tasks.filter { it.type == TaskType.ROUTINE },
+                            onAbout = { aboutOpen = true },
                             onAdd = { planEditorTask = null; planEditorOpen = true },
                             onEdit = { planEditorTask = it; planEditorOpen = true },
                             onSetActive = { id, active -> commit(engine.setTaskActive(state, id, active)) },
@@ -206,7 +180,7 @@ fun SlidingTasksApp() {
                             onRemove = { id -> commit(engine.removeTask(state, id)) },
                         )
                     }
-                    AppSection.REVIEW -> ReviewScreen(state, today)
+                    AppSection.REVIEW -> ReviewScreen(state, today, onAbout = { aboutOpen = true })
                 }
             }
         }
@@ -214,12 +188,12 @@ fun SlidingTasksApp() {
 }
 
 @Composable
-private fun AboutScreen() {
+private fun AboutScreen(onBack: () -> Unit) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        PageHeader("SLIDING TASKS", "About", "The past is observed. The future is configured. The present is acted upon.")
+        PageHeader("SLIDING TASKS", "About", "The past is observed. The future is configured. The present is acted upon.", onBack = onBack)
         Text("Plan recurring routines, act on today's cards with a slide, and review what happened over time.")
         HorizontalDivider()
         Text("Privacy", fontSize = 22.sp, fontWeight = FontWeight.Bold)
@@ -234,21 +208,57 @@ private fun AboutScreen() {
 }
 
 @Composable
-private fun PageHeader(kicker: String, title: String, subtitle: String, subtitleTag: String? = null) {
-    Text(kicker, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-    Text(title, color = MaterialTheme.colorScheme.onBackground, fontSize = 30.sp, lineHeight = 34.sp, fontWeight = FontWeight.Black)
-    Text(
-        subtitle,
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f),
-        fontSize = 16.sp,
-        modifier = if (subtitleTag == null) Modifier else Modifier.testTag(subtitleTag),
-    )
+private fun PageHeader(
+    kicker: String,
+    title: String,
+    subtitle: String,
+    subtitleTag: String? = null,
+    onAbout: (() -> Unit)? = null,
+    onBack: (() -> Unit)? = null,
+) {
+    var moreMenuOpen by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxWidth()) {
+        Column {
+            Text(kicker, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+            Text(
+                title,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 30.sp,
+                lineHeight = 34.sp,
+                fontWeight = FontWeight.Black,
+                modifier = if (onAbout == null && onBack == null) Modifier else Modifier.padding(end = 48.dp),
+            )
+            Text(
+                subtitle,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f),
+                fontSize = 16.sp,
+                modifier = if (subtitleTag == null) Modifier else Modifier.testTag(subtitleTag),
+            )
+        }
+        if (onBack != null) {
+            TextButton(onClick = onBack, modifier = Modifier.align(Alignment.TopEnd)) { Text("Back") }
+        }
+        if (onAbout != null) Box(Modifier.align(Alignment.TopEnd)) {
+            TextButton(
+                onClick = { moreMenuOpen = true },
+                modifier = Modifier.testTag("more-options").semantics { contentDescription = "More options" },
+            ) { Text("⋮", fontSize = 22.sp) }
+            DropdownMenu(expanded = moreMenuOpen, onDismissRequest = { moreMenuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text("About") },
+                    onClick = { moreMenuOpen = false; onAbout() },
+                    modifier = Modifier.testTag("about-menu-item"),
+                )
+            }
+        }
+    }
 }
 
 @Composable
 private fun TodayScreen(
     date: LocalDate,
     cards: List<TaskCard>,
+    onAbout: () -> Unit,
     pausedOneTimeTasks: List<PlannedTask>,
     onCommand: (CardCommand) -> Unit,
     onCreateOneTime: (String) -> Boolean,
@@ -307,7 +317,7 @@ private fun TodayScreen(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item { PageHeader("TODAY", date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), count, "remaining-count") }
+        item { PageHeader("TODAY", date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), count, "remaining-count", onAbout) }
         item {
             OutlinedButton(
                 onClick = { oneTimeTitle = ""; addingOneTime = true },
@@ -346,6 +356,7 @@ private fun TodayScreen(
 @Composable
 private fun PlanScreen(
     tasks: List<PlannedTask>,
+    onAbout: () -> Unit,
     onAdd: () -> Unit,
     onEdit: (PlannedTask) -> Unit,
     onSetActive: (String, Boolean) -> Unit,
@@ -410,7 +421,7 @@ private fun PlanScreen(
     }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
-        PageHeader("PLAN", "Your routines", tasks.size.toString() + " recurring entries")
+        PageHeader("PLAN", "Your routines", tasks.size.toString() + " recurring entries", onAbout = onAbout)
         Spacer(Modifier.height(20.dp))
         Button(onClick = onAdd, modifier = Modifier.fillMaxWidth().testTag("add-entry")) {
             Text("Add routine")
@@ -598,7 +609,7 @@ private fun PlanEditor(
 }
 
 @Composable
-private fun ReviewScreen(state: SlidingTasksState, today: LocalDate) {
+private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: () -> Unit) {
     val review = remember(state.cards, state.tasks, today) { reviewInsights(state, today) }
     var expandedDay by remember { mutableStateOf<LocalDate?>(null) }
 
@@ -608,7 +619,7 @@ private fun ReviewScreen(state: SlidingTasksState, today: LocalDate) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            PageHeader("REVIEW", "Your recent patterns", "A quick look at today and the recent past.")
+            PageHeader("REVIEW", "Your recent patterns", "A quick look at today and the recent past.", onAbout = onAbout)
         }
         item {
             ReviewMetricCard(

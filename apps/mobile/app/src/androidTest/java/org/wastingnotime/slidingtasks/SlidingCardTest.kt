@@ -58,7 +58,7 @@ class SlidingCardTest {
 
     @Test
     fun privacy_policy_is_available_offline_in_the_app() {
-        composeRule.onNodeWithTag("nav-privacy").performClick()
+        composeRule.onNodeWithTag("nav-about").performClick()
         composeRule.onAllNodesWithText("Sliding Tasks is provided", substring = true)[0]
             .assertExists()
         composeRule.onAllNodesWithText("stored on this device", substring = true)[0]

@@ -83,7 +83,7 @@ private val DarkColors = darkColorScheme(
     surfaceVariant = Color(0xFF243127),
     onSurfaceVariant = Color(0xFFD4E8D6),
 )
-private enum class AppSection(val label: String) { TODAY("Today"), PLAN("Plan"), REVIEW("Review"), PRIVACY("Privacy") }
+private enum class AppSection(val label: String) { TODAY("Today"), PLAN("Plan"), REVIEW("Review"), ABOUT("About") }
 
 @Composable
 fun SlidingTasksApp() {
@@ -175,7 +175,7 @@ fun SlidingTasksApp() {
                         )
                     }
                     AppSection.REVIEW -> ReviewScreen(state, today)
-                    AppSection.PRIVACY -> PrivacyScreen()
+                    AppSection.ABOUT -> AboutScreen()
                 }
             }
         }
@@ -183,12 +183,16 @@ fun SlidingTasksApp() {
 }
 
 @Composable
-private fun PrivacyScreen() {
+private fun AboutScreen() {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        PageHeader("ABOUT", "Privacy", "Sliding Tasks · effective September 23, 2026")
+        PageHeader("SLIDING TASKS", "About", "The past is observed. The future is configured. The present is acted upon.")
+        Text("Plan recurring routines, act on today's cards with a slide, and review what happened over time.")
+        HorizontalDivider()
+        Text("Privacy", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text("Effective September 23, 2026")
         Text("Sliding Tasks is provided by Wasting No Time. It works offline and does not require an account.")
         Text("Your task titles, schedules, card decisions, and history are stored on this device. The current app does not send them to us or other companies. It has no ads, analytics, or sync service.")
         Text("You can remove individual planned tasks in the app. To erase all Sliding Tasks data, use Android Settings → Apps → Sliding Tasks → Storage → Clear storage, or uninstall the app. Device backup is disabled for this app.")

@@ -101,9 +101,11 @@ first. Tap **Add routine** or a routine's **Edit** action to open its form. In
 **Today**, tap **Add one-time task** for an ad-hoc card, then act on today's
 cards. Use **Review** for this week's outcomes,
 recent task patterns, a seven-day comparison, and expandable recent days.
-Plan offers daily routines every N days, weekly routines with a separate card
-on each selected day of every Nth week, and once-per-week routines with one
-occurrence across selected valid days of every Nth week. N defaults to 1.
+Plan offers daily routines every 1–7 days, weekly routines with a separate card
+on each selected day every 1–4 weeks, and once-per-week routines with one
+occurrence across selected valid days every 1–4 weeks. The default is 1.
+The Plan editor uses single-choice intervals; existing schedules with larger
+intervals remain intact until changed.
 Weekly selections default to weekdays; choose all days, weekends, or any
 combination such as Tuesday and Friday. When N is greater than 1, choose the
 first active day or week to align the cycle.

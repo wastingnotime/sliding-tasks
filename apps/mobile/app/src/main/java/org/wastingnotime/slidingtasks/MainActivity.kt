@@ -46,7 +46,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
@@ -577,10 +576,10 @@ private fun PlanEditor(
 ) {
     var title by remember(task?.id) { mutableStateOf(task?.title ?: "") }
     var kind by remember(task?.id) { mutableStateOf(task?.schedule?.kind ?: ScheduleKind.DAILY) }
-    var intervalText by remember(task?.id) { mutableStateOf((task?.schedule?.interval ?: 1).toString()) }
+    var interval by remember(task?.id) { mutableIntStateOf(task?.schedule?.interval ?: 1) }
     var days by remember(task?.id) { mutableStateOf(task?.schedule?.days ?: weekdays) }
     var startsOn by remember(task?.id) { mutableStateOf(task?.schedule?.startsOn ?: currentDate) }
-    val interval = intervalText.toIntOrNull()?.takeIf { it > 0 }
+    val intervalOptions = if (kind == ScheduleKind.DAILY) 1..7 else 1..4
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -594,6 +593,11 @@ private fun PlanEditor(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("What do you want to do?") },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                }),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("task-title"),
             )
@@ -604,10 +608,14 @@ private fun PlanEditor(
                     FilterChip(
                         selected = kind == candidate,
                         onClick = {
-                            kind = candidate
-                            intervalText = "1"
-                            days = weekdays
-                            startsOn = currentDate
+                            if (kind != candidate) {
+                                kind = candidate
+                                interval = 1
+                                days = weekdays
+                                startsOn = currentDate
+                            }
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
                         },
                         label = { Text(candidate.label) },
                         modifier = Modifier.testTag("repeat-" + candidate.name.lowercase()),
@@ -622,25 +630,35 @@ private fun PlanEditor(
                 },
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f),
             )
-            OutlinedTextField(
-                value = intervalText,
-                onValueChange = {
-                    if (it.isEmpty() || it.all(Char::isDigit)) {
-                        if (it.toIntOrNull() == 1) startsOn = currentDate
-                        intervalText = it
-                    }
-                },
-                label = { Text(if (kind == ScheduleKind.DAILY) "Every N days" else "Every N weeks") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = {
-                    focusManager.clearFocus()
-                    keyboardController?.hide()
-                }),
-                singleLine = true,
-                isError = interval == null,
-                supportingText = if (interval == null) ({ Text("Enter a number greater than zero") }) else null,
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp).testTag("repeat-interval"),
-            )
+            Text(if (kind == ScheduleKind.DAILY) "Every how many days?" else "Every how many weeks?",
+                modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                intervalOptions.forEach { candidate ->
+                    FilterChip(
+                        selected = interval == candidate,
+                        onClick = {
+                            if (interval != candidate && candidate == 1) startsOn = currentDate
+                            interval = candidate
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        },
+                        label = { Text(candidate.toString()) },
+                        modifier = Modifier
+                            .testTag("repeat-interval-$candidate")
+                            .semantics {
+                                contentDescription = "Every $candidate " +
+                                    if (kind == ScheduleKind.DAILY) "days" else "weeks"
+                            },
+                    )
+                }
+            }
+            if (interval !in intervalOptions) {
+                Text("This routine is currently set to every $interval " +
+                    if (kind == ScheduleKind.DAILY) "days. Choose 1–7 to change it."
+                    else "weeks. Choose 1–4 to change it.",
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
+            }
             if (kind != ScheduleKind.DAILY) {
                 Text("Days", modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -667,7 +685,7 @@ private fun PlanEditor(
                 }
                 if (days.isEmpty()) Text("Select at least one day", color = MaterialTheme.colorScheme.error)
             }
-            if (interval != null && interval > 1) {
+            if (interval > 1) {
                 TextButton(onClick = {
                     DatePickerDialog(context, { _, year, month, day ->
                         startsOn = LocalDate.of(year, month + 1, day)
@@ -679,8 +697,8 @@ private fun PlanEditor(
         }
         Spacer(Modifier.height(12.dp))
         Button(
-            onClick = { onSave(title, TaskSchedule(kind, requireNotNull(interval), days, startsOn)) },
-            enabled = title.isNotBlank() && interval != null && (kind == ScheduleKind.DAILY || days.isNotEmpty()),
+            onClick = { onSave(title, TaskSchedule(kind, interval, days, startsOn)) },
+            enabled = title.isNotBlank() && (kind == ScheduleKind.DAILY || days.isNotEmpty()),
             modifier = Modifier.fillMaxWidth().testTag(if (task == null) "add-task" else "save-task"),
         ) { Text(if (task == null) "Add routine" else "Save changes") }
     }

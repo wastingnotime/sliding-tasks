@@ -6,7 +6,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeRight
@@ -18,8 +17,13 @@ import org.junit.Test
 import org.wastingnotime.slidingtasks.data.LocalTaskStore
 import org.wastingnotime.slidingtasks.model.ScheduleKind
 import org.wastingnotime.slidingtasks.model.SkipScope
+import org.wastingnotime.slidingtasks.model.PlannedTask
+import org.wastingnotime.slidingtasks.model.SlidingTasksState
+import org.wastingnotime.slidingtasks.model.TaskSchedule
+import org.wastingnotime.slidingtasks.model.TaskType
 import org.wastingnotime.slidingtasks.model.weekdays
 import java.time.DayOfWeek
+import java.time.LocalDate
 
 class SlidingCardTest {
     @get:Rule
@@ -122,16 +126,42 @@ class SlidingCardTest {
     fun plan_editor_saves_a_custom_weekly_day_schedule() {
         composeRule.onNodeWithTag("nav-plan").performClick()
         composeRule.onNodeWithTag("add-entry").performClick()
+        composeRule.onNodeWithTag("repeat-interval-7").assertExists()
+        composeRule.onNodeWithTag("repeat-interval-8").assertDoesNotExist()
         composeRule.onNodeWithTag("task-title").performTextInput("Exercise")
+        composeRule.onNodeWithTag("task-title").performImeAction()
         composeRule.onNodeWithTag("repeat-weekly_days").performClick()
-        composeRule.onNodeWithTag("repeat-interval").performTextClearance()
-        composeRule.onNodeWithTag("repeat-interval").performTextInput("2")
-        composeRule.onNodeWithTag("repeat-interval").performImeAction()
+        composeRule.onNodeWithTag("repeat-interval-4").assertExists()
+        composeRule.onNodeWithTag("repeat-interval-5").assertDoesNotExist()
+        composeRule.onNodeWithTag("repeat-interval-2").performClick()
         composeRule.onNodeWithTag("day-monday").performClick()
         composeRule.onNodeWithTag("day-wednesday").performClick()
         composeRule.onNodeWithTag("day-thursday").performClick()
         composeRule.onNodeWithTag("add-task").performClick()
 
         composeRule.onAllNodesWithText("Every 2 weeks · Tue, Fri")[0].assertExists()
+    }
+
+    @Test
+    fun editing_an_existing_long_interval_preserves_it_until_changed() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val today = LocalDate.now()
+        val store = LocalTaskStore(context)
+        store.save(SlidingTasksState(tasks = listOf(PlannedTask(
+            id = "long-interval",
+            title = "Long cycle",
+            type = TaskType.ROUTINE,
+            schedule = TaskSchedule(ScheduleKind.DAILY, interval = 10, startsOn = today),
+            active = true,
+            createdOn = today,
+        ))))
+        composeRule.activityRule.scenario.recreate()
+        composeRule.onNodeWithTag("nav-plan").performClick()
+        composeRule.onNodeWithTag("edit-long-interval").performClick()
+        composeRule.onNodeWithTag("repeat-daily").performClick()
+        composeRule.onAllNodesWithText("currently set to every 10 days", substring = true)[0]
+            .assertExists()
+        composeRule.onNodeWithTag("save-task").performClick()
+        assertEquals(10, store.load().tasks.single().schedule.interval)
     }
 }

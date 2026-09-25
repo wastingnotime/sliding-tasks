@@ -218,11 +218,19 @@ private fun AboutScreen(onBack: () -> Unit) {
         Text("Wasting No Time (WNT) makes Sliding Tasks. The app helps you plan ahead, make a simple choice today, and learn from what you did over time.")
         HorizontalDivider()
         Text("Privacy", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text("Effective September 23, 2026")
+        Text("Effective September 25, 2026")
         Text("Sliding Tasks is provided by Wasting No Time. It works offline and does not require an account.")
-        Text("Your task titles, schedules, card decisions, and history are stored on this device. The current app does not send them to us or other companies. It has no ads, analytics, or sync service.")
+        Text("Your task titles, schedules, card decisions, and history are stored on this device and are not sent to us or other companies. The app has no ads, product analytics, or sync service.")
+        if (BuildConfig.DEBUG) {
+            Text("This private alpha APK uses Firebase Crashlytics to send crash and app-not-responding reports to Google so we can fix errors. Reports may include stack traces, app version, device and Android details, timestamps, and installation identifiers. We do not add task content to these reports. The app remains usable offline.")
+        } else {
+            Text("This Play build does not include Firebase Crashlytics. Android vitals may provide us with diagnostic reports from users who share usage and diagnostics with Google.")
+        }
         Text("You can remove individual planned tasks in the app. To erase all Sliding Tasks data, use Android Settings → Apps → Sliding Tasks → Storage → Clear storage, or uninstall the app. Device backup is disabled for this app.")
-        Text("If the app later adds sync, analytics, or other data processing, this policy will be updated before those features are released.")
+        if (BuildConfig.DEBUG) {
+            Text("Clearing app storage does not erase reports already sent to Firebase. Contact us if you have questions about those reports.")
+        }
+        Text("If the app later adds sync, product analytics, or other data processing, this policy will be updated before those features are released.")
         Text("Questions? Contact sliding-tasks@wastingnotime.org.")
         Text("Public policy: https://wastingnotime.org/sliding-tasks/privacy/", color = MaterialTheme.colorScheme.primary)
     }

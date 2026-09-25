@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "169896277196",
+    "project_id": "sliding-tasks",
+    "storage_bucket": "sliding-tasks.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:169896277196:android:bfc52e49c209e3f709be69",
+        "android_client_info": {
+          "package_name": "org.wastingnotime.slidingtasks"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDr3zVLqaB3cMWlW4zFCIUTzzCLq8wva2o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

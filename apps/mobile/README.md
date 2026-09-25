@@ -23,7 +23,12 @@ Use Firebase App Distribution for the first private alpha with a small group
 of trusted Android testers. This repository's Firebase project is
 `sliding-tasks`; its Android app is registered as
 `org.wastingnotime.slidingtasks` (nickname **Sliding Tasks Android**). Firebase
-is used only to distribute builds; the app does not include the Firebase SDK.
+distributes the alpha builds and receives their crash reports.
+The debug APK now includes Firebase Crashlytics for automatic crash and ANR
+reports from alpha testers. Google Analytics is not included. Debug builds run
+locally also send reports when online. The Firebase Android configuration in
+`app/google-services.json` contains project identifiers, not credentials.
+The release bundle excludes the Crashlytics SDK.
 
 Build and upload the debug APK:
 

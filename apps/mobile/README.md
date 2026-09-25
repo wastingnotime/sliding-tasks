@@ -100,7 +100,8 @@ Use the bottom navigation to open **Plan**, where routines and unresolved
 one-time tasks are listed. Tap **Add task** or a task's **Edit** action to open its form.
 Choose **Routine** for a new card on every scheduled day, **Until decided** for
 one occurrence across selected days of an active week, or **One-time** for a
-single task that carries forward until acted on. In **Today**, **Add one-time
+single task that carries forward until acted on. Today's cards use the same
+type labels, including **Until decided**. In **Today**, **Add one-time
 task** remains a shortcut for an ad-hoc card. Act on today's cards there. Use
 **Review** for this week's outcomes,
 recent task patterns, a seven-day comparison, and expandable recent days.

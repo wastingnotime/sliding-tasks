@@ -194,11 +194,15 @@ class SlidingCardTest {
         composeRule.onNodeWithTag("mode-until_decided").performClick()
         composeRule.onNodeWithTag("repeat-weekly_days").assertDoesNotExist()
         composeRule.onNodeWithTag("repeat-interval-2").performClick()
+        composeRule.onAllNodesWithText("Any day")[0].performClick()
         composeRule.onNodeWithTag("task-title").performTextInput("Check mail")
         composeRule.onNodeWithTag("task-title").performImeAction()
         composeRule.onNodeWithTag("add-task").performClick()
 
-        composeRule.onAllNodesWithText("Until decided · Every 2 weeks · Weekdays")[0]
+        composeRule.onAllNodesWithText("Until decided · Every 2 weeks · Any day")[0]
             .assertExists()
+        composeRule.onNodeWithTag("nav-today").performClick()
+        composeRule.onAllNodesWithText("UNTIL DECIDED")[0].assertExists()
+        composeRule.onAllNodesWithText("left to skip this week", substring = true)[0].assertExists()
     }
 }

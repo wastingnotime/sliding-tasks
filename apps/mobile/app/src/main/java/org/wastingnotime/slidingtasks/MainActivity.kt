@@ -942,13 +942,19 @@ private fun TaskCardView(card: TaskCard, modifier: Modifier = Modifier) {
         Column(Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(9.dp).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50)))
-                Text(card.type.label.uppercase(), Modifier.padding(start = 8.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
+                Text(card.planLabel().uppercase(), Modifier.padding(start = 8.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
             }
             Text(card.title, Modifier.padding(vertical = 18.dp), color = MaterialTheme.colorScheme.onSurface, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
             Text("Slide right for Done · left to ${card.skipScope.label.lowercase()}",
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontSize = 14.sp)
         }
     }
+}
+
+private fun TaskCard.planLabel(): String = when {
+    type == TaskType.ONE_TIME -> "One-time"
+    skipScope == SkipScope.WEEK -> "Until decided"
+    else -> "Routine"
 }
 
 @Composable

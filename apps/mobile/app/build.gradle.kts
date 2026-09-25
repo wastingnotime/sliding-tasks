@@ -79,3 +79,19 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
+
+tasks.register("verifyReleaseWithoutCrashlytics") {
+    group = "verification"
+    description = "Reject Crashlytics dependencies in the Play release bundle."
+
+    doLast {
+        val crashlyticsModules = configurations.getByName("releaseRuntimeClasspath")
+            .incoming.resolutionResult.allComponents
+            .mapNotNull { it.id as? org.gradle.api.artifacts.component.ModuleComponentIdentifier }
+            .filter { it.group == "com.google.firebase" && it.module.startsWith("firebase-crashlytics") }
+
+        check(crashlyticsModules.isEmpty()) {
+            "Play release must not include Crashlytics: ${crashlyticsModules.joinToString()}"
+        }
+    }
+}

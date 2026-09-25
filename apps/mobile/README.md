@@ -66,6 +66,10 @@ can be requested. Firebase alpha testers do not count toward that Play closed
 test requirement. See [Google Play's testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465)
 for current account and track rules.
 
+The Play bundle must remain free of Firebase Crashlytics. The release workflow
+checks the resolved release dependencies and fails before upload if Crashlytics
+is present, including as a transitive dependency.
+
 ## Google Play upload bundle
 
 Run the **Build signed Sliding Tasks release bundle** workflow on `main` to
@@ -87,7 +91,8 @@ For a local signed build, set `SLIDING_TASKS_UPLOAD_KEYSTORE` to the absolute
 keystore path, `SLIDING_TASKS_UPLOAD_STORE_PASSWORD`,
 `SLIDING_TASKS_UPLOAD_KEY_PASSWORD`, and
 `SLIDING_TASKS_UPLOAD_KEY_ALIAS=sliding-tasks-upload`, then run
-`./gradlew testDebugUnitTest bundleRelease` from `apps/mobile`. The output is
+`./gradlew testDebugUnitTest verifyReleaseWithoutCrashlytics bundleRelease` from
+`apps/mobile`. The output is
 `app/build/outputs/bundle/release/app-release.aab`.
 
 The first vertical slice renders today's ordered pending cards and translates

@@ -35,7 +35,7 @@ jobs:
           umask 077
           printf '%s' "$UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$SLIDING_TASKS_UPLOAD_KEYSTORE"
           trap 'rm -f "$SLIDING_TASKS_UPLOAD_KEYSTORE"' EXIT
-          ./gradlew --no-daemon testDebugUnitTest bundleRelease
+          ./gradlew --no-daemon testDebugUnitTest verifyReleaseWithoutCrashlytics bundleRelease
           bundle=app/build/outputs/bundle/release/app-release.aab
           test -s "$bundle"
           jarsigner -verify "$bundle"

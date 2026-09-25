@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate
+import java.time.DayOfWeek
 
 class SlidingTasksEngineTest {
     private var id = 0
@@ -14,11 +15,20 @@ class SlidingTasksEngineTest {
         now = { Instant.parse("2026-09-18T12:00:00Z") },
     )
     private val friday = LocalDate.parse("2026-09-18")
+    private fun daily(interval: Int = 1, startsOn: LocalDate = friday) =
+        TaskSchedule(ScheduleKind.DAILY, interval, startsOn = startsOn)
+    private fun weeklyDays(days: Set<DayOfWeek> = weekdays, interval: Int = 1,
+        startsOn: LocalDate = friday) =
+        TaskSchedule(ScheduleKind.WEEKLY_DAYS, interval, days, startsOn)
+    private fun oncePerWeek(interval: Int = 1, days: Set<DayOfWeek> = allWeekDays,
+        startsOn: LocalDate = friday) =
+        TaskSchedule(ScheduleKind.ONCE_PER_WEEK, interval, days, startsOn)
+    private fun once() = TaskSchedule(ScheduleKind.ONCE, startsOn = friday)
 
     @Test
     fun task_created_during_open_day_generates_a_persistable_card_and_events() {
         val opened = engine.openDay(SlidingTasksState(), friday)
-        val state = engine.createTask(opened, "Write brief", TaskType.ROUTINE, Recurrence.DAILY, friday)
+        val state = engine.createTask(opened, "Write brief", TaskType.ROUTINE, daily(), friday)
 
         assertEquals(listOf("Write brief"), engine.pendingCards(state).map { it.title })
         assertEquals(listOf("TaskCreated", "CardGenerated"), state.events.map { it.type })
@@ -27,8 +37,9 @@ class SlidingTasksEngineTest {
     @Test
     fun recurrence_filters_weekdays_and_weekends() {
         var state = SlidingTasksState()
-        state = engine.createTask(state, "Work", TaskType.ROUTINE, Recurrence.WEEKDAYS, friday)
-        state = engine.createTask(state, "Rest", TaskType.ROUTINE, Recurrence.WEEKENDS, friday)
+        state = engine.createTask(state, "Work", TaskType.ROUTINE, weeklyDays(weekdays), friday)
+        state = engine.createTask(state, "Rest", TaskType.ROUTINE,
+            weeklyDays(setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)), friday)
 
         val weekday = engine.openDay(state, friday)
         assertEquals(listOf("Work"), engine.pendingCards(weekday).map { it.title })
@@ -42,7 +53,7 @@ class SlidingTasksEngineTest {
     fun every_two_days_uses_the_chosen_first_day() {
         val firstDay = friday.plusDays(1)
         var state = engine.createTask(SlidingTasksState(), "Vitamin", TaskType.ROUTINE,
-            Recurrence.EVERY_TWO_DAYS, friday, startsOn = firstDay)
+            daily(2, firstDay), friday)
 
         assertTrue(engine.pendingCards(engine.openDay(state, friday)).isEmpty())
         state = engine.openDay(state, firstDay)
@@ -54,7 +65,7 @@ class SlidingTasksEngineTest {
     @Test
     fun fortnightly_weekday_occurrence_waits_until_done_then_returns_next_fortnight() {
         var state = engine.createTask(SlidingTasksState(), "Cut hair", TaskType.ROUTINE,
-            Recurrence.EVERY_TWO_WEEKS, friday, AvailableDays.WEEKDAYS)
+            oncePerWeek(2, weekdays), friday)
         state = engine.openDay(state, friday)
         state = engine.openDay(state, friday.plusDays(3))
         assertTrue(engine.pendingCards(state).isEmpty())
@@ -69,9 +80,9 @@ class SlidingTasksEngineTest {
     @Test
     fun pickup_and_dropoff_can_share_one_alternating_weekend() {
         var state = engine.createTask(SlidingTasksState(), "Pick up Saturday morning", TaskType.ROUTINE,
-            Recurrence.EVERY_TWO_WEEKS, friday, AvailableDays.SATURDAY)
+            oncePerWeek(2, setOf(DayOfWeek.SATURDAY)), friday)
         state = engine.createTask(state, "Drop off Sunday night", TaskType.ROUTINE,
-            Recurrence.EVERY_TWO_WEEKS, friday, AvailableDays.SUNDAY)
+            oncePerWeek(2, setOf(DayOfWeek.SUNDAY)), friday)
 
         state = engine.openDay(state, friday.plusDays(1))
         assertEquals(listOf("Pick up Saturday morning"), engine.pendingCards(state).map { it.title })
@@ -84,7 +95,7 @@ class SlidingTasksEngineTest {
     @Test
     fun weekly_dismissal_skips_the_rest_of_the_week() {
         var state = engine.createTask(SlidingTasksState(), "Put trash out", TaskType.ROUTINE,
-            Recurrence.WEEKLY, friday)
+            oncePerWeek(), friday)
         state = engine.openDay(state, friday)
         state = engine.apply(state, CardCommand.Dismiss(engine.pendingCards(state).single().id))
         state = engine.openDay(state, friday.plusDays(1))
@@ -99,7 +110,7 @@ class SlidingTasksEngineTest {
     @Test
     fun fortnightly_dismissal_waits_for_the_next_active_week() {
         var state = engine.createTask(SlidingTasksState(), "Cut hair", TaskType.ROUTINE,
-            Recurrence.EVERY_TWO_WEEKS, friday, AvailableDays.WEEKDAYS)
+            oncePerWeek(2, weekdays), friday)
         state = engine.openDay(state, friday)
         state = engine.apply(state, CardCommand.Dismiss(engine.pendingCards(state).single().id))
         assertTrue(engine.pendingCards(engine.openDay(state, friday.plusDays(3))).isEmpty())
@@ -109,7 +120,7 @@ class SlidingTasksEngineTest {
     @Test
     fun missed_weekly_card_remains_available_in_its_week() {
         var state = engine.createTask(SlidingTasksState(), "Put trash out", TaskType.ROUTINE,
-            Recurrence.WEEKLY, friday)
+            oncePerWeek(), friday)
         state = engine.openDay(state, friday)
         state = engine.openDay(state, friday.plusDays(1))
         assertEquals(CardStatus.MISSED, state.cards.first().status)
@@ -117,9 +128,53 @@ class SlidingTasksEngineTest {
     }
 
     @Test
+    fun selected_weekdays_repeat_independently_but_once_per_week_skip_closes_the_week() {
+        val monday = LocalDate.parse("2026-09-14")
+        val tuesday = monday.plusDays(1)
+        val friday = monday.plusDays(4)
+        val selected = setOf(DayOfWeek.TUESDAY, DayOfWeek.FRIDAY)
+        var state = SlidingTasksState()
+        state = engine.createTask(state, "Exercise", TaskType.ROUTINE,
+            weeklyDays(selected, startsOn = monday), monday)
+        state = engine.createTask(state, "Pay bill", TaskType.ROUTINE,
+            oncePerWeek(days = selected, startsOn = monday), monday)
+
+        state = engine.openDay(state, tuesday)
+        assertEquals(2, engine.pendingCards(state).size)
+        assertEquals(setOf(SkipScope.TODAY, SkipScope.WEEK),
+            engine.pendingCards(state).map { it.skipScope }.toSet())
+        engine.pendingCards(state).forEach { state = engine.apply(state, CardCommand.Dismiss(it.id)) }
+        state = engine.openDay(state, friday)
+        assertEquals(listOf("Exercise"), engine.pendingCards(state).map { it.title })
+    }
+
+    @Test
+    fun missed_once_per_week_card_returns_on_next_selected_day() {
+        val monday = LocalDate.parse("2026-09-14")
+        val selected = setOf(DayOfWeek.TUESDAY, DayOfWeek.FRIDAY)
+        var state = engine.createTask(SlidingTasksState(), "Pay bill", TaskType.ROUTINE,
+            oncePerWeek(days = selected, startsOn = monday), monday)
+        state = engine.openDay(state, monday.plusDays(1))
+        state = engine.openDay(state, monday.plusDays(4))
+        assertEquals(CardStatus.MISSED, state.cards.first().status)
+        assertEquals(listOf("Pay bill"), engine.pendingCards(state).map { it.title })
+    }
+
+    @Test
+    fun every_three_weeks_uses_the_first_active_week() {
+        val monday = LocalDate.parse("2026-09-14")
+        val selected = setOf(DayOfWeek.TUESDAY)
+        val task = engine.createTask(SlidingTasksState(), "Check meter", TaskType.ROUTINE,
+            weeklyDays(selected, interval = 3, startsOn = monday), monday)
+        assertEquals(1, engine.pendingCards(engine.openDay(task, monday.plusDays(1))).size)
+        assertTrue(engine.pendingCards(engine.openDay(task, monday.plusWeeks(1).plusDays(1))).isEmpty())
+        assertEquals(1, engine.pendingCards(engine.openDay(task, monday.plusWeeks(3).plusDays(1))).size)
+    }
+
+    @Test
     fun completing_card_records_history_and_resolves_one_time_task() {
         var state = engine.openDay(SlidingTasksState(), friday)
-        state = engine.createTask(state, "Call dentist", TaskType.ONE_TIME, Recurrence.ONCE, friday)
+        state = engine.createTask(state, "Call dentist", TaskType.ONE_TIME, once(), friday)
         val card = engine.pendingCards(state).single()
         state = engine.apply(state, CardCommand.Touch(card.id))
         state = engine.apply(state, CardCommand.Complete(card.id))
@@ -135,7 +190,7 @@ class SlidingTasksEngineTest {
     @Test
     fun deactivation_changes_future_generation_but_not_today_card() {
         var state = engine.openDay(SlidingTasksState(), friday)
-        state = engine.createTask(state, "Read", TaskType.ROUTINE, Recurrence.DAILY, friday)
+        state = engine.createTask(state, "Read", TaskType.ROUTINE, daily(), friday)
         state = engine.setTaskActive(state, state.tasks.single().id, false)
 
         assertEquals(1, engine.pendingCards(state).size)
@@ -146,7 +201,7 @@ class SlidingTasksEngineTest {
     @Test
     fun removing_a_task_preserves_existing_card_and_history_but_stops_future_generation() {
         var state = engine.openDay(SlidingTasksState(), friday)
-        state = engine.createTask(state, "Read", TaskType.ROUTINE, Recurrence.DAILY, friday)
+        state = engine.createTask(state, "Read", TaskType.ROUTINE, daily(), friday)
         val taskId = state.tasks.single().id
 
         state = engine.removeTask(state, taskId)
@@ -161,8 +216,8 @@ class SlidingTasksEngineTest {
     @Test
     fun reordered_plan_controls_future_card_order() {
         var state = SlidingTasksState()
-        state = engine.createTask(state, "First", TaskType.ROUTINE, Recurrence.DAILY, friday)
-        state = engine.createTask(state, "Second", TaskType.ROUTINE, Recurrence.DAILY, friday)
+        state = engine.createTask(state, "First", TaskType.ROUTINE, daily(), friday)
+        state = engine.createTask(state, "Second", TaskType.ROUTINE, daily(), friday)
         state = engine.moveTask(state, state.tasks[1].id, -1)
 
         assertEquals(listOf("Second", "First"), state.tasks.map { it.title })

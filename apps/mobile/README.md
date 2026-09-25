@@ -73,7 +73,7 @@ produce a signed `.aab` artifact for Play Console internal testing. The workflow
 uses a dedicated upload key from GitHub Actions secrets, runs release unit
 tests, verifies the bundle signature, and records its SHA-256 digest. Download
 the artifact from the workflow run within seven days. The bundle uses package
-`org.wastingnotime.slidingtasks`, version code `1`, and version name `0.1.0`.
+`org.wastingnotime.slidingtasks`, version code `2`, and version name `0.2.0`.
 
 The repository secrets are `SLIDING_TASKS_UPLOAD_KEYSTORE_BASE64`,
 `SLIDING_TASKS_UPLOAD_STORE_PASSWORD`, and
@@ -91,7 +91,7 @@ keystore path, `SLIDING_TASKS_UPLOAD_STORE_PASSWORD`,
 `app/build/outputs/bundle/release/app-release.aab`.
 
 The first vertical slice renders today's ordered pending cards and translates
-Done and Not today interactions into `Complete` and `Dismiss` command intents.
+Done and Skip interactions into `Complete` and `Dismiss` command intents.
 Milestone 1 stores planned tasks, generated cards, decisions, and immutable
 event history on the device. Daily mobile operation does not wait for an API
 transport contract. Planning may gain optional synchronization later.
@@ -101,13 +101,17 @@ first. Tap **Add routine** or a routine's **Edit** action to open its form. In
 **Today**, tap **Add one-time task** for an ad-hoc card, then act on today's
 cards. Use **Review** for this week's outcomes,
 recent task patterns, a seven-day comparison, and expandable recent days.
-Routines support daily, weekdays, weekends, every two days, once
-per week, and once per two weeks. Weekly routines can be available any day,
-on weekdays, on Saturday, or on Sunday. **Done** and **Not today** close that
-week's occurrence; a missed card appears again on the next available day.
-The next matching week starts a new occurrence. For two-week
-routines, choose a date in the first active week to align the alternating weeks.
-For every-two-days routines, choose the first active day.
+Plan offers daily routines every N days, weekly routines with a separate card
+on each selected day of every Nth week, and once-per-week routines with one
+occurrence across selected valid days of every Nth week. N defaults to 1.
+Weekly selections default to weekdays; choose all days, weekends, or any
+combination such as Tuesday and Friday. When N is greater than 1, choose the
+first active day or week to align the cycle.
+
+For once-per-week routines, **Done** and **Skip this week** close the week's
+occurrence. A card left open becomes missed at day end and can appear again on
+the next selected day that week. For a weekly routine with separate selected
+days, **Skip today** closes only that day's card.
 
 For example, plan a vitamin every two days; a haircut every two weeks on
 weekdays; separate Saturday pickup and Sunday drop-off routines anchored in the
@@ -131,16 +135,16 @@ repository copy of the privacy policy is
 with a public copy at `https://wastingnotime.org/sliding-tasks/privacy/`.
 
 Review uses only cards stored on the device. Missed means a card was still open
-when its day ended; Not today is an explicit choice. Pattern rankings use the
+when its day ended; Skipped is an explicit choice. Pattern rankings use the
 last 14 full days, while the completion comparison uses the last seven full
 days and the seven before them. Recent days can be opened to see the cards
 behind the counts. Broader analytics remain planned for the web surface.
 
 Cards remain visible in a vertical list. Slide any card right to mark it done,
-slide it left for not today, or release before the threshold to return it to its
+slide it left to skip the current occurrence, or release before the threshold to return it to its
 list position. Cards translate horizontally without rotation. Persistent action
 buttons are intentionally omitted; assistive technologies receive equivalent
-Mark done and Not today actions from each card.
+Mark done and context-specific Skip actions from each card.
 
 ## Run on an emulator
 

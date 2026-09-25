@@ -18,6 +18,8 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,6 +36,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -42,6 +46,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
@@ -50,6 +56,7 @@ import org.wastingnotime.slidingtasks.model.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import java.time.LocalDate
+import java.time.DayOfWeek
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.roundToInt
@@ -142,7 +149,8 @@ fun SlidingTasksApp() {
                         },
                         onCommand = { commit(engine.apply(state, it)) },
                         onCreateOneTime = { title ->
-                            commit(engine.createTask(state, title, TaskType.ONE_TIME, Recurrence.ONCE, today))
+                            commit(engine.createTask(state, title, TaskType.ONE_TIME,
+                                TaskSchedule(ScheduleKind.ONCE, startsOn = today), today))
                         },
                         onResumeOneTime = { id -> commit(engine.openDay(engine.setTaskActive(state, id, true), today)) },
                         onRemoveOneTime = { id -> commit(engine.removeTask(state, id)) },
@@ -152,12 +160,12 @@ fun SlidingTasksApp() {
                             task = planEditorTask,
                             currentDate = today,
                             onCancel = { planEditorOpen = false },
-                            onSave = { title, recurrence, availableDays, startsOn ->
+                            onSave = { title, schedule ->
                                 val task = planEditorTask
                                 val saved = if (task == null) {
-                                    commit(engine.createTask(state, title, TaskType.ROUTINE, recurrence, today, availableDays, startsOn))
+                                    commit(engine.createTask(state, title, TaskType.ROUTINE, schedule, today))
                                 } else {
-                                    commit(engine.updateTask(state, task.id, title, TaskType.ROUTINE, recurrence, availableDays, startsOn))
+                                    commit(engine.updateTask(state, task.id, title, TaskType.ROUTINE, schedule))
                                 }
                                 if (saved) planEditorOpen = false
                             },
@@ -200,7 +208,7 @@ private fun AboutScreen(onBack: () -> Unit) {
         HorizontalDivider()
         Text("Quick guide", fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text("Plan: add recurring routines and choose when they are available.")
-        Text("Today: add one-time tasks, slide a card right for Done, or left for Not today.")
+        Text("Today: add one-time tasks, slide a card right for Done, or left to skip its current occurrence.")
         Text("Review: see recent decisions and patterns over time.")
         HorizontalDivider()
         Text("Wasting No Time", fontSize = 22.sp, fontWeight = FontWeight.Bold)
@@ -359,7 +367,7 @@ private fun TodayScreen(
             item { EmptyBoard() }
         } else {
             item {
-                Text("Slide left for not today · right for done",
+                Text("Slide left to skip · right for done",
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f), fontSize = 14.sp)
             }
             items(cards, key = { it.id }) { card -> SwipeableTaskCard(card, onCommand) }
@@ -540,12 +548,24 @@ private fun PlanScreen(
 }
 
 private fun PlannedTask.scheduleSummary() = buildString {
-    append(recurrence.label)
-    if (recurrence == Recurrence.WEEKLY || recurrence == Recurrence.EVERY_TWO_WEEKS) {
+    append(when (schedule.kind) {
+        ScheduleKind.ONCE -> "One-time"
+        ScheduleKind.DAILY -> if (schedule.interval == 1) "Daily" else "Every ${schedule.interval} days"
+        ScheduleKind.WEEKLY_DAYS -> if (schedule.interval == 1) "Weekly" else "Every ${schedule.interval} weeks"
+        ScheduleKind.ONCE_PER_WEEK -> if (schedule.interval == 1) "Once per week" else "Once every ${schedule.interval} weeks"
+    })
+    if (schedule.kind == ScheduleKind.WEEKLY_DAYS || schedule.kind == ScheduleKind.ONCE_PER_WEEK) {
         append(" · ")
-        append(availableDays.label)
+        append(schedule.days.daySelectionLabel())
     }
     if (resolved) append(" · Resolved")
+}
+
+private fun Set<DayOfWeek>.daySelectionLabel(): String = when (this) {
+    allWeekDays -> "Any day"
+    weekdays -> "Weekdays"
+    setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) -> "Weekend"
+    else -> DayOfWeek.entries.filter { it in this }.joinToString(", ") { it.name.take(3).lowercase().replaceFirstChar(Char::uppercase) }
 }
 
 @Composable
@@ -553,13 +573,17 @@ private fun PlanEditor(
     task: PlannedTask?,
     currentDate: LocalDate,
     onCancel: () -> Unit,
-    onSave: (String, Recurrence, AvailableDays, LocalDate) -> Unit,
+    onSave: (String, TaskSchedule) -> Unit,
 ) {
     var title by remember(task?.id) { mutableStateOf(task?.title ?: "") }
-    var recurrence by remember(task?.id) { mutableStateOf(task?.recurrence ?: Recurrence.DAILY) }
-    var availableDays by remember(task?.id) { mutableStateOf(task?.availableDays ?: AvailableDays.ANY_DAY) }
-    var startsOn by remember(task?.id) { mutableStateOf(task?.startsOn ?: currentDate) }
+    var kind by remember(task?.id) { mutableStateOf(task?.schedule?.kind ?: ScheduleKind.DAILY) }
+    var intervalText by remember(task?.id) { mutableStateOf((task?.schedule?.interval ?: 1).toString()) }
+    var days by remember(task?.id) { mutableStateOf(task?.schedule?.days ?: weekdays) }
+    var startsOn by remember(task?.id) { mutableStateOf(task?.schedule?.startsOn ?: currentDate) }
+    val interval = intervalText.toIntOrNull()?.takeIf { it > 0 }
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Column(Modifier.fillMaxSize().imePadding().padding(horizontal = 20.dp, vertical = 16.dp)) {
         TextButton(onClick = onCancel, modifier = Modifier.testTag("cancel-edit")) { Text("Cancel") }
@@ -576,12 +600,13 @@ private fun PlanEditor(
             Text("Repeat", modifier = Modifier.padding(top = 14.dp), fontWeight = FontWeight.Bold)
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Recurrence.entries.filter { it != Recurrence.ONCE }.forEach { candidate ->
+                ScheduleKind.entries.filter { it != ScheduleKind.ONCE }.forEach { candidate ->
                     FilterChip(
-                        selected = recurrence == candidate,
+                        selected = kind == candidate,
                         onClick = {
-                            recurrence = candidate
-                            availableDays = AvailableDays.ANY_DAY
+                            kind = candidate
+                            intervalText = "1"
+                            days = weekdays
                             startsOn = currentDate
                         },
                         label = { Text(candidate.label) },
@@ -589,34 +614,73 @@ private fun PlanEditor(
                     )
                 }
             }
-            if (recurrence == Recurrence.WEEKLY || recurrence == Recurrence.EVERY_TWO_WEEKS) {
-                Text("Available", fontWeight = FontWeight.Bold)
+            Text(
+                when (kind) {
+                    ScheduleKind.DAILY -> "A card appears every N days."
+                    ScheduleKind.WEEKLY_DAYS -> "A separate card appears on each selected day of an active week."
+                    else -> "One card per active week. Done or Skip this week closes that week."
+                },
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f),
+            )
+            OutlinedTextField(
+                value = intervalText,
+                onValueChange = {
+                    if (it.isEmpty() || it.all(Char::isDigit)) {
+                        if (it.toIntOrNull() == 1) startsOn = currentDate
+                        intervalText = it
+                    }
+                },
+                label = { Text(if (kind == ScheduleKind.DAILY) "Every N days" else "Every N weeks") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                }),
+                singleLine = true,
+                isError = interval == null,
+                supportingText = if (interval == null) ({ Text("Enter a number greater than zero") }) else null,
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp).testTag("repeat-interval"),
+            )
+            if (kind != ScheduleKind.DAILY) {
+                Text("Days", modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AvailableDays.entries.forEach { candidate ->
+                    listOf("Any day" to allWeekDays, "Weekdays" to weekdays,
+                        "Weekend" to setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)).forEach { (label, selection) ->
                         FilterChip(
-                            selected = availableDays == candidate,
-                            onClick = { availableDays = candidate },
-                            label = { Text(candidate.label) },
-                            modifier = Modifier.testTag("available-" + candidate.name.lowercase()),
+                            selected = days == selection,
+                            onClick = { days = selection },
+                            label = { Text(label) },
                         )
                     }
                 }
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DayOfWeek.entries.forEach { day ->
+                        FilterChip(
+                            selected = day in days,
+                            onClick = { days = if (day in days) days - day else days + day },
+                            label = { Text(day.name.take(3).lowercase().replaceFirstChar(Char::uppercase)) },
+                            modifier = Modifier.testTag("day-" + day.name.lowercase()),
+                        )
+                    }
+                }
+                if (days.isEmpty()) Text("Select at least one day", color = MaterialTheme.colorScheme.error)
             }
-            if (recurrence == Recurrence.EVERY_TWO_DAYS || recurrence == Recurrence.EVERY_TWO_WEEKS) {
+            if (interval != null && interval > 1) {
                 TextButton(onClick = {
                     DatePickerDialog(context, { _, year, month, day ->
                         startsOn = LocalDate.of(year, month + 1, day)
                     }, startsOn.year, startsOn.monthValue - 1, startsOn.dayOfMonth).show()
                 }, modifier = Modifier.testTag("repeat-start")) {
-                    Text((if (recurrence == Recurrence.EVERY_TWO_WEEKS) "First active week: " else "First day: ") + startsOn)
+                    Text((if (kind == ScheduleKind.DAILY) "First active day: " else "First active week: ") + startsOn)
                 }
             }
         }
         Spacer(Modifier.height(12.dp))
         Button(
-            onClick = { onSave(title, recurrence, availableDays, startsOn) },
-            enabled = title.isNotBlank(),
+            onClick = { onSave(title, TaskSchedule(kind, requireNotNull(interval), days, startsOn)) },
+            enabled = title.isNotBlank() && interval != null && (kind == ScheduleKind.DAILY || days.isNotEmpty()),
             modifier = Modifier.fillMaxWidth().testTag(if (task == null) "add-task" else "save-task"),
         ) { Text(if (task == null) "Add routine" else "Save changes") }
     }
@@ -640,7 +704,7 @@ private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: ()
                 title = "THIS WEEK",
                 headline = if (review.week.closed + review.week.open == 0) "No cards yet" else
                     review.week.done.toString() + " done",
-                detail = review.week.notToday.toString() + " Not today · " +
+                detail = review.week.skipped.toString() + " Skipped · " +
                     review.week.missed + " missed · " + review.week.open + " still open",
                 tag = "review-week",
             )
@@ -655,7 +719,7 @@ private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: ()
                         fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontSize = 12.sp)
                     ReviewPatternRow("Missed most", review.mostMissed, "No clear pattern yet", "missed")
                     HorizontalDivider()
-                    ReviewPatternRow("Most often Not today", review.mostNotToday, "None recently", "marked Not today")
+                    ReviewPatternRow("Most often skipped", review.mostSkipped, "None recently", "skipped")
                     HorizontalDivider()
                     ReviewPatternRow("Kept up with", review.mostDone, "Not enough completed days yet", "done")
                 }
@@ -697,7 +761,7 @@ private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: ()
                         val counts = cards.groupingBy { it.status }.eachCount()
                         Text(
                             (counts[CardStatus.DONE] ?: 0).toString() + " done · " +
-                                (counts[CardStatus.DISMISSED] ?: 0) + " Not today · " +
+                                (counts[CardStatus.DISMISSED] ?: 0) + " Skipped · " +
                                 (counts[CardStatus.MISSED] ?: 0) + " missed" +
                                 if ((counts[CardStatus.PENDING] ?: 0) > 0) " · " +
                                     counts[CardStatus.PENDING] + " open" else "",
@@ -753,7 +817,7 @@ private fun ReviewPatternRow(label: String, pattern: ReviewPattern?, empty: Stri
 private fun CardStatus.reviewLabel() = when (this) {
     CardStatus.PENDING -> "OPEN"
     CardStatus.DONE -> "DONE"
-    CardStatus.DISMISSED -> "NOT TODAY"
+    CardStatus.DISMISSED -> "SKIPPED"
     CardStatus.MISSED -> "MISSED"
 }
 
@@ -767,7 +831,8 @@ private fun SwipeableTaskCard(card: TaskCard, onCommand: (CardCommand) -> Unit) 
     Box(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("DONE", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Black, modifier = Modifier.alpha(progress.coerceAtLeast(0f)))
-            Text("NOT TODAY", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, modifier = Modifier.alpha((-progress).coerceAtLeast(0f)))
+            Text(card.skipScope.label.uppercase(), color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Black, modifier = Modifier.alpha((-progress).coerceAtLeast(0f)))
         }
         TaskCardView(
             card,
@@ -775,7 +840,7 @@ private fun SwipeableTaskCard(card: TaskCard, onCommand: (CardCommand) -> Unit) 
                 .semantics {
                     customActions = listOf(
                         CustomAccessibilityAction("Mark done") { currentOnCommand(CardCommand.Complete(card.id)); true },
-                        CustomAccessibilityAction("Not today") { currentOnCommand(CardCommand.Dismiss(card.id)); true },
+                        CustomAccessibilityAction(card.skipScope.label) { currentOnCommand(CardCommand.Dismiss(card.id)); true },
                     )
                 }
                 .onSizeChanged { cardWidth = it.width.toFloat() }
@@ -816,6 +881,8 @@ private fun TaskCardView(card: TaskCard, modifier: Modifier = Modifier) {
                 Text(card.type.label.uppercase(), Modifier.padding(start = 8.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
             }
             Text(card.title, Modifier.padding(vertical = 18.dp), color = MaterialTheme.colorScheme.onSurface, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+            Text("Slide right for Done · left to ${card.skipScope.label.lowercase()}",
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontSize = 14.sp)
         }
     }
 }

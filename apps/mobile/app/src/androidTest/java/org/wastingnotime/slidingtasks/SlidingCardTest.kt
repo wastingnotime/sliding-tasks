@@ -6,12 +6,20 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeRight
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.wastingnotime.slidingtasks.data.LocalTaskStore
+import org.wastingnotime.slidingtasks.model.ScheduleKind
+import org.wastingnotime.slidingtasks.model.SkipScope
+import org.wastingnotime.slidingtasks.model.weekdays
+import java.time.DayOfWeek
 
 class SlidingCardTest {
     @get:Rule
@@ -78,5 +86,52 @@ class SlidingCardTest {
             .assertExists()
         composeRule.onAllNodesWithText("Wasting No Time (WNT)", substring = true)[0]
             .assertExists()
+    }
+
+    @Test
+    fun legacy_schedules_and_card_actions_survive_storage_migration() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val legacy = """{
+            "activeDate":"2026-09-18",
+            "tasks":[
+                {"id":"weekday","title":"Work","type":"ROUTINE","recurrence":"WEEKDAYS","active":true,"createdOn":"2026-09-18","startsOn":"2026-09-18"},
+                {"id":"fortnight","title":"Haircut","type":"ROUTINE","recurrence":"EVERY_TWO_WEEKS","availableDays":"WEEKDAYS","active":true,"createdOn":"2026-09-18","startsOn":"2026-09-18"},
+                {"id":"vitamin","title":"Vitamin","type":"ROUTINE","recurrence":"EVERY_TWO_DAYS","active":true,"createdOn":"2026-09-18","startsOn":"2026-09-19"}
+            ],
+            "cards":[{"id":"card","taskId":"fortnight","boardDate":"2026-09-18","title":"Haircut","type":"ROUTINE","status":"PENDING","touches":0}],
+            "events":[]
+        }""".trimIndent()
+        context.getSharedPreferences("sliding_tasks", 0).edit().putString("state-v1", legacy).commit()
+        val store = LocalTaskStore(context)
+
+        val migrated = store.load()
+        assertEquals(ScheduleKind.WEEKLY_DAYS, migrated.tasks[0].schedule.kind)
+        assertEquals(weekdays, migrated.tasks[0].schedule.days)
+        assertEquals(ScheduleKind.ONCE_PER_WEEK, migrated.tasks[1].schedule.kind)
+        assertEquals(2, migrated.tasks[1].schedule.interval)
+        assertEquals(setOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
+            DayOfWeek.THURSDAY, DayOfWeek.FRIDAY), migrated.tasks[1].schedule.days)
+        assertEquals(2, migrated.tasks[2].schedule.interval)
+        assertEquals(SkipScope.WEEK, migrated.cards.single().skipScope)
+
+        store.save(migrated)
+        assertEquals(migrated, store.load())
+    }
+
+    @Test
+    fun plan_editor_saves_a_custom_weekly_day_schedule() {
+        composeRule.onNodeWithTag("nav-plan").performClick()
+        composeRule.onNodeWithTag("add-entry").performClick()
+        composeRule.onNodeWithTag("task-title").performTextInput("Exercise")
+        composeRule.onNodeWithTag("repeat-weekly_days").performClick()
+        composeRule.onNodeWithTag("repeat-interval").performTextClearance()
+        composeRule.onNodeWithTag("repeat-interval").performTextInput("2")
+        composeRule.onNodeWithTag("repeat-interval").performImeAction()
+        composeRule.onNodeWithTag("day-monday").performClick()
+        composeRule.onNodeWithTag("day-wednesday").performClick()
+        composeRule.onNodeWithTag("day-thursday").performClick()
+        composeRule.onNodeWithTag("add-task").performClick()
+
+        composeRule.onAllNodesWithText("Every 2 weeks · Tue, Fri")[0].assertExists()
     }
 }

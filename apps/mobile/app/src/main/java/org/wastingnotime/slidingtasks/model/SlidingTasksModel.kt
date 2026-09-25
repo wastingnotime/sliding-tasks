@@ -12,21 +12,32 @@ enum class TaskType(val label: String) {
     ONE_TIME("One-time"),
 }
 
-enum class Recurrence(val label: String) {
-    ONCE("Once"),
+enum class ScheduleKind(val label: String) {
+    ONCE("One-time"),
     DAILY("Daily"),
-    WEEKDAYS("Weekdays"),
-    WEEKENDS("Weekends"),
-    EVERY_TWO_DAYS("Every 2 days"),
-    WEEKLY("Every week"),
-    EVERY_TWO_WEEKS("Every 2 weeks"),
+    WEEKLY_DAYS("Weekly"),
+    ONCE_PER_WEEK("Once per week"),
 }
 
-enum class AvailableDays(val label: String) {
-    ANY_DAY("Any day"),
-    WEEKDAYS("Weekdays"),
-    SATURDAY("Saturday"),
-    SUNDAY("Sunday"),
+val weekdays: Set<DayOfWeek> = DayOfWeek.entries.take(5).toSet()
+val allWeekDays: Set<DayOfWeek> = DayOfWeek.entries.toSet()
+
+data class TaskSchedule(
+    val kind: ScheduleKind,
+    val interval: Int = 1,
+    val days: Set<DayOfWeek> = weekdays,
+    val startsOn: LocalDate,
+) {
+    init {
+        require(interval > 0) { "Repeat interval must be positive" }
+        require(kind == ScheduleKind.ONCE || kind == ScheduleKind.DAILY || days.isNotEmpty()) {
+            "Select at least one day"
+        }
+    }
+}
+
+enum class SkipScope(val label: String) {
+    TODAY("Skip today"), WEEK("Skip this week"), TASK("Skip task"),
 }
 
 enum class CardStatus { PENDING, DONE, DISMISSED, MISSED }
@@ -35,12 +46,10 @@ data class PlannedTask(
     val id: String,
     val title: String,
     val type: TaskType,
-    val recurrence: Recurrence,
+    val schedule: TaskSchedule,
     val active: Boolean,
     val createdOn: LocalDate,
     val resolved: Boolean = false,
-    val availableDays: AvailableDays = AvailableDays.ANY_DAY,
-    val startsOn: LocalDate = createdOn,
 )
 
 data class TaskCard(
@@ -51,6 +60,7 @@ data class TaskCard(
     val type: TaskType,
     val status: CardStatus = CardStatus.PENDING,
     val touches: Int = 0,
+    val skipScope: SkipScope = SkipScope.TODAY,
 )
 
 data class TaskEvent(
@@ -118,6 +128,11 @@ class SlidingTasksEngine(
                     boardDate = date,
                     title = task.title,
                     type = task.type,
+                    skipScope = when (task.schedule.kind) {
+                        ScheduleKind.ONCE -> SkipScope.TASK
+                        ScheduleKind.ONCE_PER_WEEK -> SkipScope.WEEK
+                        else -> SkipScope.TODAY
+                    },
                 )
             }
         next = next.copy(activeDate = date, cards = next.cards + generated)
@@ -128,21 +143,15 @@ class SlidingTasksEngine(
         state: SlidingTasksState,
         title: String,
         type: TaskType,
-        recurrence: Recurrence,
+        schedule: TaskSchedule,
         date: LocalDate,
-        availableDays: AvailableDays = AvailableDays.ANY_DAY,
-        startsOn: LocalDate = date,
     ): SlidingTasksState {
         val cleanTitle = title.trim()
         require(cleanTitle.isNotEmpty()) { "Task title cannot be empty" }
-        require((type == TaskType.ONE_TIME) == (recurrence == Recurrence.ONCE)) {
+        require((type == TaskType.ONE_TIME) == (schedule.kind == ScheduleKind.ONCE)) {
             "One-time tasks use Once; recurring tasks require a recurrence"
         }
-        require(recurrence in setOf(Recurrence.WEEKLY, Recurrence.EVERY_TWO_WEEKS) || availableDays == AvailableDays.ANY_DAY) {
-            "Day windows are only available for weekly routines"
-        }
-        val task = PlannedTask(newId(), cleanTitle, type, recurrence, active = true, createdOn = date,
-            availableDays = availableDays, startsOn = startsOn)
+        val task = PlannedTask(newId(), cleanTitle, type, schedule, active = true, createdOn = date)
         val created = state.copy(tasks = state.tasks + task).withEvent("TaskCreated", task)
         return if (created.activeDate == date && task.isEligible(date, created.cards)) openDay(created, date) else created
     }
@@ -152,21 +161,15 @@ class SlidingTasksEngine(
         taskId: String,
         title: String,
         type: TaskType,
-        recurrence: Recurrence,
-        availableDays: AvailableDays,
-        startsOn: LocalDate,
+        schedule: TaskSchedule,
     ): SlidingTasksState {
         val task = state.tasks.firstOrNull { it.id == taskId } ?: return state
         val cleanTitle = title.trim()
         require(cleanTitle.isNotEmpty()) { "Task title cannot be empty" }
-        require((type == TaskType.ONE_TIME) == (recurrence == Recurrence.ONCE)) {
+        require((type == TaskType.ONE_TIME) == (schedule.kind == ScheduleKind.ONCE)) {
             "One-time tasks use Once; recurring tasks require a recurrence"
         }
-        require(recurrence in setOf(Recurrence.WEEKLY, Recurrence.EVERY_TWO_WEEKS) || availableDays == AvailableDays.ANY_DAY) {
-            "Day windows are only available for weekly routines"
-        }
-        val updated = task.copy(title = cleanTitle, type = type, recurrence = recurrence,
-            availableDays = availableDays, startsOn = startsOn)
+        val updated = task.copy(title = cleanTitle, type = type, schedule = schedule)
         if (updated == task) return state
         val changed = state.copy(tasks = state.tasks.map { if (it.id == taskId) updated else it })
             .withEvent("TaskUpdated", updated)
@@ -233,28 +236,19 @@ class SlidingTasksEngine(
     }
 
     private fun PlannedTask.isEligible(date: LocalDate, cards: List<TaskCard>): Boolean {
-        if (!active || resolved || createdOn > date || startsOn > date) return false
-        return when (recurrence) {
-            Recurrence.ONCE -> true
-            Recurrence.DAILY -> true
-            Recurrence.WEEKDAYS -> date.dayOfWeek !in setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
-            Recurrence.WEEKENDS -> date.dayOfWeek in setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
-            Recurrence.EVERY_TWO_DAYS -> ChronoUnit.DAYS.between(startsOn, date) % 2L == 0L
-            Recurrence.WEEKLY, Recurrence.EVERY_TWO_WEEKS -> {
-                val startWeek = startsOn.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        if (!active || resolved || createdOn > date || schedule.startsOn > date) return false
+        return when (schedule.kind) {
+            ScheduleKind.ONCE -> true
+            ScheduleKind.DAILY -> ChronoUnit.DAYS.between(schedule.startsOn, date) % schedule.interval == 0L
+            ScheduleKind.WEEKLY_DAYS, ScheduleKind.ONCE_PER_WEEK -> {
+                val startWeek = schedule.startsOn.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 val currentWeek = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 val weeks = ChronoUnit.WEEKS.between(startWeek, currentWeek)
-                val matchingWeek = recurrence == Recurrence.WEEKLY || weeks % 2L == 0L
-                val matchingDay = when (availableDays) {
-                    AvailableDays.ANY_DAY -> true
-                    AvailableDays.WEEKDAYS -> date.dayOfWeek.value <= DayOfWeek.FRIDAY.value
-                    AvailableDays.SATURDAY -> date.dayOfWeek == DayOfWeek.SATURDAY
-                    AvailableDays.SUNDAY -> date.dayOfWeek == DayOfWeek.SUNDAY
-                }
-                matchingWeek && matchingDay && cards.none {
+                val activeDay = weeks % schedule.interval == 0L && date.dayOfWeek in schedule.days
+                activeDay && (schedule.kind == ScheduleKind.WEEKLY_DAYS || cards.none {
                     it.taskId == id && it.status in setOf(CardStatus.DONE, CardStatus.DISMISSED) &&
                         !it.boardDate.isBefore(currentWeek) && it.boardDate.isBefore(currentWeek.plusWeeks(1))
-                }
+                })
             }
         }
     }

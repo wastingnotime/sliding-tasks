@@ -24,7 +24,7 @@ will be updated before those features are released.
 
 ## Contact
 
-For privacy questions, email <hriccio@wastingnotime.org>.
+For privacy questions, email <sliding-tasks@wastingnotime.org>.
 
 The public copy is intended to be available at
 <https://wastingnotime.org/sliding-tasks/privacy/>.

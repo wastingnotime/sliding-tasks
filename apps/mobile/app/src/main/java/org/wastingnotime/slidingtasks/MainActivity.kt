@@ -212,7 +212,7 @@ private fun AboutScreen(onBack: () -> Unit) {
         Text("Your task titles, schedules, card decisions, and history are stored on this device. The current app does not send them to us or other companies. It has no ads, analytics, or sync service.")
         Text("You can remove individual planned tasks in the app. To erase all Sliding Tasks data, use Android Settings → Apps → Sliding Tasks → Storage → Clear storage, or uninstall the app. Device backup is disabled for this app.")
         Text("If the app later adds sync, analytics, or other data processing, this policy will be updated before those features are released.")
-        Text("Questions? Contact hriccio@wastingnotime.org.")
+        Text("Questions? Contact sliding-tasks@wastingnotime.org.")
         Text("Public policy: https://wastingnotime.org/sliding-tasks/privacy/", color = MaterialTheme.colorScheme.primary)
     }
 }

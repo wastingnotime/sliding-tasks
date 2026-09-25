@@ -139,7 +139,7 @@ class SlidingCardTest {
         composeRule.onNodeWithTag("day-thursday").performClick()
         composeRule.onNodeWithTag("add-task").performClick()
 
-        composeRule.onAllNodesWithText("Every 2 weeks · Tue, Fri")[0].assertExists()
+        composeRule.onAllNodesWithText("Routine · Every 2 weeks · Tue, Fri")[0].assertExists()
     }
 
     @Test
@@ -163,5 +163,42 @@ class SlidingCardTest {
             .assertExists()
         composeRule.onNodeWithTag("save-task").performClick()
         assertEquals(10, store.load().tasks.single().schedule.interval)
+    }
+
+    @Test
+    fun plan_can_create_a_one_time_task_that_appears_today() {
+        composeRule.onNodeWithTag("nav-plan").performClick()
+        composeRule.onNodeWithTag("add-entry").performClick()
+        composeRule.onNodeWithTag("mode-one_time").performClick()
+        composeRule.onNodeWithTag("repeat-interval-1").assertDoesNotExist()
+        composeRule.onNodeWithTag("task-title").performTextInput("Send invoice")
+        composeRule.onNodeWithTag("task-title").performImeAction()
+        composeRule.onNodeWithTag("add-task").performClick()
+        composeRule.onAllNodesWithText("One-time")[0].assertExists()
+        composeRule.onNodeWithTag("nav-today").performClick()
+        composeRule.onAllNodesWithText("Send invoice")[0].assertExists()
+        composeRule.onAllNodesWithText("left to skip task", substring = true)[0].assertExists()
+        composeRule.onAllNodesWithText("Send invoice")[0]
+            .performTouchInput { swipeRight(durationMillis = 500) }
+        composeRule.waitUntil(timeoutMillis = 2_000) {
+            composeRule.onAllNodesWithText("0 cards left").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag("nav-plan").performClick()
+        assertEquals(0, composeRule.onAllNodesWithText("Send invoice").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun plan_labels_a_weekly_occurrence_until_decided() {
+        composeRule.onNodeWithTag("nav-plan").performClick()
+        composeRule.onNodeWithTag("add-entry").performClick()
+        composeRule.onNodeWithTag("mode-until_decided").performClick()
+        composeRule.onNodeWithTag("repeat-weekly_days").assertDoesNotExist()
+        composeRule.onNodeWithTag("repeat-interval-2").performClick()
+        composeRule.onNodeWithTag("task-title").performTextInput("Check mail")
+        composeRule.onNodeWithTag("task-title").performImeAction()
+        composeRule.onNodeWithTag("add-task").performClick()
+
+        composeRule.onAllNodesWithText("Until decided · Every 2 weeks · Weekdays")[0]
+            .assertExists()
     }
 }

@@ -93,6 +93,9 @@ private val DarkColors = darkColorScheme(
     onSurfaceVariant = Color(0xFFD4E8D6),
 )
 private enum class AppSection(val label: String) { TODAY("Today"), PLAN("Plan"), REVIEW("Review") }
+private enum class PlanMode(val label: String) {
+    ROUTINE("Routine"), UNTIL_DECIDED("Until decided"), ONE_TIME("One-time"),
+}
 
 @Composable
 fun SlidingTasksApp() {
@@ -161,28 +164,29 @@ fun SlidingTasksApp() {
                             onCancel = { planEditorOpen = false },
                             onSave = { title, schedule ->
                                 val task = planEditorTask
+                                val type = if (schedule.kind == ScheduleKind.ONCE) TaskType.ONE_TIME else TaskType.ROUTINE
                                 val saved = if (task == null) {
-                                    commit(engine.createTask(state, title, TaskType.ROUTINE, schedule, today))
+                                    commit(engine.createTask(state, title, type, schedule, today))
                                 } else {
-                                    commit(engine.updateTask(state, task.id, title, TaskType.ROUTINE, schedule))
+                                    commit(engine.updateTask(state, task.id, title, type, schedule))
                                 }
                                 if (saved) planEditorOpen = false
                             },
                         )
                     } else {
                         PlanScreen(
-                            tasks = state.tasks.filter { it.type == TaskType.ROUTINE },
+                            tasks = state.tasks.filter { it.type == TaskType.ROUTINE || !it.resolved },
                             onAbout = { aboutOpen = true },
                             onAdd = { planEditorTask = null; planEditorOpen = true },
                             onEdit = { planEditorTask = it; planEditorOpen = true },
                             onSetActive = { id, active -> commit(engine.setTaskActive(state, id, active)) },
                             onMove = { id, offset ->
-                                val routines = state.tasks.filter { it.type == TaskType.ROUTINE }
-                                val from = routines.indexOfFirst { it.id == id }
+                                val planned = state.tasks.filter { it.type == TaskType.ROUTINE || !it.resolved }
+                                val from = planned.indexOfFirst { it.id == id }
                                 if (from >= 0) {
-                                    val to = (from + offset).coerceIn(routines.indices)
+                                    val to = (from + offset).coerceIn(planned.indices)
                                     val absoluteFrom = state.tasks.indexOfFirst { it.id == id }
-                                    val absoluteTo = state.tasks.indexOfFirst { it.id == routines[to].id }
+                                    val absoluteTo = state.tasks.indexOfFirst { it.id == planned[to].id }
                                     commit(engine.moveTask(state, id, absoluteTo - absoluteFrom))
                                 }
                             },
@@ -206,7 +210,7 @@ private fun AboutScreen(onBack: () -> Unit) {
         Text("Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
         HorizontalDivider()
         Text("Quick guide", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text("Plan: add recurring routines and choose when they are available.")
+        Text("Plan: add routines, until-decided tasks, or one-time tasks.")
         Text("Today: add one-time tasks, slide a card right for Done, or left to skip its current occurrence.")
         Text("Review: see recent decisions and patterns over time.")
         HorizontalDivider()
@@ -442,14 +446,14 @@ private fun PlanScreen(
     }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
-        PageHeader("PLAN", "Your routines", tasks.size.toString() + " recurring entries", onAbout = onAbout)
+        PageHeader("PLAN", "Your plans", tasks.size.toString() + " planned entries", onAbout = onAbout)
         Spacer(Modifier.height(20.dp))
         Button(onClick = onAdd, modifier = Modifier.fillMaxWidth().testTag("add-entry")) {
-            Text("Add routine")
+            Text("Add task")
         }
         Spacer(Modifier.height(12.dp))
         if (tasks.isEmpty()) {
-            Text("No routines yet.", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
+            Text("No plans yet.", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
         } else {
             Text("Touch and hold an entry to reorder", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f), fontSize = 13.sp)
             Spacer(Modifier.height(8.dp))
@@ -549,9 +553,12 @@ private fun PlanScreen(
 private fun PlannedTask.scheduleSummary() = buildString {
     append(when (schedule.kind) {
         ScheduleKind.ONCE -> "One-time"
-        ScheduleKind.DAILY -> if (schedule.interval == 1) "Daily" else "Every ${schedule.interval} days"
-        ScheduleKind.WEEKLY_DAYS -> if (schedule.interval == 1) "Weekly" else "Every ${schedule.interval} weeks"
-        ScheduleKind.ONCE_PER_WEEK -> if (schedule.interval == 1) "Once per week" else "Once every ${schedule.interval} weeks"
+        ScheduleKind.DAILY -> "Routine · " +
+            if (schedule.interval == 1) "Daily" else "Every ${schedule.interval} days"
+        ScheduleKind.WEEKLY_DAYS -> "Routine · " +
+            if (schedule.interval == 1) "Weekly" else "Every ${schedule.interval} weeks"
+        ScheduleKind.ONCE_PER_WEEK -> "Until decided · " +
+            if (schedule.interval == 1) "Every week" else "Every ${schedule.interval} weeks"
     })
     if (schedule.kind == ScheduleKind.WEEKLY_DAYS || schedule.kind == ScheduleKind.ONCE_PER_WEEK) {
         append(" · ")
@@ -575,10 +582,26 @@ private fun PlanEditor(
     onSave: (String, TaskSchedule) -> Unit,
 ) {
     var title by remember(task?.id) { mutableStateOf(task?.title ?: "") }
-    var kind by remember(task?.id) { mutableStateOf(task?.schedule?.kind ?: ScheduleKind.DAILY) }
+    var mode by remember(task?.id) {
+        mutableStateOf(when (task?.schedule?.kind) {
+            ScheduleKind.ONCE -> PlanMode.ONE_TIME
+            ScheduleKind.ONCE_PER_WEEK -> PlanMode.UNTIL_DECIDED
+            else -> PlanMode.ROUTINE
+        })
+    }
+    var routineCadence by remember(task?.id) {
+        mutableStateOf(
+            if (task?.schedule?.kind == ScheduleKind.WEEKLY_DAYS) ScheduleKind.WEEKLY_DAYS else ScheduleKind.DAILY
+        )
+    }
     var interval by remember(task?.id) { mutableIntStateOf(task?.schedule?.interval ?: 1) }
     var days by remember(task?.id) { mutableStateOf(task?.schedule?.days ?: weekdays) }
     var startsOn by remember(task?.id) { mutableStateOf(task?.schedule?.startsOn ?: currentDate) }
+    val kind = when (mode) {
+        PlanMode.ROUTINE -> routineCadence
+        PlanMode.UNTIL_DECIDED -> ScheduleKind.ONCE_PER_WEEK
+        PlanMode.ONE_TIME -> ScheduleKind.ONCE
+    }
     val intervalOptions = if (kind == ScheduleKind.DAILY) 1..7 else 1..4
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -586,7 +609,7 @@ private fun PlanEditor(
 
     Column(Modifier.fillMaxSize().imePadding().padding(horizontal = 20.dp, vertical = 16.dp)) {
         TextButton(onClick = onCancel, modifier = Modifier.testTag("cancel-edit")) { Text("Cancel") }
-        PageHeader("PLAN", if (task == null) "New routine" else "Edit routine", "Set when this routine appears.")
+        PageHeader("PLAN", if (task == null) "New task" else "Edit task", "Choose when it appears and what closes it.")
         Spacer(Modifier.height(16.dp))
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             OutlinedTextField(
@@ -601,15 +624,15 @@ private fun PlanEditor(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("task-title"),
             )
-            Text("Repeat", modifier = Modifier.padding(top = 14.dp), fontWeight = FontWeight.Bold)
+            Text("Type", modifier = Modifier.padding(top = 14.dp), fontWeight = FontWeight.Bold)
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ScheduleKind.entries.filter { it != ScheduleKind.ONCE }.forEach { candidate ->
+                PlanMode.entries.forEach { candidate ->
                     FilterChip(
-                        selected = kind == candidate,
+                        selected = mode == candidate,
                         onClick = {
-                            if (kind != candidate) {
-                                kind = candidate
+                            if (mode != candidate) {
+                                mode = candidate
                                 interval = 1
                                 days = weekdays
                                 startsOn = currentDate
@@ -618,89 +641,112 @@ private fun PlanEditor(
                             keyboardController?.hide()
                         },
                         label = { Text(candidate.label) },
-                        modifier = Modifier.testTag("repeat-" + candidate.name.lowercase()),
+                        modifier = Modifier.testTag("mode-" + candidate.name.lowercase()),
                     )
                 }
             }
             Text(
-                when (kind) {
-                    ScheduleKind.DAILY -> "A card appears every N days."
-                    ScheduleKind.WEEKLY_DAYS -> "A separate card appears on each selected day of an active week."
-                    else -> "One card per active week. Done or Skip this week closes that week."
+                when (mode) {
+                    PlanMode.ROUTINE -> "A new card appears on each scheduled day."
+                    PlanMode.UNTIL_DECIDED -> "One card per active week. Done or Skip this week closes it."
+                    PlanMode.ONE_TIME -> "One card carries forward until you mark it Done or Skip task."
                 },
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f),
             )
-            Text(if (kind == ScheduleKind.DAILY) "Every how many days?" else "Every how many weeks?",
-                modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                intervalOptions.forEach { candidate ->
-                    FilterChip(
-                        selected = interval == candidate,
-                        onClick = {
-                            if (interval != candidate && candidate == 1) startsOn = currentDate
-                            interval = candidate
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                        },
-                        label = { Text(candidate.toString()) },
-                        modifier = Modifier
-                            .testTag("repeat-interval-$candidate")
-                            .semantics {
-                                contentDescription = "Every $candidate " +
-                                    if (kind == ScheduleKind.DAILY) "days" else "weeks"
+            if (mode == PlanMode.ROUTINE) {
+                Text("Schedule", modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(ScheduleKind.DAILY, ScheduleKind.WEEKLY_DAYS).forEach { candidate ->
+                        FilterChip(
+                            selected = routineCadence == candidate,
+                            onClick = {
+                                if (routineCadence != candidate) {
+                                    routineCadence = candidate
+                                    interval = 1
+                                    days = weekdays
+                                    startsOn = currentDate
+                                }
                             },
-                    )
-                }
-            }
-            if (interval !in intervalOptions) {
-                Text("This routine is currently set to every $interval " +
-                    if (kind == ScheduleKind.DAILY) "days. Choose 1–7 to change it."
-                    else "weeks. Choose 1–4 to change it.",
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
-            }
-            if (kind != ScheduleKind.DAILY) {
-                Text("Days", modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("Any day" to allWeekDays, "Weekdays" to weekdays,
-                        "Weekend" to setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)).forEach { (label, selection) ->
-                        FilterChip(
-                            selected = days == selection,
-                            onClick = { days = selection },
-                            label = { Text(label) },
+                            label = { Text(candidate.label) },
+                            modifier = Modifier.testTag("repeat-" + candidate.name.lowercase()),
                         )
                     }
                 }
+            }
+            if (mode != PlanMode.ONE_TIME) {
+                Text(if (kind == ScheduleKind.DAILY) "Every how many days?" else "Every how many weeks?",
+                    modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    DayOfWeek.entries.forEach { day ->
+                    intervalOptions.forEach { candidate ->
                         FilterChip(
-                            selected = day in days,
-                            onClick = { days = if (day in days) days - day else days + day },
-                            label = { Text(day.name.take(3).lowercase().replaceFirstChar(Char::uppercase)) },
-                            modifier = Modifier.testTag("day-" + day.name.lowercase()),
+                            selected = interval == candidate,
+                            onClick = {
+                                if (interval != candidate && candidate == 1) startsOn = currentDate
+                                interval = candidate
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                            },
+                            label = { Text(candidate.toString()) },
+                            modifier = Modifier
+                                .testTag("repeat-interval-$candidate")
+                                .semantics {
+                                    contentDescription = "Every $candidate " +
+                                        if (kind == ScheduleKind.DAILY) "days" else "weeks"
+                                },
                         )
                     }
                 }
-                if (days.isEmpty()) Text("Select at least one day", color = MaterialTheme.colorScheme.error)
-            }
-            if (interval > 1) {
-                TextButton(onClick = {
-                    DatePickerDialog(context, { _, year, month, day ->
-                        startsOn = LocalDate.of(year, month + 1, day)
-                    }, startsOn.year, startsOn.monthValue - 1, startsOn.dayOfMonth).show()
-                }, modifier = Modifier.testTag("repeat-start")) {
-                    Text((if (kind == ScheduleKind.DAILY) "First active day: " else "First active week: ") + startsOn)
+                if (interval !in intervalOptions) {
+                    Text("This routine is currently set to every $interval " +
+                        if (kind == ScheduleKind.DAILY) "days. Choose 1–7 to change it."
+                        else "weeks. Choose 1–4 to change it.",
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
+                }
+                if (kind != ScheduleKind.DAILY) {
+                    Text("Days", modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("Any day" to allWeekDays, "Weekdays" to weekdays,
+                            "Weekend" to setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)).forEach { (label, selection) ->
+                            FilterChip(
+                                selected = days == selection,
+                                onClick = { days = selection },
+                                label = { Text(label) },
+                            )
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        DayOfWeek.entries.forEach { day ->
+                            FilterChip(
+                                selected = day in days,
+                                onClick = { days = if (day in days) days - day else days + day },
+                                label = { Text(day.name.take(3).lowercase().replaceFirstChar(Char::uppercase)) },
+                                modifier = Modifier.testTag("day-" + day.name.lowercase()),
+                            )
+                        }
+                    }
+                    if (days.isEmpty()) Text("Select at least one day", color = MaterialTheme.colorScheme.error)
+                }
+                if (interval > 1) {
+                    TextButton(onClick = {
+                        DatePickerDialog(context, { _, year, month, day ->
+                            startsOn = LocalDate.of(year, month + 1, day)
+                        }, startsOn.year, startsOn.monthValue - 1, startsOn.dayOfMonth).show()
+                    }, modifier = Modifier.testTag("repeat-start")) {
+                        Text((if (kind == ScheduleKind.DAILY) "First active day: " else "First active week: ") + startsOn)
+                    }
                 }
             }
         }
         Spacer(Modifier.height(12.dp))
         Button(
             onClick = { onSave(title, TaskSchedule(kind, interval, days, startsOn)) },
-            enabled = title.isNotBlank() && (kind == ScheduleKind.DAILY || days.isNotEmpty()),
+            enabled = title.isNotBlank() && (kind == ScheduleKind.ONCE || kind == ScheduleKind.DAILY || days.isNotEmpty()),
             modifier = Modifier.fillMaxWidth().testTag(if (task == null) "add-task" else "save-task"),
-        ) { Text(if (task == null) "Add routine" else "Save changes") }
+        ) { Text(if (task == null) "Add task" else "Save changes") }
     }
 }
 

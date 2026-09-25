@@ -96,10 +96,13 @@ Milestone 1 stores planned tasks, generated cards, decisions, and immutable
 event history on the device. Daily mobile operation does not wait for an API
 transport contract. Planning may gain optional synchronization later.
 
-Use the bottom navigation to open **Plan**, where recurring routines are listed
-first. Tap **Add routine** or a routine's **Edit** action to open its form. In
-**Today**, tap **Add one-time task** for an ad-hoc card, then act on today's
-cards. Use **Review** for this week's outcomes,
+Use the bottom navigation to open **Plan**, where routines and unresolved
+one-time tasks are listed. Tap **Add task** or a task's **Edit** action to open its form.
+Choose **Routine** for a new card on every scheduled day, **Until decided** for
+one occurrence across selected days of an active week, or **One-time** for a
+single task that carries forward until acted on. In **Today**, **Add one-time
+task** remains a shortcut for an ad-hoc card. Act on today's cards there. Use
+**Review** for this week's outcomes,
 recent task patterns, a seven-day comparison, and expandable recent days.
 Plan offers daily routines every 1–7 days, weekly routines with a separate card
 on each selected day every 1–4 weeks, and once-per-week routines with one
@@ -110,7 +113,7 @@ Weekly selections default to weekdays; choose all days, weekends, or any
 combination such as Tuesday and Friday. When N is greater than 1, choose the
 first active day or week to align the cycle.
 
-For once-per-week routines, **Done** and **Skip this week** close the week's
+For **Until decided**, **Done** and **Skip this week** close the week's
 occurrence. A card left open becomes missed at day end and can appear again on
 the next selected day that week. For a weekly routine with separate selected
 days, **Skip today** closes only that day's card.
@@ -119,9 +122,10 @@ For example, plan a vitamin every two days; a haircut every two weeks on
 weekdays; separate Saturday pickup and Sunday drop-off routines anchored in the
 same two-week cycle; and trash once per week on any day. Morning and night can
 be included in the titles; the app does not schedule time-of-day reminders.
-Routine and one-time are the only task types in Milestone 1; the earlier Focus
-label had no distinct behavior and stored Focus tasks migrate to Routine.
-One-time tasks are created on Today. Older paused one-time entries can be
+Routine and one-time are the stored task types in Milestone 1; **Until decided**
+is a weekly schedule for a routine. The earlier Focus label had no distinct
+behavior and stored Focus tasks migrate to Routine. One-time tasks can be
+created in Plan or Today. Older paused one-time entries can be
 resumed or removed there; resolved ones remain in local history.
 Planned tasks can be edited, reordered by touching and holding an entry while
 dragging it, or removed with confirmation. Move up and Move down remain available

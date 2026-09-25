@@ -196,7 +196,15 @@ private fun AboutScreen(onBack: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         PageHeader("SLIDING TASKS", "About", "The past is observed. The future is configured. The present is acted upon.", onBack = onBack)
-        Text("Plan recurring routines, act on today's cards with a slide, and review what happened over time.")
+        Text("Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
+        HorizontalDivider()
+        Text("Quick guide", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text("Plan: add recurring routines and choose when they are available.")
+        Text("Today: add one-time tasks, slide a card right for Done, or left for Not today.")
+        Text("Review: see recent decisions and patterns over time.")
+        HorizontalDivider()
+        Text("Wasting No Time", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text("Wasting No Time (WNT) makes Sliding Tasks. The app helps you plan ahead, make a simple choice today, and learn from what you did over time.")
         HorizontalDivider()
         Text("Privacy", fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text("Effective September 23, 2026")

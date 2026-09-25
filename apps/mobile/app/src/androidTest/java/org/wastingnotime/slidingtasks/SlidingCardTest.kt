@@ -65,4 +65,18 @@ class SlidingCardTest {
         composeRule.onAllNodesWithText("stored on this device", substring = true)[0]
             .assertExists()
     }
+
+    @Test
+    fun about_shows_installed_version_guide_and_wnt() {
+        composeRule.onNodeWithTag("more-options").performClick()
+        composeRule.onNodeWithTag("about-menu-item").performClick()
+
+        composeRule.onAllNodesWithText("Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")[0]
+            .assertExists()
+        composeRule.onAllNodesWithText("Quick guide")[0].assertExists()
+        composeRule.onAllNodesWithText("slide a card right for Done", substring = true)[0]
+            .assertExists()
+        composeRule.onAllNodesWithText("Wasting No Time (WNT)", substring = true)[0]
+            .assertExists()
+    }
 }

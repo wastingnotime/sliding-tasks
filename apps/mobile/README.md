@@ -124,8 +124,9 @@ Edits update future cards while keeping existing card snapshots and history.
 Reordering controls future board order; removal preserves cards and history
 already recorded.
 The app follows the Android system light or dark appearance setting.
-Open **More → About** to read about the app and its current privacy policy
-offline. The canonical repository copy is
+Open **More → About** for the installed version, a quick guide, an introduction
+to Wasting No Time, and the current privacy policy offline. The canonical
+repository copy of the privacy policy is
 [`docs/privacy-policy.md`](../../docs/privacy-policy.md),
 with a public copy at `https://wastingnotime.org/sliding-tasks/privacy/`.
 

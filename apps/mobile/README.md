@@ -17,6 +17,29 @@ Native Android app for local-first Sliding Tasks planning and daily use.
 Open `apps/mobile` in Android Studio, or use the Gradle wrapper from that
 directory.
 
+## Languages
+
+The app includes English (US) fallback strings in `app/src/main/res/values/`
+and Brazilian Portuguese in `values-pt-rBR/`. Android chooses the device
+language, and Android 13+ also offers an app-specific language choice in
+system settings. Dates and weekday names use the active app locale; persisted
+dates remain ISO strings. Keep both resource files complete when changing
+user-facing copy, including accessibility text and the offline privacy notice.
+
+## Saved data and upgrades
+
+Play updates within `org.wastingnotime.slidingtasks` keep its private
+`sliding_tasks` preferences. The reader accepts both the original recurrence
+fields and the current schedule fields. If saved data cannot be decoded, the
+app blocks writes and asks the user to keep app storage intact.
+
+An empty installation can import a Sliding Tasks JSON state file from
+**About → Restore tasks → Import saved tasks**. This supports moving data from
+the earlier `com.wastingnotime.slidingtasks` debug package, whose private
+storage Android cannot share automatically with the Play package. Import is
+only offered while the current installation has no tasks, cards, or events;
+the file is validated before its contents are saved.
+
 ## Alpha distribution with Firebase
 
 Use Firebase App Distribution for the first private alpha with a small group

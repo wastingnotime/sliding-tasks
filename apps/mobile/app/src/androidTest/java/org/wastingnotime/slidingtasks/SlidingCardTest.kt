@@ -24,6 +24,9 @@ import org.wastingnotime.slidingtasks.model.TaskType
 import org.wastingnotime.slidingtasks.model.weekdays
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.Instant
+import java.util.Locale
+import android.content.res.Configuration
 
 class SlidingCardTest {
     @get:Rule
@@ -37,6 +40,61 @@ class SlidingCardTest {
             .clear()
             .commit()
         composeRule.activityRule.scenario.recreate()
+    }
+
+    @Test
+    fun portuguese_resources_are_available() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val config = Configuration(context.resources.configuration).apply {
+            setLocale(Locale.forLanguageTag("pt-BR"))
+        }
+        val portuguese = context.createConfigurationContext(config)
+        assertEquals("Hoje", portuguese.getString(R.string.today))
+        assertEquals("1 cartão restante", portuguese.getString(R.string.card_left, 1))
+        assertEquals("Pular esta semana", portuguese.getString(R.string.skip_this_week))
+    }
+
+    @Test
+    fun legacy_state_survives_first_launch_and_is_reencoded() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val today = LocalDate.now()
+        val raw = """{
+            "activeDate":"$today",
+            "tasks":[{"id":"legacy-task","title":"Existing plan","type":"ROUTINE",
+                "recurrence":"DAILY","active":true,"createdOn":"$today",
+                "startsOn":"$today","availableDays":"ANY_DAY"}],
+            "cards":[{"id":"legacy-card","taskId":"legacy-task","boardDate":"$today",
+                "title":"Existing plan","type":"ROUTINE","status":"PENDING","touches":0}],
+            "events":[{"id":"legacy-event","type":"TaskCreated","occurredAt":"${Instant.now()}",
+                "taskId":"legacy-task","cardId":null,"title":"Existing plan"}]
+        }""".trimIndent()
+        composeRule.waitForIdle()
+        context.getSharedPreferences("sliding_tasks", 0).edit().putString("state-v1", raw).commit()
+
+        composeRule.activityRule.scenario.recreate()
+        composeRule.onNodeWithTag("nav-plan").performClick()
+        composeRule.onAllNodesWithText("Existing plan")[0].assertExists()
+        composeRule.waitUntil(timeoutMillis = 2_000) {
+            context.getSharedPreferences("sliding_tasks", 0).getString("state-v1", null)?.contains("\"schedule\"") == true
+        }
+        val migrated = LocalTaskStore(context).load()
+        assertEquals("Existing plan", migrated.tasks.single().title)
+        assertEquals("legacy-card", migrated.cards.single().id)
+        assertEquals("legacy-event", migrated.events.single().id)
+    }
+
+    @Test
+    fun unreadable_state_is_not_replaced_by_an_empty_board() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val preferences = context.getSharedPreferences("sliding_tasks", 0)
+        composeRule.waitForIdle()
+        val raw = "{unreadable state"
+        preferences.edit().putString("state-v1", raw).commit()
+
+        composeRule.activityRule.scenario.recreate()
+        composeRule.onNodeWithTag("storage-load-error").assertExists()
+        composeRule.waitForIdle()
+        assertEquals(raw, preferences.getString("state-v1", null))
     }
 
     @Test

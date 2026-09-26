@@ -15,4 +15,11 @@ docker run --rm -p 127.0.0.1:8080:80 sliding-tasks-site:local
 ```
 
 The image serves `/sliding-tasks/`, `/sliding-tasks/privacy/`,
+`/sliding-tasks/pt-br/`, `/sliding-tasks/pt-br/privacy/`,
 `/health/live`, and `/health/ready`. All unrelated paths return 404.
+
+The English landing page sends first-time visitors whose browser prefers
+Portuguese to the pt-BR page. The language links save an explicit choice in
+browser storage. Keep both privacy pages aligned with `docs/privacy-policy.md`.
+The pages link `/sliding-tasks/favicon.svg` explicitly; the domain-level
+favicon remains owned by the parent site.

@@ -8,6 +8,7 @@ a { color:inherit; }
 .brand { display:inline-flex; align-items:center; gap:10px; font-family:Outfit,system-ui,sans-serif; font-size:22px; font-weight:700; letter-spacing:-.04em; text-decoration:none; }
 .brand-mark { display:grid; place-items:center; width:32px; height:32px; border-radius:10px; background:var(--orange); color:#fff; font-size:23px; line-height:1; }
 .header-link { font-weight:700; text-decoration:none; border-bottom:1px solid var(--ink); }
+.header-links { display:flex; align-items:center; gap:20px; }
 .hero { min-height:670px; display:grid; grid-template-columns:1fr 480px; align-items:center; gap:70px; padding-block:44px 95px; }
 .eyebrow { margin:0 0 14px; color:var(--green); font-size:12px; font-weight:800; letter-spacing:.17em; text-transform:uppercase; }
 h1,h2,h3,p { margin-top:0; }
@@ -52,5 +53,5 @@ h1,h2,h3 { font-family:Outfit,system-ui,sans-serif; }
 .policy p { font-size:17px; }
 .policy a { color:var(--green); font-weight:700; }
 @media(max-width:900px) { .hero { grid-template-columns:1fr; gap:42px; padding-block:48px 80px; } .hero h1 { max-width:760px; } .demo { transform:rotate(1deg); } .step-grid { grid-template-columns:1fr; } .privacy-note { flex-direction:column; align-items:flex-start; } }
-@media(max-width:520px) { .wrap { width:min(100% - 32px,1160px); } .site-header { height:72px; } .brand { font-size:19px; } .hero { padding-top:38px; } .hero h1 { font-size:60px; } .lede { font-size:18px; } .steps { padding-block:72px; } .privacy-note { padding-block:72px; } .site-footer { flex-direction:column; } .policy { padding-block:56px 80px; } }
+@media(max-width:520px) { .wrap { width:min(100% - 32px,1160px); } .site-header { height:72px; } .brand { font-size:19px; } .header-links { gap:12px; font-size:13px; } .hero { padding-top:38px; } .hero h1 { font-size:60px; } .lede { font-size:18px; } .steps { padding-block:72px; } .privacy-note { padding-block:72px; } .site-footer { flex-direction:column; } .policy { padding-block:56px 80px; } }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }

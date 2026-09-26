@@ -30,6 +30,11 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    androidResources {
+        generateLocaleConfig = true
+        localeFilters += listOf("en", "pt-rBR")
+    }
+
     signingConfigs {
         if (hasUploadSigning) {
             create("playUpload") {

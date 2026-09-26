@@ -10,13 +10,23 @@
     <meta property="og:description" content="A simple offline task board for the things you do and the things you decide to leave for another day." />
     <meta property="og:url" content="https://wastingnotime.org/sliding-tasks/" />
     <link rel="canonical" href="https://wastingnotime.org/sliding-tasks/" />
+    <link rel="icon" type="image/svg+xml" href="/sliding-tasks/favicon.svg" />
+    <link rel="alternate" hreflang="en" href="https://wastingnotime.org/sliding-tasks/" />
+    <link rel="alternate" hreflang="pt-BR" href="https://wastingnotime.org/sliding-tasks/pt-br/" />
+    <link rel="alternate" hreflang="x-default" href="https://wastingnotime.org/sliding-tasks/" />
     <link rel="stylesheet" href="/sliding-tasks/styles.css" />
     <title>Sliding Tasks — make room for today</title>
+    <script>
+      const choice = new URLSearchParams(location.search).get('lang');
+      if (choice === 'en') localStorage.setItem('sliding-tasks-language', choice);
+      const language = localStorage.getItem('sliding-tasks-language') || navigator.languages?.[0] || navigator.language;
+      if (language.toLowerCase().startsWith('pt')) location.replace('/sliding-tasks/pt-br/');
+    </script>
   </head>
   <body>
     <header class="site-header wrap">
       <a class="brand" href="/sliding-tasks/" aria-label="Sliding Tasks home"><span class="brand-mark" aria-hidden="true">↗</span> Sliding Tasks</a>
-      <a class="header-link" href="/sliding-tasks/privacy/">Privacy</a>
+      <nav class="header-links" aria-label="Site links"><a class="header-link" href="/sliding-tasks/pt-br/?lang=pt-BR" lang="pt-BR" hreflang="pt-BR">Português</a><a class="header-link" href="/sliding-tasks/privacy/">Privacy</a></nav>
     </header>
 
     <main>

@@ -21,9 +21,13 @@ import java.time.LocalDate
 class LocalTaskStore(context: Context) {
     private val preferences = context.getSharedPreferences("sliding_tasks", Context.MODE_PRIVATE)
 
-    fun load(): SlidingTasksState = runCatching {
+    fun load(): SlidingTasksState = try {
         preferences.getString(KEY_STATE, null)?.let { decode(JSONObject(it)) } ?: SlidingTasksState()
-    }.getOrElse { SlidingTasksState() }
+    } catch (error: Exception) {
+        throw IllegalStateException("Could not read saved task state", error)
+    }
+
+    fun readImport(raw: String): SlidingTasksState = decode(JSONObject(raw))
 
     fun save(state: SlidingTasksState) {
         check(preferences.edit().putString(KEY_STATE, encode(state).toString()).commit()) {

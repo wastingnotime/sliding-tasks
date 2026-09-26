@@ -2,6 +2,8 @@ package org.wastingnotime.slidingtasks
 
 import android.os.Bundle
 import android.app.DatePickerDialog
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -39,6 +41,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -92,9 +97,13 @@ private val DarkColors = darkColorScheme(
     surfaceVariant = Color(0xFF243127),
     onSurfaceVariant = Color(0xFFD4E8D6),
 )
-private enum class AppSection(val label: String) { TODAY("Today"), PLAN("Plan"), REVIEW("Review") }
-private enum class PlanMode(val label: String) {
-    ROUTINE("Routine"), UNTIL_DECIDED("Until decided"), ONE_TIME("One-time"),
+private enum class AppSection(val label: Int, val icon: Int) {
+    TODAY(R.string.today, R.drawable.ic_nav_today),
+    PLAN(R.string.plan, R.drawable.ic_nav_plan),
+    REVIEW(R.string.review, R.drawable.ic_nav_review),
+}
+private enum class PlanMode(val label: Int) {
+    ROUTINE(R.string.routine), UNTIL_DECIDED(R.string.until_decided), ONE_TIME(R.string.one_time),
 }
 
 @Composable
@@ -103,18 +112,56 @@ fun SlidingTasksApp() {
     val store = remember { LocalTaskStore(context.applicationContext) }
     val engine = remember { SlidingTasksEngine() }
     val today = remember { LocalDate.now() }
-    var state by remember { mutableStateOf(engine.openDay(store.load(), today)) }
+    val initialState = remember { runCatching { engine.openDay(store.load(), today) } }
+    if (initialState.isFailure) {
+        MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors) {
+            Column(
+                Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 48.dp)
+                    .testTag("storage-load-error"),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(stringResource(R.string.storage_error_title),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.storage_error_message),
+                    color = MaterialTheme.colorScheme.onBackground)
+            }
+        }
+        return
+    }
+    var state by remember { mutableStateOf(initialState.getOrThrow()) }
     var section by remember { mutableStateOf(AppSection.TODAY) }
     var planEditorOpen by remember { mutableStateOf(false) }
     var planEditorTask by remember { mutableStateOf<PlannedTask?>(null) }
     var aboutOpen by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
+    var importError by remember { mutableStateOf<String?>(null) }
 
     fun commit(next: SlidingTasksState): Boolean {
         return runCatching { store.save(next) }
             .onSuccess { state = next; saveError = null }
-            .onFailure { saveError = "Could not save that change. Please try again." }
+            .onFailure { saveError = context.getString(R.string.save_error) }
             .isSuccess
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching {
+                val raw = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    ?: error("Could not open selected file")
+                store.readImport(raw).also { imported ->
+                    check(imported.tasks.isNotEmpty() || imported.cards.isNotEmpty() || imported.events.isNotEmpty()) {
+                        "Selected file contains no task data"
+                    }
+                }.let { engine.openDay(it, today) }
+            }.onSuccess { imported ->
+                if (commit(imported)) {
+                    importError = null
+                    aboutOpen = false
+                    section = AppSection.TODAY
+                }
+            }.onFailure { importError = context.getString(R.string.import_error) }
+        }
     }
     LaunchedEffect(Unit) { commit(state) }
     BackHandler(enabled = planEditorOpen || aboutOpen) {
@@ -130,8 +177,8 @@ fun SlidingTasksApp() {
                         NavigationBarItem(
                             selected = section == item,
                             onClick = { section = item },
-                            icon = { Text(item.label.take(1), fontWeight = FontWeight.Black) },
-                            label = { Text(item.label) },
+                            icon = { Icon(painterResource(item.icon), contentDescription = null) },
+                            label = { Text(stringResource(item.label)) },
                             modifier = Modifier.testTag("nav-${item.name.lowercase()}"),
                         )
                     }
@@ -140,7 +187,12 @@ fun SlidingTasksApp() {
         ) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
                 saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
-                if (aboutOpen) AboutScreen(onBack = { aboutOpen = false }) else when (section) {
+                if (aboutOpen) AboutScreen(
+                    onBack = { aboutOpen = false },
+                    onImport = if (state.tasks.isEmpty() && state.cards.isEmpty() && state.events.isEmpty())
+                        ({ importError = null; importLauncher.launch(arrayOf("application/json", "text/plain")) }) else null,
+                    importError = importError,
+                ) else when (section) {
                     AppSection.TODAY -> TodayScreen(
                         date = today,
                         cards = engine.pendingCards(state),
@@ -201,38 +253,47 @@ fun SlidingTasksApp() {
 }
 
 @Composable
-private fun AboutScreen(onBack: () -> Unit) {
+private fun AboutScreen(onBack: () -> Unit, onImport: (() -> Unit)?, importError: String?) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        PageHeader("SLIDING TASKS", "About", "The past is observed. The future is configured. The present is acted upon.", onBack = onBack)
-        Text("Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
+        PageHeader(stringResource(R.string.sliding_tasks), stringResource(R.string.about), stringResource(R.string.about_tagline), onBack = onBack)
+        Text(stringResource(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE), color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
         HorizontalDivider()
-        Text("Quick guide", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text("Plan: add routines, until-decided tasks, or one-time tasks.")
-        Text("Today: add one-time tasks, slide a card right for Done, or left to skip its current occurrence.")
-        Text("Review: see recent decisions and patterns over time.")
+        Text(stringResource(R.string.quick_guide), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.guide_plan))
+        Text(stringResource(R.string.guide_today))
+        Text(stringResource(R.string.guide_review))
+        if (onImport != null) {
+            HorizontalDivider()
+            Text(stringResource(R.string.restore_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.restore_description))
+            Button(onClick = onImport, modifier = Modifier.testTag("import-saved-tasks")) {
+                Text(stringResource(R.string.import_saved_tasks))
+            }
+            importError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        }
         HorizontalDivider()
-        Text("Wasting No Time", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text("Wasting No Time (WNT) makes Sliding Tasks. The app helps you plan ahead, make a simple choice today, and learn from what you did over time.")
+        Text(stringResource(R.string.wasting_no_time), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.about_wnt))
         HorizontalDivider()
-        Text("Privacy", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text("Effective September 25, 2026")
-        Text("Sliding Tasks is provided by Wasting No Time. It works offline and does not require an account.")
-        Text("Your task titles, schedules, card decisions, and history are stored on this device and are not sent to us or other companies. The app has no ads, product analytics, or sync service.")
+        Text(stringResource(R.string.privacy), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.privacy_effective_date))
+        Text(stringResource(R.string.privacy_intro))
+        Text(stringResource(R.string.privacy_storage))
         if (BuildConfig.DEBUG) {
-            Text("This private alpha APK uses Firebase Crashlytics to send crash and app-not-responding reports to Google so we can fix errors. Reports may include stack traces, app version, device and Android details, timestamps, and installation identifiers. We do not add task content to these reports. The app remains usable offline.")
+            Text(stringResource(R.string.privacy_alpha_diagnostics))
         } else {
-            Text("This Play build does not include Firebase Crashlytics. Android vitals may provide us with diagnostic reports from users who share usage and diagnostics with Google.")
+            Text(stringResource(R.string.privacy_play_diagnostics))
         }
-        Text("You can remove individual planned tasks in the app. To erase all Sliding Tasks data, use Android Settings → Apps → Sliding Tasks → Storage → Clear storage, or uninstall the app. Device backup is disabled for this app.")
+        Text(stringResource(R.string.privacy_erasure))
         if (BuildConfig.DEBUG) {
-            Text("Clearing app storage does not erase reports already sent to Firebase. Contact us if you have questions about those reports.")
+            Text(stringResource(R.string.privacy_firebase_retention))
         }
-        Text("If the app later adds sync, product analytics, or other data processing, this policy will be updated before those features are released.")
-        Text("Questions? Contact sliding-tasks@wastingnotime.org.")
-        Text("Public policy: https://wastingnotime.org/sliding-tasks/privacy/", color = MaterialTheme.colorScheme.primary)
+        Text(stringResource(R.string.privacy_changes))
+        Text(stringResource(R.string.privacy_contact))
+        Text(stringResource(R.string.privacy_public_link), color = MaterialTheme.colorScheme.primary)
     }
 }
 
@@ -246,6 +307,7 @@ private fun PageHeader(
     onBack: (() -> Unit)? = null,
 ) {
     var moreMenuOpen by remember { mutableStateOf(false) }
+    val moreOptionsLabel = stringResource(R.string.more_options)
     Box(Modifier.fillMaxWidth()) {
         Column {
             Text(kicker, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
@@ -265,20 +327,20 @@ private fun PageHeader(
             )
         }
         if (onBack != null) {
-            TextButton(onClick = onBack, modifier = Modifier.align(Alignment.TopEnd)) { Text("Back") }
+            TextButton(onClick = onBack, modifier = Modifier.align(Alignment.TopEnd)) { Text(stringResource(R.string.back)) }
         }
         if (onAbout != null) Box(Modifier.align(Alignment.TopEnd)) {
             Box(
                 Modifier.size(48.dp)
                     .testTag("more-options")
-                    .semantics { contentDescription = "More options" }
+                    .semantics { contentDescription = moreOptionsLabel }
                     .clickable(role = Role.Button) { moreMenuOpen = true },
             ) {
                 Text("⋮", modifier = Modifier.align(Alignment.TopCenter), fontSize = 22.sp)
             }
             DropdownMenu(expanded = moreMenuOpen, onDismissRequest = { moreMenuOpen = false }) {
                 DropdownMenuItem(
-                    text = { Text("About") },
+                    text = { Text(stringResource(R.string.about)) },
                     onClick = { moreMenuOpen = false; onAbout() },
                     modifier = Modifier.testTag("about-menu-item"),
                 )
@@ -298,7 +360,7 @@ private fun TodayScreen(
     onResumeOneTime: (String) -> Unit,
     onRemoveOneTime: (String) -> Unit,
 ) {
-    val count = cards.size.toString() + " " + if (cards.size == 1) "card left" else "cards left"
+    val count = stringResource(if (cards.size == 1) R.string.card_left else R.string.cards_left, cards.size)
     var addingOneTime by remember { mutableStateOf(false) }
     var oneTimeTitle by remember { mutableStateOf("") }
     var pendingRemoval by remember { mutableStateOf<PlannedTask?>(null) }
@@ -306,12 +368,12 @@ private fun TodayScreen(
     if (addingOneTime) {
         AlertDialog(
             onDismissRequest = { addingOneTime = false },
-            title = { Text("Add for today") },
+            title = { Text(stringResource(R.string.add_for_today)) },
             text = {
                 OutlinedTextField(
                     value = oneTimeTitle,
                     onValueChange = { oneTimeTitle = it },
-                    label = { Text("What needs doing?") },
+                    label = { Text(stringResource(R.string.what_needs_doing)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("one-time-title"),
                 )
@@ -326,22 +388,22 @@ private fun TodayScreen(
                     },
                     enabled = oneTimeTitle.isNotBlank(),
                     modifier = Modifier.testTag("save-one-time"),
-                ) { Text("Add") }
+                ) { Text(stringResource(R.string.add)) }
             },
-            dismissButton = { TextButton(onClick = { addingOneTime = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { addingOneTime = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
     pendingRemoval?.let { task ->
         AlertDialog(
             onDismissRequest = { pendingRemoval = null },
-            title = { Text("Remove one-time entry?") },
-            text = { Text(task.title + " will be removed. Existing cards and history are preserved.") },
+            title = { Text(stringResource(R.string.remove_one_time_entry)) },
+            text = { Text(stringResource(R.string.remove_one_time_message, task.title)) },
             confirmButton = {
                 TextButton(onClick = { onRemoveOneTime(task.id); pendingRemoval = null }) {
-                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { pendingRemoval = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { pendingRemoval = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
@@ -350,25 +412,25 @@ private fun TodayScreen(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item { PageHeader("TODAY", date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), count, "remaining-count", onAbout) }
+        item { PageHeader(stringResource(R.string.today_text), localizedDate(date, FormatStyle.FULL), count, "remaining-count", onAbout) }
         item {
             OutlinedButton(
                 onClick = { oneTimeTitle = ""; addingOneTime = true },
                 modifier = Modifier.fillMaxWidth().testTag("add-one-time"),
-            ) { Text("Add one-time task") }
+            ) { Text(stringResource(R.string.add_one_time_task)) }
         }
         if (pausedOneTimeTasks.isNotEmpty()) {
             item {
-                Text("PAUSED ONE-TIME ENTRIES", color = MaterialTheme.colorScheme.primary,
+                Text(stringResource(R.string.paused_one_time_entries), color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             }
             items(pausedOneTimeTasks, key = { "paused-" + it.id }) { task ->
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(task.title, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                        TextButton(onClick = { onResumeOneTime(task.id) }) { Text("Resume") }
+                        TextButton(onClick = { onResumeOneTime(task.id) }) { Text(stringResource(R.string.resume)) }
                         TextButton(onClick = { pendingRemoval = task }) {
-                            Text("Remove", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -378,7 +440,7 @@ private fun TodayScreen(
             item { EmptyBoard() }
         } else {
             item {
-                Text("Slide left to skip · right for done",
+                Text(stringResource(R.string.slide_left_to_skip_right_for_done),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f), fontSize = 14.sp)
             }
             items(cards, key = { it.id }) { card -> SwipeableTaskCard(card, onCommand) }
@@ -396,6 +458,8 @@ private fun PlanScreen(
     onMove: (String, Int) -> Unit,
     onRemove: (String) -> Unit,
 ) {
+    val moveUpLabel = stringResource(R.string.move_up)
+    val moveDownLabel = stringResource(R.string.move_down)
     var pendingRemoval by remember { mutableStateOf<PlannedTask?>(null) }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
@@ -442,28 +506,28 @@ private fun PlanScreen(
     pendingRemoval?.let { task ->
         AlertDialog(
             onDismissRequest = { pendingRemoval = null },
-            title = { Text("Remove from plan?") },
-            text = { Text(task.title + " will stop appearing on future days. Existing cards and history are preserved.") },
+            title = { Text(stringResource(R.string.remove_from_plan)) },
+            text = { Text(stringResource(R.string.remove_plan_message, task.title)) },
             confirmButton = {
                 TextButton(onClick = { onRemove(task.id); pendingRemoval = null }) {
-                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { pendingRemoval = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { pendingRemoval = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
-        PageHeader("PLAN", "Your plans", tasks.size.toString() + " planned entries", onAbout = onAbout)
+        PageHeader(stringResource(R.string.plan_text), stringResource(R.string.your_plans), quantity(R.plurals.planned_entries, tasks.size), onAbout = onAbout)
         Spacer(Modifier.height(20.dp))
         Button(onClick = onAdd, modifier = Modifier.fillMaxWidth().testTag("add-entry")) {
-            Text("Add task")
+            Text(stringResource(R.string.add_task))
         }
         Spacer(Modifier.height(12.dp))
         if (tasks.isEmpty()) {
-            Text("No plans yet.", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
+            Text(stringResource(R.string.no_plans_yet), color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
         } else {
-            Text("Touch and hold an entry to reorder", color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f), fontSize = 13.sp)
+            Text(stringResource(R.string.reorder_hint), color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f), fontSize = 13.sp)
             Spacer(Modifier.height(8.dp))
             Box(Modifier.fillMaxSize()) {
             LazyColumn(
@@ -501,11 +565,11 @@ private fun PlanScreen(
                             .alpha(if (draggingId == task.id) .25f else 1f)
                             .semantics {
                                 customActions = buildList {
-                                    if (index > 0) add(CustomAccessibilityAction("Move up") {
+                                    if (index > 0) add(CustomAccessibilityAction(moveUpLabel) {
                                         onMove(task.id, -1)
                                         true
                                     })
-                                    if (index < tasks.lastIndex) add(CustomAccessibilityAction("Move down") {
+                                    if (index < tasks.lastIndex) add(CustomAccessibilityAction(moveDownLabel) {
                                         onMove(task.id, 1)
                                         true
                                     })
@@ -527,11 +591,11 @@ private fun PlanScreen(
                             }
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                 TextButton(onClick = { onEdit(task) }, modifier = Modifier.testTag("edit-" + task.id)) {
-                                    Text("Edit")
+                                    Text(stringResource(R.string.edit))
                                 }
                                 TextButton(onClick = { pendingRemoval = task },
                                     modifier = Modifier.testTag("remove-" + task.id)) {
-                                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                                    Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error)
                                 }
                             }
                         }
@@ -558,29 +622,39 @@ private fun PlanScreen(
     }
 }
 
-private fun PlannedTask.scheduleSummary() = buildString {
-    append(when (schedule.kind) {
-        ScheduleKind.ONCE -> "One-time"
-        ScheduleKind.DAILY -> "Routine · " +
-            if (schedule.interval == 1) "Daily" else "Every ${schedule.interval} days"
-        ScheduleKind.WEEKLY_DAYS -> "Routine · " +
-            if (schedule.interval == 1) "Weekly" else "Every ${schedule.interval} weeks"
-        ScheduleKind.ONCE_PER_WEEK -> "Until decided · " +
-            if (schedule.interval == 1) "Every week" else "Every ${schedule.interval} weeks"
-    })
-    if (schedule.kind == ScheduleKind.WEEKLY_DAYS || schedule.kind == ScheduleKind.ONCE_PER_WEEK) {
-        append(" · ")
-        append(schedule.days.daySelectionLabel())
+@Composable
+private fun PlannedTask.scheduleSummary(): String {
+    val cadence = when (schedule.kind) {
+        ScheduleKind.ONCE -> stringResource(R.string.one_time)
+        ScheduleKind.DAILY -> stringResource(R.string.routine_cadence,
+            if (schedule.interval == 1) stringResource(R.string.daily) else stringResource(R.string.every_days, schedule.interval))
+        ScheduleKind.WEEKLY_DAYS -> stringResource(R.string.routine_cadence,
+            if (schedule.interval == 1) stringResource(R.string.weekly) else stringResource(R.string.every_weeks, schedule.interval))
+        ScheduleKind.ONCE_PER_WEEK -> stringResource(R.string.until_decided_cadence,
+            if (schedule.interval == 1) stringResource(R.string.every_week) else stringResource(R.string.every_weeks, schedule.interval))
     }
-    if (resolved) append(" · Resolved")
+    val withDays = if (schedule.kind == ScheduleKind.WEEKLY_DAYS || schedule.kind == ScheduleKind.ONCE_PER_WEEK)
+        stringResource(R.string.summary_join, cadence, schedule.days.daySelectionLabel()) else cadence
+    return if (resolved) stringResource(R.string.summary_join, withDays, stringResource(R.string.resolved)) else withDays
 }
 
+@Composable
 private fun Set<DayOfWeek>.daySelectionLabel(): String = when (this) {
-    allWeekDays -> "Any day"
-    weekdays -> "Weekdays"
-    setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) -> "Weekend"
-    else -> DayOfWeek.entries.filter { it in this }.joinToString(", ") { it.name.take(3).lowercase().replaceFirstChar(Char::uppercase) }
+    allWeekDays -> stringResource(R.string.any_day)
+    weekdays -> stringResource(R.string.weekdays)
+    setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) -> stringResource(R.string.weekend)
+    else -> {
+        val locale = LocalConfiguration.current.locales[0]
+        DayOfWeek.entries.filter { it in this }.joinToString(", ") { it.getDisplayName(java.time.format.TextStyle.SHORT, locale) }
+    }
 }
+
+@Composable
+private fun localizedDate(date: LocalDate, style: FormatStyle): String =
+    date.format(DateTimeFormatter.ofLocalizedDate(style).withLocale(LocalConfiguration.current.locales[0]))
+
+@Composable
+private fun quantity(id: Int, count: Int): String = LocalContext.current.resources.getQuantityString(id, count, count)
 
 @Composable
 private fun PlanEditor(
@@ -616,14 +690,14 @@ private fun PlanEditor(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Column(Modifier.fillMaxSize().imePadding().padding(horizontal = 20.dp, vertical = 16.dp)) {
-        TextButton(onClick = onCancel, modifier = Modifier.testTag("cancel-edit")) { Text("Cancel") }
-        PageHeader("PLAN", if (task == null) "New task" else "Edit task", "Choose when it appears and what closes it.")
+        TextButton(onClick = onCancel, modifier = Modifier.testTag("cancel-edit")) { Text(stringResource(R.string.cancel)) }
+        PageHeader(stringResource(R.string.plan_text), if (task == null) stringResource(R.string.new_task) else stringResource(R.string.edit_task), stringResource(R.string.plan_editor_hint))
         Spacer(Modifier.height(16.dp))
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("What do you want to do?") },
+                label = { Text(stringResource(R.string.what_do_you_want_to_do)) },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = {
                     focusManager.clearFocus()
@@ -632,7 +706,7 @@ private fun PlanEditor(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("task-title"),
             )
-            Text("Type", modifier = Modifier.padding(top = 14.dp), fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.type), modifier = Modifier.padding(top = 14.dp), fontWeight = FontWeight.Bold)
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PlanMode.entries.forEach { candidate ->
@@ -648,21 +722,21 @@ private fun PlanEditor(
                             focusManager.clearFocus()
                             keyboardController?.hide()
                         },
-                        label = { Text(candidate.label) },
+                        label = { Text(stringResource(candidate.label)) },
                         modifier = Modifier.testTag("mode-" + candidate.name.lowercase()),
                     )
                 }
             }
             Text(
                 when (mode) {
-                    PlanMode.ROUTINE -> "A new card appears on each scheduled day."
-                    PlanMode.UNTIL_DECIDED -> "One card per active week. Done or Skip this week closes it."
-                    PlanMode.ONE_TIME -> "One card carries forward until you mark it Done or Skip task."
+                    PlanMode.ROUTINE -> stringResource(R.string.routine_explanation)
+                    PlanMode.UNTIL_DECIDED -> stringResource(R.string.until_decided_explanation)
+                    PlanMode.ONE_TIME -> stringResource(R.string.one_time_explanation)
                 },
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f),
             )
             if (mode == PlanMode.ROUTINE) {
-                Text("Schedule", modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.schedule), modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(ScheduleKind.DAILY, ScheduleKind.WEEKLY_DAYS).forEach { candidate ->
@@ -676,14 +750,14 @@ private fun PlanEditor(
                                     startsOn = currentDate
                                 }
                             },
-                            label = { Text(candidate.label) },
+                            label = { Text(stringResource(if (candidate == ScheduleKind.DAILY) R.string.daily else R.string.weekly)) },
                             modifier = Modifier.testTag("repeat-" + candidate.name.lowercase()),
                         )
                     }
                 }
             }
             if (mode != PlanMode.ONE_TIME) {
-                Text(if (kind == ScheduleKind.DAILY) "Every how many days?" else "Every how many weeks?",
+                Text(if (kind == ScheduleKind.DAILY) stringResource(R.string.every_how_many_days) else stringResource(R.string.every_how_many_weeks),
                     modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -700,24 +774,23 @@ private fun PlanEditor(
                             modifier = Modifier
                                 .testTag("repeat-interval-$candidate")
                                 .semantics {
-                                    contentDescription = "Every $candidate " +
-                                        if (kind == ScheduleKind.DAILY) "days" else "weeks"
+                                    contentDescription = context.getString(
+                                        if (kind == ScheduleKind.DAILY) R.string.every_days else R.string.every_weeks, candidate)
                                 },
                         )
                     }
                 }
                 if (interval !in intervalOptions) {
-                    Text("This routine is currently set to every $interval " +
-                        if (kind == ScheduleKind.DAILY) "days. Choose 1–7 to change it."
-                        else "weeks. Choose 1–4 to change it.",
+                    Text(if (kind == ScheduleKind.DAILY) stringResource(R.string.long_days_interval, interval)
+                        else stringResource(R.string.long_weeks_interval, interval),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
                 }
                 if (kind != ScheduleKind.DAILY) {
-                    Text("Days", modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.days), modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("Any day" to allWeekDays, "Weekdays" to weekdays,
-                            "Weekend" to setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)).forEach { (label, selection) ->
+                        listOf(stringResource(R.string.any_day) to allWeekDays, stringResource(R.string.weekdays) to weekdays,
+                            stringResource(R.string.weekend) to setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)).forEach { (label, selection) ->
                             FilterChip(
                                 selected = days == selection,
                                 onClick = { days = selection },
@@ -731,12 +804,12 @@ private fun PlanEditor(
                             FilterChip(
                                 selected = day in days,
                                 onClick = { days = if (day in days) days - day else days + day },
-                                label = { Text(day.name.take(3).lowercase().replaceFirstChar(Char::uppercase)) },
+                                label = { Text(day.getDisplayName(java.time.format.TextStyle.SHORT, LocalConfiguration.current.locales[0])) },
                                 modifier = Modifier.testTag("day-" + day.name.lowercase()),
                             )
                         }
                     }
-                    if (days.isEmpty()) Text("Select at least one day", color = MaterialTheme.colorScheme.error)
+                    if (days.isEmpty()) Text(stringResource(R.string.select_at_least_one_day), color = MaterialTheme.colorScheme.error)
                 }
                 if (interval > 1) {
                     TextButton(onClick = {
@@ -744,7 +817,8 @@ private fun PlanEditor(
                             startsOn = LocalDate.of(year, month + 1, day)
                         }, startsOn.year, startsOn.monthValue - 1, startsOn.dayOfMonth).show()
                     }, modifier = Modifier.testTag("repeat-start")) {
-                        Text((if (kind == ScheduleKind.DAILY) "First active day: " else "First active week: ") + startsOn)
+                        Text(stringResource(if (kind == ScheduleKind.DAILY) R.string.first_active_day else R.string.first_active_week,
+                            localizedDate(startsOn, FormatStyle.MEDIUM)))
                     }
                 }
             }
@@ -754,7 +828,7 @@ private fun PlanEditor(
             onClick = { onSave(title, TaskSchedule(kind, interval, days, startsOn)) },
             enabled = title.isNotBlank() && (kind == ScheduleKind.ONCE || kind == ScheduleKind.DAILY || days.isNotEmpty()),
             modifier = Modifier.fillMaxWidth().testTag(if (task == null) "add-task" else "save-task"),
-        ) { Text(if (task == null) "Add task" else "Save changes") }
+        ) { Text(if (task == null) stringResource(R.string.add_task) else stringResource(R.string.save_changes)) }
     }
 }
 
@@ -769,15 +843,16 @@ private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: ()
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            PageHeader("REVIEW", "Your recent patterns", "A quick look at today and the recent past.", onAbout = onAbout)
+            PageHeader(stringResource(R.string.review_text), stringResource(R.string.your_recent_patterns), stringResource(R.string.review_intro), onAbout = onAbout)
         }
         item {
             ReviewMetricCard(
-                title = "THIS WEEK",
-                headline = if (review.week.closed + review.week.open == 0) "No cards yet" else
-                    review.week.done.toString() + " done",
-                detail = review.week.skipped.toString() + " Skipped · " +
-                    review.week.missed + " missed · " + review.week.open + " still open",
+                title = stringResource(R.string.this_week),
+                headline = if (review.week.closed + review.week.open == 0) stringResource(R.string.no_cards_yet) else
+                    quantity(R.plurals.done_count, review.week.done),
+                detail = listOf(quantity(R.plurals.skipped_count, review.week.skipped),
+                    quantity(R.plurals.missed_count, review.week.missed),
+                    quantity(R.plurals.still_open_count, review.week.open)).joinToString(" · "),
                 tag = "review-week",
             )
         }
@@ -787,33 +862,33 @@ private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: ()
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             ) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("LAST 14 FULL DAYS", color = MaterialTheme.colorScheme.primary,
+                    Text(stringResource(R.string.last_14_full_days), color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontSize = 12.sp)
-                    ReviewPatternRow("Missed most", review.mostMissed, "No clear pattern yet", "missed")
+                    ReviewPatternRow(stringResource(R.string.missed_most), review.mostMissed, stringResource(R.string.no_clear_pattern_yet), R.string.pattern_missed)
                     HorizontalDivider()
-                    ReviewPatternRow("Most often skipped", review.mostSkipped, "None recently", "skipped")
+                    ReviewPatternRow(stringResource(R.string.most_often_skipped), review.mostSkipped, stringResource(R.string.none_recently), R.string.pattern_skipped)
                     HorizontalDivider()
-                    ReviewPatternRow("Kept up with", review.mostDone, "Not enough completed days yet", "done")
+                    ReviewPatternRow(stringResource(R.string.kept_up_with), review.mostDone, stringResource(R.string.not_enough_days), R.string.pattern_done)
                 }
             }
         }
         item {
             val trend = review.trend
             ReviewMetricCard(
-                title = "RECENT DIRECTION",
-                headline = if (trend == null) "Not enough history yet" else
-                    trend.recent.donePercent.toString() + "% vs " + trend.previous.donePercent + "%",
-                detail = if (trend == null) "Needs at least 3 closed cards in each 7-day period" else
-                    "Done share of closed cards: last 7 full days vs previous 7",
+                title = stringResource(R.string.recent_direction),
+                headline = if (trend == null) stringResource(R.string.not_enough_history_yet) else
+                    stringResource(R.string.trend_compare, trend.recent.donePercent, trend.previous.donePercent),
+                detail = if (trend == null) stringResource(R.string.trend_insufficient_cards) else
+                    stringResource(R.string.trend_description),
                 tag = "review-trend",
             )
         }
         item {
-            Text("RECENT DAYS", color = MaterialTheme.colorScheme.primary,
+            Text(stringResource(R.string.recent_days), color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
         if (review.days.isEmpty()) {
-            item { Text("Your recent card decisions will appear here.",
+            item { Text(stringResource(R.string.recent_days_empty),
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f)) }
         } else {
             items(review.days, key = { it.first.toString() }) { (date, cards) ->
@@ -825,18 +900,17 @@ private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: ()
                 ) {
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+                            Text(localizedDate(date, FormatStyle.MEDIUM),
                                 fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
-                            Text(if (expanded) "Hide" else "Show",
+                            Text(if (expanded) stringResource(R.string.hide) else stringResource(R.string.show),
                                 color = MaterialTheme.colorScheme.primary)
                         }
                         val counts = cards.groupingBy { it.status }.eachCount()
                         Text(
-                            (counts[CardStatus.DONE] ?: 0).toString() + " done · " +
-                                (counts[CardStatus.DISMISSED] ?: 0) + " Skipped · " +
-                                (counts[CardStatus.MISSED] ?: 0) + " missed" +
-                                if ((counts[CardStatus.PENDING] ?: 0) > 0) " · " +
-                                    counts[CardStatus.PENDING] + " open" else "",
+                            (listOf(quantity(R.plurals.done_count, counts[CardStatus.DONE] ?: 0),
+                                quantity(R.plurals.skipped_count, counts[CardStatus.DISMISSED] ?: 0),
+                                quantity(R.plurals.missed_count, counts[CardStatus.MISSED] ?: 0)) +
+                                if ((counts[CardStatus.PENDING] ?: 0) > 0) listOf(quantity(R.plurals.open_count, counts[CardStatus.PENDING] ?: 0)) else emptyList()).joinToString(" · "),
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f),
                         )
                         if (expanded) {
@@ -874,27 +948,37 @@ private fun ReviewMetricCard(title: String, headline: String, detail: String, ta
 }
 
 @Composable
-private fun ReviewPatternRow(label: String, pattern: ReviewPattern?, empty: String, measure: String) {
+private fun ReviewPatternRow(label: String, pattern: ReviewPattern?, empty: String, measure: Int) {
     Column {
         Text(label, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontSize = 13.sp)
         Text(pattern?.title ?: empty, color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.SemiBold)
         if (pattern != null) Text(
-            pattern.matching.toString() + " of " + pattern.total + " recent card days " + measure,
+            stringResource(R.string.pattern_count, pattern.matching, pattern.total, stringResource(measure)),
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontSize = 13.sp,
         )
     }
 }
 
+@Composable
 private fun CardStatus.reviewLabel() = when (this) {
-    CardStatus.PENDING -> "OPEN"
-    CardStatus.DONE -> "DONE"
-    CardStatus.DISMISSED -> "SKIPPED"
-    CardStatus.MISSED -> "MISSED"
+    CardStatus.PENDING -> stringResource(R.string.open)
+    CardStatus.DONE -> stringResource(R.string.done)
+    CardStatus.DISMISSED -> stringResource(R.string.skipped)
+    CardStatus.MISSED -> stringResource(R.string.missed)
 }
 
 @Composable
+private fun SkipScope.localizedLabel(): String = stringResource(when (this) {
+    SkipScope.TODAY -> R.string.skip_today
+    SkipScope.WEEK -> R.string.skip_this_week
+    SkipScope.TASK -> R.string.skip_task
+})
+
+@Composable
 private fun SwipeableTaskCard(card: TaskCard, onCommand: (CardCommand) -> Unit) {
+    val skipLabel = card.skipScope.localizedLabel()
+    val markDoneLabel = stringResource(R.string.mark_done)
     var offsetX by remember(card.id) { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
     val currentOnCommand by rememberUpdatedState(onCommand)
@@ -902,8 +986,8 @@ private fun SwipeableTaskCard(card: TaskCard, onCommand: (CardCommand) -> Unit) 
     val progress = if (cardWidth == 0f) 0f else (offsetX / (cardWidth * .28f)).coerceIn(-1f, 1f)
     Box(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("DONE", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Black, modifier = Modifier.alpha(progress.coerceAtLeast(0f)))
-            Text(card.skipScope.label.uppercase(), color = MaterialTheme.colorScheme.primary,
+            Text(stringResource(R.string.done), color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Black, modifier = Modifier.alpha(progress.coerceAtLeast(0f)))
+            Text(skipLabel.uppercase(LocalConfiguration.current.locales[0]), color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Black, modifier = Modifier.alpha((-progress).coerceAtLeast(0f)))
         }
         TaskCardView(
@@ -911,8 +995,8 @@ private fun SwipeableTaskCard(card: TaskCard, onCommand: (CardCommand) -> Unit) 
             Modifier.testTag("card-${card.id}")
                 .semantics {
                     customActions = listOf(
-                        CustomAccessibilityAction("Mark done") { currentOnCommand(CardCommand.Complete(card.id)); true },
-                        CustomAccessibilityAction(card.skipScope.label) { currentOnCommand(CardCommand.Dismiss(card.id)); true },
+                        CustomAccessibilityAction(markDoneLabel) { currentOnCommand(CardCommand.Complete(card.id)); true },
+                        CustomAccessibilityAction(skipLabel) { currentOnCommand(CardCommand.Dismiss(card.id)); true },
                     )
                 }
                 .onSizeChanged { cardWidth = it.width.toFloat() }
@@ -941,6 +1025,7 @@ private fun SwipeableTaskCard(card: TaskCard, onCommand: (CardCommand) -> Unit) 
 
 @Composable
 private fun TaskCardView(card: TaskCard, modifier: Modifier = Modifier) {
+    val skipLabel = card.skipScope.localizedLabel()
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -953,24 +1038,25 @@ private fun TaskCardView(card: TaskCard, modifier: Modifier = Modifier) {
                 Text(card.planLabel().uppercase(), Modifier.padding(start = 8.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
             }
             Text(card.title, Modifier.padding(vertical = 18.dp), color = MaterialTheme.colorScheme.onSurface, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
-            Text("Slide right for Done · left to ${card.skipScope.label.lowercase()}",
+            Text(stringResource(R.string.card_slide_hint, skipLabel.replaceFirstChar { it.lowercase() }),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontSize = 14.sp)
         }
     }
 }
 
+@Composable
 private fun TaskCard.planLabel(): String = when {
-    type == TaskType.ONE_TIME -> "One-time"
-    skipScope == SkipScope.WEEK -> "Until decided"
-    else -> "Routine"
+    type == TaskType.ONE_TIME -> stringResource(R.string.one_time)
+    skipScope == SkipScope.WEEK -> stringResource(R.string.until_decided)
+    else -> stringResource(R.string.routine)
 }
 
 @Composable
 private fun EmptyBoard() {
     Box(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(24.dp)).padding(28.dp)) {
         Column {
-            Text("All clear.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            Text("The present is handled.", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f), fontSize = 17.sp)
+            Text(stringResource(R.string.all_clear), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.the_present_is_handled), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f), fontSize = 17.sp)
         }
     }
 }

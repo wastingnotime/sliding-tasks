@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <rect width="1024" height="500" fill="#fff8f3"/>
+  <circle cx="873" cy="-12" r="212" fill="#f5eee8"/>
+  <circle cx="977" cy="460" r="191" fill="#f5eee8"/>
+  <text x="72" y="117" fill="#377a45" font-family="DejaVu Sans,sans-serif" font-size="22" font-weight="700" letter-spacing="2">SLIDING TASKS</text>
+  <text x="68" y="222" fill="#231f20" font-family="DejaVu Sans,sans-serif" font-size="57" font-weight="700">Make room</text>
+  <text x="68" y="296" fill="#231f20" font-family="DejaVu Sans,sans-serif" font-size="57" font-weight="700">for today.</text>
+  <text x="72" y="362" fill="#645f5a" font-family="DejaVu Sans,sans-serif" font-size="21">Plan routines. Decide. Review.</text>
+  <g transform="translate(563 65) scale(3.35)">
+    <path d="M34 29h32q6 0 6 6v32q0 6-6 6H34q-6 0-6-6V35q0-6 6-6Z" fill="#377a45"/>
+    <path d="M43 37h32q6 0 6 6v32q0 6-6 6H43q-6 0-6-6V43q0-6 6-6Z" fill="#e85d3f"/>
+    <path d="m48 59 8 8 14-16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

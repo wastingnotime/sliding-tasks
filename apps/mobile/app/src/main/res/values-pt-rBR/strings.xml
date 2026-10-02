@@ -74,6 +74,8 @@
     <string name="every_how_many_days">A cada quantos dias?</string>
     <string name="every_how_many_weeks">A cada quantas semanas?</string>
     <string name="days">Dias</string>
+    <string name="weekly_days_hint">Escolha uma opção pronta ou toque em um ou mais dias em que a tarefa aparece.</string>
+    <string name="until_decided_days_hint">Escolha uma opção pronta ou toque em um ou mais dias em que a tarefa pode aparecer.</string>
     <string name="select_at_least_one_day">Selecione pelo menos um dia</string>
     <string name="save_changes">Salvar alterações</string>
     <string name="review_text">REVISAR</string>

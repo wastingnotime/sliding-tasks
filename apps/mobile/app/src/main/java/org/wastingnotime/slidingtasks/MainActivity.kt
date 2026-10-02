@@ -787,6 +787,10 @@ private fun PlanEditor(
                 }
                 if (kind != ScheduleKind.DAILY) {
                     Text(stringResource(R.string.days), modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(if (kind == ScheduleKind.WEEKLY_DAYS) R.string.weekly_days_hint else R.string.until_decided_days_hint),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f),
+                    )
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(stringResource(R.string.any_day) to allWeekDays, stringResource(R.string.weekdays) to weekdays,

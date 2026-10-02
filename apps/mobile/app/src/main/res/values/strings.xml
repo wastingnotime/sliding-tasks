@@ -74,6 +74,8 @@
     <string name="every_how_many_days">Every how many days?</string>
     <string name="every_how_many_weeks">Every how many weeks?</string>
     <string name="days">Days</string>
+    <string name="weekly_days_hint">Choose a preset or tap one or more days when the task appears.</string>
+    <string name="until_decided_days_hint">Choose a preset or tap one or more days when the task can appear.</string>
     <string name="select_at_least_one_day">Select at least one day</string>
     <string name="save_changes">Save changes</string>
     <string name="review_text">REVIEW</string>

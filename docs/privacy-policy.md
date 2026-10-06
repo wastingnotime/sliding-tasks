@@ -8,9 +8,11 @@ require an account.
 ## Information stored on your device
 
 Your task titles, schedules, card decisions, and history are stored on your
-device. You can export them to a file you choose using Android's document
-picker. The exported file contains private task content, so store it securely.
-Your chosen document provider may store or sync that file. The app itself does
+device. You can export them to a file you choose or select a folder for
+automatic daily backups using Android's document picker. Automatic backups
+keep the seven newest copies in that folder. Backup files contain private task
+content, so choose a secure location. Your chosen document provider may store
+or sync these files. The app itself does
 not send task data to Wasting No Time or other companies. The app
 has no ads, product analytics, or sync service.
 

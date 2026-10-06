@@ -48,6 +48,18 @@ Import into a nonempty installation remains disallowed. A cancelled export or
 import leaves local data unchanged. If writing fails, choose another location
 and export again; an incomplete file at the first location should be discarded.
 
+**About → Automatic backups → Choose backup folder** asks for folder access
+once through Android's system picker. The app writes an immediate backup, then
+uses WorkManager to write another approximately once per day without opening
+the app or asking again. Each file uses the same versioned JSON format as
+manual export. The app keeps the seven newest automatic files in that folder;
+manual exports and other files are untouched. About shows the last successful
+backup or a failure notice. Changing the folder leaves old files where they
+were. Turning off automatic backups cancels scheduled work and leaves existing
+files in place. A folder on this device does not protect against device loss;
+choose a document provider that syncs across devices if that protection is
+needed. Android may delay background work, so the interval is approximate.
+
 ## Alpha distribution with Firebase
 
 Use Firebase App Distribution for the first private alpha with a small group

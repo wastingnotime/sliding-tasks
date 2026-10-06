@@ -1,0 +1,148 @@
+package org.wastingnotime.slidingtasks.data
+
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.Worker
+import androidx.work.WorkerParameters
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
+
+data class BackupStatus(
+    val enabled: Boolean,
+    val lastSuccessMillis: Long?,
+    val lastAttemptFailed: Boolean,
+)
+
+class ScheduledBackup(private val context: Context) {
+    private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    private val workManager = WorkManager.getInstance(context)
+
+    fun status() = BackupStatus(
+        enabled = preferences.contains(KEY_FOLDER),
+        lastSuccessMillis = preferences.getLong(KEY_LAST_SUCCESS, 0L).takeIf { it > 0L },
+        lastAttemptFailed = preferences.getBoolean(KEY_LAST_FAILURE, false),
+    )
+
+    fun configure(folder: Uri) {
+        val resolver = context.contentResolver
+        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        val previous = preferences.getString(KEY_FOLDER, null)
+        resolver.takePersistableUriPermission(folder, flags)
+        val writable = runCatching {
+            DocumentFile.fromTreeUri(context, folder)?.let { it.isDirectory && it.canWrite() } == true
+        }.getOrDefault(false)
+        if (!writable) {
+            if (previous != folder.toString()) {
+                runCatching { resolver.releasePersistableUriPermission(folder, flags) }
+            }
+            error("Selected backup folder is unavailable")
+        }
+        val editor = preferences.edit().putString(KEY_FOLDER, folder.toString())
+            .putBoolean(KEY_LAST_FAILURE, false)
+        if (previous != folder.toString()) editor.remove(KEY_LAST_SUCCESS)
+        if (!editor.commit()) {
+            if (previous != folder.toString()) {
+                runCatching { resolver.releasePersistableUriPermission(folder, flags) }
+            }
+            error("Could not save backup folder")
+        }
+        ensureScheduled()
+        workManager.enqueueUniqueWork(
+            IMMEDIATE_WORK,
+            ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequestBuilder<BackupWorker>().build(),
+        )
+        if (previous != null && previous != folder.toString()) {
+            runCatching { resolver.releasePersistableUriPermission(Uri.parse(previous), flags) }
+        }
+    }
+
+    fun ensureScheduled() {
+        if (!preferences.contains(KEY_FOLDER)) return
+        workManager.enqueueUniquePeriodicWork(
+            PERIODIC_WORK,
+            ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequestBuilder<BackupWorker>(1, TimeUnit.DAYS)
+                .setInitialDelay(1, TimeUnit.DAYS).build(),
+        )
+    }
+
+    fun disable() {
+        val previous = preferences.getString(KEY_FOLDER, null)
+        check(preferences.edit().remove(KEY_FOLDER).remove(KEY_LAST_FAILURE)
+            .remove(KEY_LAST_SUCCESS).commit()) {
+            "Could not disable scheduled backups"
+        }
+        workManager.cancelUniqueWork(PERIODIC_WORK)
+        workManager.cancelUniqueWork(IMMEDIATE_WORK)
+        if (previous != null) {
+            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            runCatching { context.contentResolver.releasePersistableUriPermission(Uri.parse(previous), flags) }
+        }
+    }
+
+    companion object {
+        const val PREFERENCES_NAME = "scheduled_backup"
+        internal const val KEY_FOLDER = "folder_uri"
+        internal const val KEY_LAST_SUCCESS = "last_success"
+        internal const val KEY_LAST_FAILURE = "last_failure"
+        private const val PERIODIC_WORK = "daily_task_backup"
+        private const val IMMEDIATE_WORK = "initial_task_backup"
+    }
+}
+
+class BackupWorker(context: Context, parameters: WorkerParameters) : Worker(context, parameters) {
+    override fun doWork(): Result {
+        val preferences = applicationContext.getSharedPreferences(
+            ScheduledBackup.PREFERENCES_NAME, Context.MODE_PRIVATE,
+        )
+        val folderUri = preferences.getString(ScheduledBackup.KEY_FOLDER, null) ?: return Result.success()
+        return runCatching {
+            writeBackup(Uri.parse(folderUri))
+            check(preferences.edit().putLong(ScheduledBackup.KEY_LAST_SUCCESS, System.currentTimeMillis())
+                .putBoolean(ScheduledBackup.KEY_LAST_FAILURE, false).commit()) {
+                "Could not save backup status"
+            }
+        }.fold(
+            onSuccess = { Result.success() },
+            onFailure = {
+                preferences.edit().putBoolean(ScheduledBackup.KEY_LAST_FAILURE, true).commit()
+                if (runAttemptCount < 2) Result.retry() else Result.failure()
+            },
+        )
+    }
+
+    private fun writeBackup(folderUri: Uri) {
+        val folder = DocumentFile.fromTreeUri(applicationContext, folderUri)
+            ?.takeIf { it.isDirectory && it.canWrite() }
+            ?: error("Backup folder is unavailable")
+        val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS")
+            .withZone(ZoneOffset.UTC).format(Instant.now())
+        val file = folder.createFile("application/json", "sliding-tasks-auto-$timestamp.json")
+            ?: error("Could not create backup file")
+        try {
+            val json = LocalTaskStore(applicationContext).let { it.export(it.load()) }
+            applicationContext.contentResolver.openOutputStream(file.uri, "wt")
+                ?.bufferedWriter(Charsets.UTF_8)?.use { it.write(json) }
+                ?: error("Could not write backup file")
+        } catch (error: Exception) {
+            runCatching { file.delete() }
+            throw error
+        }
+        folder.listFiles()
+            .filter { it.isFile && it.name?.startsWith("sliding-tasks-auto-") == true &&
+                it.name?.endsWith(".json") == true }
+            .sortedByDescending { it.name }
+            .drop(7)
+            .forEach { it.delete() }
+    }
+}

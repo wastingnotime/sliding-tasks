@@ -78,6 +78,8 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
+    implementation("androidx.documentfile:documentfile:1.1.0")
 
     debugImplementation(platform("com.google.firebase:firebase-bom:34.19.0"))
     debugImplementation("com.google.firebase:firebase-crashlytics")

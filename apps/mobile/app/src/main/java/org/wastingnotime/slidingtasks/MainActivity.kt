@@ -2,6 +2,8 @@ package org.wastingnotime.slidingtasks
 
 import android.os.Bundle
 import android.app.DatePickerDialog
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
@@ -56,11 +58,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import org.wastingnotime.slidingtasks.data.LocalTaskStore
+import org.wastingnotime.slidingtasks.data.BackupStatus
+import org.wastingnotime.slidingtasks.data.ScheduledBackup
 import org.wastingnotime.slidingtasks.model.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.DayOfWeek
+import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.roundToInt
@@ -110,6 +116,7 @@ private enum class PlanMode(val label: Int) {
 fun SlidingTasksApp() {
     val context = LocalContext.current
     val store = remember { LocalTaskStore(context.applicationContext) }
+    val scheduledBackup = remember { ScheduledBackup(context.applicationContext) }
     val engine = remember { SlidingTasksEngine() }
     val today = remember { LocalDate.now() }
     val initialState = remember { runCatching { engine.openDay(store.load(), today) } }
@@ -138,6 +145,17 @@ fun SlidingTasksApp() {
     var saveError by remember { mutableStateOf<String?>(null) }
     var importError by remember { mutableStateOf<String?>(null) }
     var exportResult by remember { mutableStateOf<String?>(null) }
+    var backupStatus by remember { mutableStateOf(scheduledBackup.status()) }
+    var backupMessage by remember { mutableStateOf<String?>(null) }
+
+    DisposableEffect(scheduledBackup) {
+        val preferences = context.getSharedPreferences(ScheduledBackup.PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+            backupStatus = scheduledBackup.status()
+        }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
 
     fun commit(next: SlidingTasksState): Boolean {
         return runCatching { store.save(next) }
@@ -179,7 +197,21 @@ fun SlidingTasksApp() {
             )
         }
     }
-    LaunchedEffect(Unit) { commit(state) }
+    val backupFolderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri == null) {
+            backupMessage = context.getString(R.string.backup_setup_cancelled)
+        } else {
+            backupMessage = runCatching { scheduledBackup.configure(uri) }.fold(
+                onSuccess = { context.getString(R.string.backup_setup_success) },
+                onFailure = { context.getString(R.string.backup_setup_error) },
+            )
+            backupStatus = scheduledBackup.status()
+        }
+    }
+    LaunchedEffect(Unit) {
+        commit(state)
+        runCatching { scheduledBackup.ensureScheduled() }
+    }
     BackHandler(enabled = planEditorOpen || aboutOpen) {
         if (aboutOpen) aboutOpen = false else planEditorOpen = false
     }
@@ -207,6 +239,16 @@ fun SlidingTasksApp() {
                     onBack = { aboutOpen = false },
                     onExport = { exportResult = null; exportLauncher.launch("sliding-tasks-backup.json") },
                     exportResult = exportResult,
+                    backupStatus = backupStatus,
+                    backupMessage = backupMessage,
+                    onChooseBackupFolder = { backupMessage = null; backupFolderLauncher.launch(null) },
+                    onDisableScheduledBackup = {
+                        backupMessage = runCatching { scheduledBackup.disable() }.fold(
+                            onSuccess = { context.getString(R.string.backup_disabled) },
+                            onFailure = { context.getString(R.string.backup_disable_error) },
+                        )
+                        backupStatus = scheduledBackup.status()
+                    },
                     onImport = if (state.tasks.isEmpty() && state.cards.isEmpty() && state.events.isEmpty())
                         ({ importError = null; importLauncher.launch(arrayOf("application/json", "text/plain")) }) else null,
                     importError = importError,
@@ -275,6 +317,10 @@ private fun AboutScreen(
     onBack: () -> Unit,
     onExport: () -> Unit,
     exportResult: String?,
+    backupStatus: BackupStatus,
+    backupMessage: String?,
+    onChooseBackupFolder: () -> Unit,
+    onDisableScheduledBackup: () -> Unit,
     onImport: (() -> Unit)?,
     importError: String?,
 ) {
@@ -296,6 +342,34 @@ private fun AboutScreen(
             Text(stringResource(R.string.export_tasks))
         }
         exportResult?.let { Text(it) }
+        HorizontalDivider()
+        Text(stringResource(R.string.backup_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.backup_description))
+        if (backupStatus.enabled) {
+            Text(stringResource(R.string.backup_enabled))
+            if (backupStatus.lastSuccessMillis == null && !backupStatus.lastAttemptFailed) {
+                Text(stringResource(R.string.backup_first_pending))
+            }
+            backupStatus.lastSuccessMillis?.let { millis ->
+                val date = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+                    .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(millis))
+                Text(stringResource(R.string.backup_last_success, date))
+            }
+            if (backupStatus.lastAttemptFailed) {
+                Text(stringResource(R.string.backup_last_failed), color = MaterialTheme.colorScheme.error)
+            }
+            Button(onClick = onChooseBackupFolder, modifier = Modifier.testTag("change-backup-folder")) {
+                Text(stringResource(R.string.backup_change_folder))
+            }
+            TextButton(onClick = onDisableScheduledBackup, modifier = Modifier.testTag("disable-backup")) {
+                Text(stringResource(R.string.backup_turn_off))
+            }
+        } else {
+            Button(onClick = onChooseBackupFolder, modifier = Modifier.testTag("choose-backup-folder")) {
+                Text(stringResource(R.string.backup_choose_folder))
+            }
+        }
+        backupMessage?.let { Text(it) }
         HorizontalDivider()
         Text(stringResource(R.string.restore_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text(stringResource(R.string.restore_description))

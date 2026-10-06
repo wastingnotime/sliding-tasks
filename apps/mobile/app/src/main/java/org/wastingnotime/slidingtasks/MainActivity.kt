@@ -137,6 +137,7 @@ fun SlidingTasksApp() {
     var aboutOpen by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
     var importError by remember { mutableStateOf<String?>(null) }
+    var exportResult by remember { mutableStateOf<String?>(null) }
 
     fun commit(next: SlidingTasksState): Boolean {
         return runCatching { store.save(next) }
@@ -145,15 +146,15 @@ fun SlidingTasksApp() {
             .isSuccess
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
+        if (uri == null) {
+            importError = context.getString(R.string.import_cancelled)
+        } else if (state.tasks.isNotEmpty() || state.cards.isNotEmpty() || state.events.isNotEmpty()) {
+            importError = context.getString(R.string.import_requires_empty)
+        } else {
             runCatching {
                 val raw = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
                     ?: error("Could not open selected file")
-                store.readImport(raw).also { imported ->
-                    check(imported.tasks.isNotEmpty() || imported.cards.isNotEmpty() || imported.events.isNotEmpty()) {
-                        "Selected file contains no task data"
-                    }
-                }.let { engine.openDay(it, today) }
+                engine.openDay(store.readImport(raw), today)
             }.onSuccess { imported ->
                 if (commit(imported)) {
                     importError = null
@@ -161,6 +162,21 @@ fun SlidingTasksApp() {
                     section = AppSection.TODAY
                 }
             }.onFailure { importError = context.getString(R.string.import_error) }
+        }
+    }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri == null) {
+            exportResult = context.getString(R.string.export_cancelled)
+        } else {
+            exportResult = runCatching {
+                val raw = store.export(store.load())
+                context.contentResolver.openOutputStream(uri, "wt")?.bufferedWriter(Charsets.UTF_8)?.use {
+                    it.write(raw)
+                } ?: error("Could not open selected file")
+            }.fold(
+                onSuccess = { context.getString(R.string.export_success) },
+                onFailure = { context.getString(R.string.export_error) },
+            )
         }
     }
     LaunchedEffect(Unit) { commit(state) }
@@ -189,6 +205,8 @@ fun SlidingTasksApp() {
                 saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
                 if (aboutOpen) AboutScreen(
                     onBack = { aboutOpen = false },
+                    onExport = { exportResult = null; exportLauncher.launch("sliding-tasks-backup.json") },
+                    exportResult = exportResult,
                     onImport = if (state.tasks.isEmpty() && state.cards.isEmpty() && state.events.isEmpty())
                         ({ importError = null; importLauncher.launch(arrayOf("application/json", "text/plain")) }) else null,
                     importError = importError,
@@ -253,7 +271,13 @@ fun SlidingTasksApp() {
 }
 
 @Composable
-private fun AboutScreen(onBack: () -> Unit, onImport: (() -> Unit)?, importError: String?) {
+private fun AboutScreen(
+    onBack: () -> Unit,
+    onExport: () -> Unit,
+    exportResult: String?,
+    onImport: (() -> Unit)?,
+    importError: String?,
+) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -265,15 +289,24 @@ private fun AboutScreen(onBack: () -> Unit, onImport: (() -> Unit)?, importError
         Text(stringResource(R.string.guide_plan))
         Text(stringResource(R.string.guide_today))
         Text(stringResource(R.string.guide_review))
+        HorizontalDivider()
+        Text(stringResource(R.string.export_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.export_description))
+        Button(onClick = onExport, modifier = Modifier.testTag("export-tasks")) {
+            Text(stringResource(R.string.export_tasks))
+        }
+        exportResult?.let { Text(it) }
+        HorizontalDivider()
+        Text(stringResource(R.string.restore_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.restore_description))
         if (onImport != null) {
-            HorizontalDivider()
-            Text(stringResource(R.string.restore_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text(stringResource(R.string.restore_description))
             Button(onClick = onImport, modifier = Modifier.testTag("import-saved-tasks")) {
                 Text(stringResource(R.string.import_saved_tasks))
             }
-            importError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        } else {
+            Text(stringResource(R.string.import_requires_empty))
         }
+        importError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         HorizontalDivider()
         Text(stringResource(R.string.wasting_no_time), fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text(stringResource(R.string.about_wnt))

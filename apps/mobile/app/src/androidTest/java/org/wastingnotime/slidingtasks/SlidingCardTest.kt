@@ -18,6 +18,9 @@ import org.wastingnotime.slidingtasks.data.LocalTaskStore
 import org.wastingnotime.slidingtasks.model.ScheduleKind
 import org.wastingnotime.slidingtasks.model.SkipScope
 import org.wastingnotime.slidingtasks.model.PlannedTask
+import org.wastingnotime.slidingtasks.model.TaskCard
+import org.wastingnotime.slidingtasks.model.TaskEvent
+import org.wastingnotime.slidingtasks.model.CardStatus
 import org.wastingnotime.slidingtasks.model.SlidingTasksState
 import org.wastingnotime.slidingtasks.model.TaskSchedule
 import org.wastingnotime.slidingtasks.model.TaskType
@@ -40,6 +43,35 @@ class SlidingCardTest {
             .clear()
             .commit()
         composeRule.activityRule.scenario.recreate()
+    }
+
+    @Test
+    fun exported_state_restores_all_tasks_cards_and_history() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val store = LocalTaskStore(context)
+        val day = LocalDate.of(2026, 10, 6)
+        val original = SlidingTasksState(
+            activeDate = day,
+            tasks = listOf(PlannedTask("task-1", "Private plan", TaskType.ROUTINE,
+                TaskSchedule(ScheduleKind.ONCE_PER_WEEK, 2,
+                    setOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY), day), false, day)),
+            cards = listOf(TaskCard("card-1", "task-1", day, "Private plan",
+                TaskType.ROUTINE, CardStatus.DONE, 3, SkipScope.WEEK)),
+            events = listOf(TaskEvent("event-1", "CardCompleted", Instant.parse("2026-10-06T12:00:00Z"),
+                "task-1", "card-1", "Private plan")),
+        )
+        store.save(original)
+        val backup = store.export(store.load())
+        assertEquals(1, org.json.JSONObject(backup).getInt("formatVersion"))
+        org.junit.Assert.assertThrows(Exception::class.java) {
+            store.readImport(org.json.JSONObject(backup).put("formatVersion", 2).toString())
+        }
+        org.junit.Assert.assertThrows(Exception::class.java) { store.readImport("{broken") }
+        assertEquals(original, store.load())
+        context.getSharedPreferences("sliding_tasks", 0).edit().clear().commit()
+        assertEquals(SlidingTasksState(), store.load())
+        store.save(store.readImport(backup))
+        assertEquals(original, store.load())
     }
 
     @Test

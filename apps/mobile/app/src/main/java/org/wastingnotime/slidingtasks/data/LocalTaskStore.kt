@@ -27,7 +27,22 @@ class LocalTaskStore(context: Context) {
         throw IllegalStateException("Could not read saved task state", error)
     }
 
-    fun readImport(raw: String): SlidingTasksState = decode(JSONObject(raw))
+    fun readImport(raw: String): SlidingTasksState {
+        val root = JSONObject(raw)
+        require(!root.has("formatVersion") || root.getInt("formatVersion") == FORMAT_VERSION) {
+            "Unsupported backup format"
+        }
+        return decode(root).also { state ->
+            require(root.has("formatVersion") || state.tasks.isNotEmpty() ||
+                state.cards.isNotEmpty() || state.events.isNotEmpty()) {
+                "Legacy file contains no task data"
+            }
+        }
+    }
+
+    fun export(state: SlidingTasksState): String = encode(state).apply {
+        put("formatVersion", FORMAT_VERSION)
+    }.toString()
 
     fun save(state: SlidingTasksState) {
         check(preferences.edit().putString(KEY_STATE, encode(state).toString()).commit()) {
@@ -172,5 +187,6 @@ class LocalTaskStore(context: Context) {
 
     private companion object {
         const val KEY_STATE = "state-v1"
+        const val FORMAT_VERSION = 1
     }
 }

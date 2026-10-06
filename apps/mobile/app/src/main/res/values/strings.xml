@@ -13,6 +13,14 @@
     <string name="restore_description">If you have a Sliding Tasks data file, import it to restore your tasks and history.</string>
     <string name="import_saved_tasks">Import saved tasks</string>
     <string name="import_error">Could not import this file. Your current data has not been changed.</string>
+    <string name="import_cancelled">Import cancelled. Your tasks were not changed.</string>
+    <string name="import_requires_empty">Import is available only when this installation has no tasks or history.</string>
+    <string name="export_heading">Export tasks</string>
+    <string name="export_description">Save your tasks, schedules, cards, board state, and history to a JSON file you choose. This file contains private task content. Store it securely.</string>
+    <string name="export_tasks">Export tasks</string>
+    <string name="export_success">Tasks exported. Keep the file somewhere secure.</string>
+    <string name="export_cancelled">Export cancelled. Your tasks were not changed.</string>
+    <string name="export_error">Could not write the backup file. Choose another location and try again.</string>
     <string name="sliding_tasks">SLIDING TASKS</string>
     <string name="about">About</string>
     <string name="about_tagline">The past is observed. The future is configured. The present is acted upon.</string>
@@ -23,9 +31,9 @@
     <string name="wasting_no_time">Wasting No Time</string>
     <string name="about_wnt">Wasting No Time (WNT) makes Sliding Tasks. The app helps you plan ahead, make a simple choice today, and learn from what you did over time.</string>
     <string name="privacy">Privacy</string>
-    <string name="privacy_effective_date">Effective September 25, 2026</string>
+    <string name="privacy_effective_date">Effective October 6, 2026</string>
     <string name="privacy_intro">Sliding Tasks is provided by Wasting No Time. It works offline and does not require an account.</string>
-    <string name="privacy_storage">Your task titles, schedules, card decisions, and history are stored on this device and are not sent to us or other companies. The app has no ads, product analytics, or sync service.</string>
+    <string name="privacy_storage">Your task titles, schedules, card decisions, and history are stored on this device. You can export them to a file you choose. Your chosen document provider may store or sync that file. The app itself does not send task data to us or other companies. The app has no ads, product analytics, or sync service.</string>
     <string name="privacy_alpha_diagnostics">This private alpha APK uses Firebase Crashlytics to send crash and app-not-responding reports to Google so we can fix errors. Reports may include stack traces, app version, device and Android details, timestamps, and installation identifiers. We do not add task content to these reports. The app remains usable offline.</string>
     <string name="privacy_play_diagnostics">This Play build does not include Firebase Crashlytics. Android vitals may provide us with diagnostic reports from users who share usage and diagnostics with Google.</string>
     <string name="privacy_erasure">You can remove individual planned tasks in the app. To erase all Sliding Tasks data, use Android Settings → Apps → Sliding Tasks → Storage → Clear storage, or uninstall the app. Device backup is disabled for this app.</string>

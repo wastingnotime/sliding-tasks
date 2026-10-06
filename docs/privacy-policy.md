@@ -1,6 +1,6 @@
 # Sliding Tasks privacy policy
 
-Effective September 25, 2026.
+Effective October 6, 2026.
 
 Sliding Tasks is provided by Wasting No Time. It works offline and does not
 require an account.
@@ -8,8 +8,11 @@ require an account.
 ## Information stored on your device
 
 Your task titles, schedules, card decisions, and history are stored on your
-device and are not sent to Wasting No Time or other companies. The app has no
-ads, product analytics, or sync service.
+device. You can export them to a file you choose using Android's document
+picker. The exported file contains private task content, so store it securely.
+Your chosen document provider may store or sync that file. The app itself does
+not send task data to Wasting No Time or other companies. The app
+has no ads, product analytics, or sync service.
 
 ## Diagnostic reports in the private alpha
 

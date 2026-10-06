@@ -13,6 +13,14 @@
     <string name="restore_description">Se você tiver um arquivo de dados do Sliding Tasks, importe-o para restaurar suas tarefas e seu histórico.</string>
     <string name="import_saved_tasks">Importar tarefas salvas</string>
     <string name="import_error">Não foi possível importar este arquivo. Seus dados atuais não foram alterados.</string>
+    <string name="import_cancelled">Importação cancelada. Suas tarefas não foram alteradas.</string>
+    <string name="import_requires_empty">A importação só está disponível quando esta instalação não tem tarefas nem histórico.</string>
+    <string name="export_heading">Exportar tarefas</string>
+    <string name="export_description">Salve suas tarefas, programações, cartões, estado do painel e histórico em um arquivo JSON escolhido por você. O arquivo contém informações privadas das tarefas. Guarde-o com segurança.</string>
+    <string name="export_tasks">Exportar tarefas</string>
+    <string name="export_success">Tarefas exportadas. Guarde o arquivo em um lugar seguro.</string>
+    <string name="export_cancelled">Exportação cancelada. Suas tarefas não foram alteradas.</string>
+    <string name="export_error">Não foi possível gravar o arquivo de backup. Escolha outro local e tente novamente.</string>
     <string name="sliding_tasks">SLIDING TASKS</string>
     <string name="about">Sobre</string>
     <string name="about_tagline">O passado é observado. O futuro é planejado. O presente é vivido.</string>
@@ -23,9 +31,9 @@
     <string name="wasting_no_time">Wasting No Time</string>
     <string name="about_wnt">A Wasting No Time (WNT) desenvolve o Sliding Tasks. O app ajuda você a planejar, tomar uma decisão simples hoje e aprender com suas escolhas ao longo do tempo.</string>
     <string name="privacy">Privacidade</string>
-    <string name="privacy_effective_date">Em vigor desde 25 de setembro de 2026</string>
+    <string name="privacy_effective_date">Em vigor desde 6 de outubro de 2026</string>
     <string name="privacy_intro">O Sliding Tasks é oferecido pela Wasting No Time. Funciona offline e não exige uma conta.</string>
-    <string name="privacy_storage">Os títulos das tarefas, programações, decisões sobre cartões e histórico ficam armazenados neste dispositivo e não são enviados a nós nem a outras empresas. O app não tem anúncios, análise de uso do produto ou sincronização.</string>
+    <string name="privacy_storage">Os títulos das tarefas, programações, decisões sobre cartões e histórico ficam armazenados neste dispositivo. Você pode exportá-los para um arquivo escolhido por você. O provedor de documentos escolhido pode armazenar ou sincronizar esse arquivo. O próprio app não envia os dados das tarefas a nós nem a outras empresas. O app não tem anúncios, análise de uso do produto ou sincronização.</string>
     <string name="privacy_alpha_diagnostics">Este APK alfa privado usa o Firebase Crashlytics para enviar ao Google relatórios de falhas e de falta de resposta do app, para que possamos corrigir erros. Os relatórios podem incluir rastreamentos de pilha, versão do app, informações do dispositivo e do Android, horários e identificadores da instalação. Não adicionamos o conteúdo das tarefas a esses relatórios. O app continua funcionando offline.</string>
     <string name="privacy_play_diagnostics">Esta versão da Play Store não inclui o Firebase Crashlytics. O Android vitals pode nos fornecer relatórios de diagnóstico de usuários que compartilham dados de uso e diagnóstico com o Google.</string>
     <string name="privacy_erasure">Você pode remover tarefas planejadas individualmente no app. Para apagar todos os dados do Sliding Tasks, acesse Configurações do Android → Apps → Sliding Tasks → Armazenamento → Limpar armazenamento ou desinstale o app. O backup do dispositivo está desativado para este app.</string>

@@ -40,6 +40,14 @@ storage Android cannot share automatically with the Play package. Import is
 only offered while the current installation has no tasks, cards, or events;
 the file is validated before its contents are saved.
 
+**About → Export tasks** saves a versioned JSON file through Android's system
+document picker. It includes planned tasks and schedules, cards, active board
+date, and event history. The file contains private task content; store it
+securely. An empty installation can import this file to recover the state.
+Import into a nonempty installation remains disallowed. A cancelled export or
+import leaves local data unchanged. If writing fails, choose another location
+and export again; an incomplete file at the first location should be discarded.
+
 ## Alpha distribution with Firebase
 
 Use Firebase App Distribution for the first private alpha with a small group

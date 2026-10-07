@@ -1,0 +1,15 @@
+{
+  "versionName": "0.3.0",
+  "versionCode": 3,
+  "sourceRevision": "4845ad4",
+  "artifacts": {
+    "play_aab": {
+      "path": "apps/mobile/app/build/outputs/bundle/release/app-release.aab",
+      "sha256": "2d19180bdc4c763c75124c0acd3245d4140d1173277880964e69ad305055653d"
+    },
+    "firebase_apk": {
+      "path": "apps/mobile/app/build/outputs/apk/debug/app-debug.apk",
+      "sha256": "eeab59a47ef52734d2c3fcd9715f869c899f945574c0b70055b34e0f35be4c41"
+    }
+  }
+}

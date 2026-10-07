@@ -32,9 +32,12 @@ Google through their device settings.
 
 ## How to erase your information
 
-You can remove individual planned tasks in the app. To erase all Sliding Tasks
-data, use Android Settings → Apps → Sliding Tasks → Storage → Clear storage, or
-uninstall the app. Device backup is disabled for this app.
+You can remove individual planned tasks in the app. To erase task data stored
+by the app, use Android Settings → Apps → Sliding Tasks → Storage → Clear
+storage, or uninstall the app. This does not delete exported files or automatic
+backups. Delete those separately from the folder you chose and from any
+document provider or cloud storage where they were synced. Android device
+backup is disabled for this app.
 
 Clearing app storage or uninstalling does not erase crash reports already sent
 to Firebase. Contact us if you have questions about those reports.

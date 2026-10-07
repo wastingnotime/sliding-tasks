@@ -39,6 +39,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -114,6 +118,16 @@ private enum class PlanMode(val label: Int) {
     ROUTINE(R.string.routine), UNTIL_DECIDED(R.string.until_decided), ONE_TIME(R.string.one_time),
 }
 
+private data class PendingTaskRemoval(val task: PlannedTask, val position: Int)
+private data class TaskRemovalMessage(
+    val removal: PendingTaskRemoval,
+    override val message: String,
+    override val actionLabel: String,
+) : SnackbarVisuals {
+    override val duration = SnackbarDuration.Indefinite
+    override val withDismissAction = false
+}
+
 @Composable
 fun SlidingTasksApp() {
     val context = LocalContext.current
@@ -145,6 +159,10 @@ fun SlidingTasksApp() {
     var planEditorOpen by remember { mutableStateOf(false) }
     var planEditorTask by remember { mutableStateOf<PlannedTask?>(null) }
     var aboutOpen by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    var pendingTaskRemoval by remember { mutableStateOf<PendingTaskRemoval?>(null) }
+    val accessibilityManager = LocalAccessibilityManager.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var saveError by remember { mutableStateOf<String?>(null) }
     var importError by remember { mutableStateOf<String?>(null) }
     var exportResult by remember { mutableStateOf<String?>(null) }
@@ -165,6 +183,46 @@ fun SlidingTasksApp() {
             .onSuccess { state = next; saveError = null }
             .onFailure { saveError = context.getString(R.string.save_error) }
             .isSuccess
+    }
+    fun removeTask(id: String) {
+        val position = state.tasks.indexOfFirst { it.id == id }
+        if (position < 0) return
+        val removal = PendingTaskRemoval(state.tasks[position], position)
+        if (commit(engine.removeTask(state, id))) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            pendingTaskRemoval = removal
+        }
+    }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                pendingTaskRemoval = null
+                snackbarHostState.currentSnackbarData?.dismiss()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(pendingTaskRemoval) {
+        val removal = pendingTaskRemoval ?: return@LaunchedEffect
+        val timeout = accessibilityManager?.calculateRecommendedTimeoutMillis(
+            originalTimeoutMillis = 5_000L,
+            containsIcons = false, containsText = true, containsControls = true,
+        ) ?: 5_000L
+        val expiry = launch {
+            delay(timeout)
+            snackbarHostState.currentSnackbarData?.dismiss()
+        }
+        try {
+            snackbarHostState.showSnackbar(
+                TaskRemovalMessage(removal,
+                    context.getString(R.string.task_removed, removal.task.title),
+                    context.getString(R.string.undo)),
+            )
+            if (pendingTaskRemoval == removal) pendingTaskRemoval = null
+        } finally {
+            expiry.cancel()
+        }
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) {
@@ -233,6 +291,22 @@ fun SlidingTasksApp() {
 
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors) {
         Scaffold(
+            snackbarHost = {
+                SnackbarHost(snackbarHostState) { data ->
+                    Snackbar(
+                        action = {
+                            TextButton(onClick = {
+                                val removal = (data.visuals as TaskRemovalMessage).removal
+                                if (pendingTaskRemoval == removal && commit(engine.restoreTask(state, removal.task, removal.position))) {
+                                    data.performAction()
+                                }
+                            }, modifier = Modifier.testTag("undo-task-removal")) {
+                                Text(stringResource(R.string.undo))
+                            }
+                        },
+                    ) { Text(data.visuals.message) }
+                }
+            },
             containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
                 if (!planEditorOpen && !aboutOpen) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
@@ -282,7 +356,7 @@ fun SlidingTasksApp() {
                                 TaskSchedule(ScheduleKind.ONCE, startsOn = today), today))
                         },
                         onResumeOneTime = { id -> commit(engine.openDay(engine.setTaskActive(state, id, true), today)) },
-                        onRemoveOneTime = { id -> commit(engine.removeTask(state, id)) },
+                        onRemoveOneTime = { id -> removeTask(id) },
                     )
                     AppSection.PLAN -> if (planEditorOpen) {
                         PlanEditor(
@@ -317,7 +391,7 @@ fun SlidingTasksApp() {
                                     commit(engine.moveTask(state, id, absoluteTo - absoluteFrom))
                                 }
                             },
-                            onRemove = { id -> commit(engine.removeTask(state, id)) },
+                            onRemove = { id -> removeTask(id) },
                         )
                     }
                     AppSection.REVIEW -> ReviewScreen(state, today, onAbout = { aboutOpen = true })

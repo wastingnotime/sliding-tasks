@@ -81,6 +81,13 @@ contract gaps.
   snapshots and immutable history are preserved; changes record `TaskUpdated`.
 - Removing a task prevents future card generation. Existing cards and immutable
   history remain available so removing a plan never rewrites past facts.
+- After a successful removal, a temporary Undo action restores the same task
+  and its plan position for approximately five seconds, extended by Android
+  accessibility timeout settings. It remains available across tab navigation;
+  expiry, leaving the app, process loss, or a subsequent removal ends that
+  opportunity. There is no later task recovery screen. Undo preserves cards and
+  existing events and records `TaskRestored`. A one-time task whose retained card
+  was resolved meanwhile remains resolved when restored.
 - Removal and reordering record `TaskRemoved` and `TaskReordered` events.
 
 ## Local review

@@ -193,6 +193,18 @@ class SlidingTasksEngine(
             .withEvent("TaskRemoved", task)
     }
 
+    fun restoreTask(state: SlidingTasksState, task: PlannedTask, position: Int): SlidingTasksState {
+        if (state.tasks.any { it.id == task.id }) return state
+        // A retained card may have been resolved while the task was removed.
+        val restored = if (task.type == TaskType.ONE_TIME && state.cards.any {
+            it.taskId == task.id && it.status in setOf(CardStatus.DONE, CardStatus.DISMISSED)
+        }) task.copy(active = false, resolved = true) else task
+        val tasks = state.tasks.toMutableList().apply {
+            add(position.coerceIn(0, size), restored)
+        }
+        return state.copy(tasks = tasks).withEvent("TaskRestored", restored)
+    }
+
     fun moveTask(state: SlidingTasksState, taskId: String, offset: Int): SlidingTasksState {
         val from = state.tasks.indexOfFirst { it.id == taskId }
         if (from == -1) return state

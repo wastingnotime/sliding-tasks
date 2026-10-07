@@ -176,4 +176,6 @@
         <item quantity="one">%d aberto</item>
         <item quantity="other">%d abertos</item>
     </plurals>
+    <string name="task_removed">%1$s removida</string>
+    <string name="undo">Desfazer</string>
 </resources>

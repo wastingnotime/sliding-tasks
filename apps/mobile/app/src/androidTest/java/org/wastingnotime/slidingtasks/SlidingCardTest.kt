@@ -1,5 +1,6 @@
 package org.wastingnotime.slidingtasks
 
+import androidx.activity.compose.setContent
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -43,6 +44,91 @@ class SlidingCardTest {
             .clear()
             .commit()
         composeRule.activityRule.scenario.recreate()
+    }
+
+    private fun seedRemovalTasks(): LocalTaskStore {
+        val store = LocalTaskStore(composeRule.activity)
+        val day = LocalDate.now()
+        store.save(SlidingTasksState(tasks = listOf("Alpha", "Beta").map {
+            PlannedTask(it, it, TaskType.ROUTINE,
+                TaskSchedule(ScheduleKind.DAILY, startsOn = day), true, day)
+        }))
+        composeRule.activityRule.scenario.recreate()
+        composeRule.onNodeWithTag("nav-plan").performClick()
+        composeRule.waitForIdle()
+        return store
+    }
+
+    private fun removeSeededTask(id: String) {
+        composeRule.onNodeWithTag("remove-$id").performClick()
+        composeRule.mainClock.advanceTimeBy(50)
+        composeRule.onAllNodesWithText(composeRule.activity.getString(R.string.remove)).let {
+            // The dialog confirmation and underlying row both use this label.
+            it[it.fetchSemanticsNodes().lastIndex].performClick()
+        }
+    }
+
+    @Test
+    fun removal_undo_survives_tab_navigation_and_persists_original_order() {
+        val store = seedRemovalTasks()
+        composeRule.mainClock.autoAdvance = false
+        removeSeededTask("Alpha")
+        composeRule.mainClock.advanceTimeBy(100)
+        composeRule.onNodeWithTag("nav-review").performClick()
+        composeRule.mainClock.advanceTimeBy(100)
+        composeRule.onNodeWithTag("undo-task-removal").performClick()
+        composeRule.mainClock.advanceTimeBy(100)
+        composeRule.runOnIdle {
+            assertEquals(listOf("Alpha", "Beta"), store.load().tasks.map { it.id })
+            assertEquals("TaskRestored", store.load().events.last().type)
+        }
+    }
+
+    @Test
+    fun later_removal_replaces_undo_and_expiry_keeps_both_tasks_removed() {
+        val store = seedRemovalTasks()
+        composeRule.mainClock.autoAdvance = false
+        removeSeededTask("Alpha")
+        composeRule.mainClock.advanceTimeBy(100)
+        removeSeededTask("Beta")
+        composeRule.mainClock.advanceTimeBy(100)
+        composeRule.onAllNodesWithText(composeRule.activity.getString(R.string.task_removed, "Beta"))[0]
+            .assertExists()
+        composeRule.mainClock.advanceTimeBy(5_500)
+        composeRule.onNodeWithTag("undo-task-removal").assertDoesNotExist()
+        composeRule.runOnIdle { assertEquals(emptyList<PlannedTask>(), store.load().tasks) }
+        composeRule.activityRule.scenario.recreate()
+        composeRule.onNodeWithTag("undo-task-removal").assertDoesNotExist()
+    }
+
+    @Test
+    fun accessibility_extends_undo_but_backgrounding_ends_recovery() {
+        val store = seedRemovalTasks()
+        val extendedTimeout = object : androidx.compose.ui.platform.AccessibilityManager {
+            override fun calculateRecommendedTimeoutMillis(
+                originalTimeoutMillis: Long, containsIcons: Boolean,
+                containsText: Boolean, containsControls: Boolean,
+            ): Long = 10_000L
+        }
+        composeRule.activity.runOnUiThread {
+            composeRule.activity.setContent {
+                androidx.compose.runtime.CompositionLocalProvider(
+                    androidx.compose.ui.platform.LocalAccessibilityManager provides extendedTimeout,
+                ) { SlidingTasksApp() }
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("nav-plan").performClick()
+        composeRule.waitForIdle()
+        composeRule.mainClock.autoAdvance = false
+        removeSeededTask("Alpha")
+        composeRule.mainClock.advanceTimeBy(6_000)
+        composeRule.onNodeWithTag("undo-task-removal").assertExists()
+        composeRule.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+        composeRule.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+        composeRule.mainClock.advanceTimeBy(500)
+        composeRule.onNodeWithTag("undo-task-removal").assertDoesNotExist()
+        composeRule.runOnIdle { assertEquals(listOf("Beta"), store.load().tasks.map { it.id }) }
     }
 
     @Test

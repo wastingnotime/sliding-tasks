@@ -26,6 +26,38 @@ class SlidingTasksEngineTest {
     private fun once() = TaskSchedule(ScheduleKind.ONCE, startsOn = friday)
 
     @Test
+    fun undo_removal_preserves_task_order_cards_and_intervening_changes() {
+        var state = engine.openDay(SlidingTasksState(), friday)
+        for (title in listOf("First", "Middle", "Last")) {
+            state = engine.createTask(state, title, TaskType.ROUTINE, daily(), friday)
+        }
+        val original = state.tasks[1]
+        state = engine.removeTask(state, original.id)
+        state = engine.apply(state, CardCommand.Touch(state.cards.first().id))
+        val beforeUndo = state
+        state = engine.restoreTask(state, original, 1)
+        assertEquals(listOf("First", "Middle", "Last"), state.tasks.map { it.title })
+        assertEquals(original, state.tasks[1])
+        assertEquals(beforeUndo.cards, state.cards)
+        assertEquals(beforeUndo.events, state.events.dropLast(1))
+        assertEquals("TaskRestored", state.events.last().type)
+        assertEquals(state, engine.restoreTask(state, original, 1))
+    }
+
+    @Test
+    fun undo_does_not_reactivate_a_one_time_card_resolved_after_removal() {
+        var state = engine.openDay(SlidingTasksState(), friday)
+        state = engine.createTask(state, "Once", TaskType.ONE_TIME, once(), friday)
+        val task = state.tasks.single()
+        state = engine.removeTask(state, task.id)
+        state = engine.apply(state, CardCommand.Complete(state.cards.single().id))
+        state = engine.restoreTask(state, task, 0)
+        assertTrue(state.tasks.single().resolved)
+        assertFalse(state.tasks.single().active)
+        assertTrue(engine.pendingCards(engine.openDay(state, friday.plusDays(1))).isEmpty())
+    }
+
+    @Test
     fun task_created_during_open_day_generates_a_persistable_card_and_events() {
         val opened = engine.openDay(SlidingTasksState(), friday)
         val state = engine.createTask(opened, "Write brief", TaskType.ROUTINE, daily(), friday)

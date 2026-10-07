@@ -12,6 +12,8 @@ import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import java.time.Instant
+import java.time.Duration
+import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
@@ -149,7 +151,7 @@ class BackupWorker(context: Context, parameters: WorkerParameters) : Worker(cont
         val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS")
             .withZone(ZoneOffset.UTC).format(Instant.now())
         folder.listFiles()
-            .filter { it.isFile && it.name?.startsWith(PENDING_PREFIX) == true }
+            .filter { isStalePendingBackup(it) }
             .forEach { check(it.delete()) { "Could not remove an incomplete backup" } }
 
         val pending = folder.createFile("application/json", "$PENDING_PREFIX$timestamp.tmp")
@@ -178,10 +180,23 @@ class BackupWorker(context: Context, parameters: WorkerParameters) : Worker(cont
     private fun isCompletedBackup(file: DocumentFile) =
         file.isFile && file.name?.matches(COMPLETED_BACKUP_NAME) == true
 
+    private fun isStalePendingBackup(file: DocumentFile): Boolean {
+        if (!file.isFile) return false
+        val name = file.name ?: return false
+        val match = PENDING_BACKUP_NAME.matchEntire(name) ?: return false
+        val createdAt = runCatching {
+            LocalDateTime.parse(match.groupValues[1], PENDING_TIMESTAMP_FORMAT).toInstant(ZoneOffset.UTC)
+        }.getOrNull() ?: return false
+        return createdAt.isBefore(Instant.now().minus(PENDING_STALE_AFTER))
+    }
+
     private companion object {
         const val BACKUP_PREFIX = "sliding-tasks-auto-"
         const val PENDING_PREFIX = "sliding-tasks-pending-"
         val COMPLETED_BACKUP_NAME = Regex("^sliding-tasks-auto-\\d{8}-\\d{6}-\\d{3}\\.json$")
+        val PENDING_BACKUP_NAME = Regex("^sliding-tasks-pending-(\\d{8}-\\d{6}-\\d{3})\\.tmp$")
+        val PENDING_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS")
+        val PENDING_STALE_AFTER = Duration.ofDays(1)
         const val MAX_BACKUPS = 7
     }
 }

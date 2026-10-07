@@ -32,6 +32,7 @@
     <string name="backup_last_success">Último backup concluído: %1$s</string>
     <string name="backup_last_failed">O último backup falhou. Verifique se a pasta está disponível ou escolha-a novamente.</string>
     <string name="backup_setup_success">Pasta de backup salva. Os backups serão feitos automaticamente.</string>
+    <string name="backup_setup_in_progress">Verificando a pasta de backup…</string>
     <string name="backup_setup_cancelled">A escolha da pasta de backup foi cancelada.</string>
     <string name="backup_setup_error">Não foi possível usar essa pasta. Escolha outra pasta e tente novamente.</string>
     <string name="backup_disabled">Os backups automáticos estão desativados. Os arquivos de backup existentes foram mantidos.</string>

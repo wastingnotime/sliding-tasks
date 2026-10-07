@@ -26,6 +26,33 @@ class SlidingTasksEngineTest {
     private fun once() = TaskSchedule(ScheduleKind.ONCE, startsOn = friday)
 
     @Test
+    fun undo_card_outcomes_preserves_other_changes_and_does_not_duplicate_history() {
+        for (outcome in listOf(CardStatus.DONE, CardStatus.DISMISSED)) {
+            var state = engine.openDay(SlidingTasksState(), friday)
+            state = engine.createTask(state, "Once", TaskType.ONE_TIME, once(), friday)
+            state = engine.createTask(state, "Routine", TaskType.ROUTINE, daily(), friday)
+            val task = state.tasks.first()
+            val card = state.cards.first()
+            state = engine.apply(state, if (outcome == CardStatus.DONE)
+                CardCommand.Complete(card.id) else CardCommand.Dismiss(card.id))
+            state = engine.apply(state, CardCommand.Touch(state.cards.last().id))
+            state = engine.updateTask(state, task.id, "Renamed", task.type, task.schedule)
+            val beforeUndo = state
+            state = engine.undoCardResolution(state, card.id, outcome, task)
+            assertEquals(CardStatus.PENDING, state.cards.first().status)
+            assertEquals(beforeUndo.cards.last(), state.cards.last())
+            assertEquals("Renamed", state.tasks.first().title)
+            assertTrue(state.tasks.first().active)
+            assertFalse(state.tasks.first().resolved)
+            assertEquals(beforeUndo.events, state.events.dropLast(1))
+            assertEquals("CardResolutionUndone", state.events.last().type)
+            assertEquals(state, engine.undoCardResolution(state, card.id, outcome, task))
+            val removed = engine.removeTask(beforeUndo, task.id)
+            assertFalse(engine.undoCardResolution(removed, card.id, outcome, task).tasks.any { it.id == task.id })
+        }
+    }
+
+    @Test
     fun undo_removal_preserves_task_order_cards_and_intervening_changes() {
         var state = engine.openDay(SlidingTasksState(), friday)
         for (title in listOf("First", "Middle", "Last")) {

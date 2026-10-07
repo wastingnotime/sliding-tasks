@@ -1,6 +1,7 @@
 package org.wastingnotime.slidingtasks
 
 import androidx.activity.compose.setContent
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -10,6 +11,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.swipeLeft
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -76,7 +78,10 @@ class SlidingCardTest {
         composeRule.mainClock.advanceTimeBy(100)
         composeRule.onNodeWithTag("nav-review").performClick()
         composeRule.mainClock.advanceTimeBy(100)
-        composeRule.onNodeWithTag("undo-task-removal").performClick()
+        composeRule.onNodeWithTag("undo-last-action").assertIsDisplayed()
+        composeRule.onAllNodesWithText(composeRule.activity.getString(R.string.task_removed, "Alpha"))[0]
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag("undo-last-action").performClick()
         composeRule.mainClock.advanceTimeBy(100)
         composeRule.runOnIdle {
             assertEquals(listOf("Alpha", "Beta"), store.load().tasks.map { it.id })
@@ -95,10 +100,10 @@ class SlidingCardTest {
         composeRule.onAllNodesWithText(composeRule.activity.getString(R.string.task_removed, "Beta"))[0]
             .assertExists()
         composeRule.mainClock.advanceTimeBy(5_500)
-        composeRule.onNodeWithTag("undo-task-removal").assertDoesNotExist()
+        composeRule.onNodeWithTag("undo-last-action").assertDoesNotExist()
         composeRule.runOnIdle { assertEquals(emptyList<PlannedTask>(), store.load().tasks) }
         composeRule.activityRule.scenario.recreate()
-        composeRule.onNodeWithTag("undo-task-removal").assertDoesNotExist()
+        composeRule.onNodeWithTag("undo-last-action").assertDoesNotExist()
     }
 
     @Test
@@ -123,12 +128,53 @@ class SlidingCardTest {
         composeRule.mainClock.autoAdvance = false
         removeSeededTask("Alpha")
         composeRule.mainClock.advanceTimeBy(6_000)
-        composeRule.onNodeWithTag("undo-task-removal").assertExists()
+        composeRule.onNodeWithTag("undo-last-action").assertExists()
         composeRule.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
         composeRule.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
         composeRule.mainClock.advanceTimeBy(500)
-        composeRule.onNodeWithTag("undo-task-removal").assertDoesNotExist()
+        composeRule.onNodeWithTag("undo-last-action").assertDoesNotExist()
         composeRule.runOnIdle { assertEquals(listOf("Beta"), store.load().tasks.map { it.id }) }
+    }
+
+    @Test
+    fun both_swipe_outcomes_offer_visible_undo_and_restore_the_same_one_time_card() {
+        val store = LocalTaskStore(composeRule.activity)
+        val day = LocalDate.now()
+        store.save(SlidingTasksState(tasks = listOf(PlannedTask("swipe-task", "Swipe me", TaskType.ONE_TIME,
+            TaskSchedule(ScheduleKind.ONCE, startsOn = day), true, day))))
+        composeRule.activityRule.scenario.recreate()
+        composeRule.waitForIdle()
+        val original = store.load().cards.single()
+        composeRule.mainClock.autoAdvance = false
+        for (outcome in listOf(CardStatus.DONE, CardStatus.DISMISSED)) {
+            composeRule.onNodeWithTag("card-${original.id}").performTouchInput {
+                if (outcome == CardStatus.DONE) swipeRight(durationMillis = 500)
+                else swipeLeft(durationMillis = 500)
+            }
+            composeRule.mainClock.advanceTimeBy(500)
+            composeRule.onNodeWithTag("undo-last-action").assertIsDisplayed()
+            composeRule.onAllNodesWithText(composeRule.activity.getString(
+                if (outcome == CardStatus.DONE) R.string.card_done_notice else R.string.card_not_today_notice,
+                "Swipe me"))[0].assertIsDisplayed()
+            composeRule.runOnIdle { assertEquals(outcome, store.load().cards.single().status) }
+            composeRule.onNodeWithTag("undo-last-action").performClick()
+            composeRule.mainClock.advanceTimeBy(500)
+            composeRule.onNodeWithTag("card-${original.id}").assertIsDisplayed()
+            composeRule.runOnIdle {
+                val restored = store.load()
+                assertEquals(CardStatus.PENDING, restored.cards.single().status)
+                assertEquals(original.id, restored.cards.single().id)
+                org.junit.Assert.assertTrue(restored.tasks.single().active)
+                org.junit.Assert.assertFalse(restored.tasks.single().resolved)
+                assertEquals("CardResolutionUndone", restored.events.last().type)
+            }
+        }
+        composeRule.onNodeWithTag("card-${original.id}").performTouchInput { swipeLeft(durationMillis = 500) }
+        composeRule.mainClock.advanceTimeBy(500)
+        composeRule.onNodeWithTag("undo-last-action").assertIsDisplayed()
+        composeRule.mainClock.advanceTimeBy(5_500)
+        composeRule.onNodeWithTag("undo-last-action").assertDoesNotExist()
+        composeRule.runOnIdle { assertEquals(CardStatus.DISMISSED, store.load().cards.single().status) }
     }
 
     @Test

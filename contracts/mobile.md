@@ -40,6 +40,13 @@ User actions map to locally executed released commands:
 | Not today | `DismissCard` | Card leaves the pending board |
 | Focus/view a card | `TouchCard` | Board order is unchanged |
 
+Done and Not today expose a temporary Undo action after the outcome is saved.
+Undo returns the same card to pending, restores the prior active/resolved state
+of a one-time task, and appends `CardResolutionUndone` while retaining the
+outcome event. It shares the five-second, accessibility-adjusted window and
+navigation/expiry behavior of removal Undo. Only the latest card outcome or
+task removal can be undone; touching a card does not replace that opportunity.
+
 Cards remain independently visible in a vertical list. A horizontal slide on
 any card records a touch when dragging begins. Crossing 28% of the card width
 and releasing maps right to `CompleteCard` and left to `DismissCard`; a shorter

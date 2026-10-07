@@ -227,6 +227,24 @@ class SlidingTasksEngine(
         }
     }
 
+    fun undoCardResolution(
+        state: SlidingTasksState,
+        cardId: String,
+        outcome: CardStatus,
+        taskBefore: PlannedTask?,
+    ): SlidingTasksState {
+        if (outcome !in setOf(CardStatus.DONE, CardStatus.DISMISSED)) return state
+        val card = state.cards.firstOrNull { it.id == cardId } ?: return state
+        if (card.boardDate != state.activeDate || card.status != outcome) return state
+        var restored = state.updateCard(card.copy(status = CardStatus.PENDING))
+        if (taskBefore?.type == TaskType.ONE_TIME) {
+            restored = restored.copy(tasks = restored.tasks.map {
+                if (it.id == taskBefore.id) it.copy(active = taskBefore.active, resolved = taskBefore.resolved) else it
+            })
+        }
+        return restored.withEvent("CardResolutionUndone", card)
+    }
+
     fun pendingCards(state: SlidingTasksState): List<TaskCard> = state.cards.filter {
         it.boardDate == state.activeDate && it.status == CardStatus.PENDING
     }

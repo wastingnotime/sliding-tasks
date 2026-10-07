@@ -21,3 +21,20 @@ navigation with persisted order, replacement by another removal and expiry,
 and an extended accessibility timeout followed by backgrounding. Storage
 failure behavior was reviewed against the existing commit/save boundary;
 these instrumentation checks do not inject storage failures.
+
+
+## Swipe Undo correction
+
+The owner clarified that Undo was expected after Done and Not today swipes.
+Those successful card outcomes now use the same app-level snackbar as task
+removal, including the equivalent accessibility actions. Undo restores the
+same card to pending and prior one-time task flags, preserves current task
+edits and other cards, and records `CardResolutionUndone`. The action is
+localized in English and Brazilian Portuguese. Touching another card does
+not replace Undo; another saved outcome or removal does.
+
+Validation of this correction: debug APK build and unit suite passed. The
+focused emulator test performs both right and left swipes, asserts that each
+notice and Undo action is displayed, restores the original card and one-time
+task state, and verifies expiry of a later swipe. The removal/navigation test
+also passed with explicit visibility assertions after the shared Undo change.

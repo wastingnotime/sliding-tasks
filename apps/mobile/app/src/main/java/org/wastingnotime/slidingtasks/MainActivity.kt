@@ -118,9 +118,12 @@ private enum class PlanMode(val label: Int) {
     ROUTINE(R.string.routine), UNTIL_DECIDED(R.string.until_decided), ONE_TIME(R.string.one_time),
 }
 
-private data class PendingTaskRemoval(val task: PlannedTask, val position: Int)
-private data class TaskRemovalMessage(
-    val removal: PendingTaskRemoval,
+private sealed interface PendingUndo {
+    data class TaskRemoval(val task: PlannedTask, val position: Int) : PendingUndo
+    data class CardResolution(val card: TaskCard, val taskBefore: PlannedTask?, val outcome: CardStatus) : PendingUndo
+}
+private data class UndoMessage(
+    val undo: PendingUndo,
     override val message: String,
     override val actionLabel: String,
 ) : SnackbarVisuals {
@@ -160,7 +163,7 @@ fun SlidingTasksApp() {
     var planEditorTask by remember { mutableStateOf<PlannedTask?>(null) }
     var aboutOpen by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    var pendingTaskRemoval by remember { mutableStateOf<PendingTaskRemoval?>(null) }
+    var pendingUndo by remember { mutableStateOf<PendingUndo?>(null) }
     val accessibilityManager = LocalAccessibilityManager.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var saveError by remember { mutableStateOf<String?>(null) }
@@ -187,24 +190,41 @@ fun SlidingTasksApp() {
     fun removeTask(id: String) {
         val position = state.tasks.indexOfFirst { it.id == id }
         if (position < 0) return
-        val removal = PendingTaskRemoval(state.tasks[position], position)
+        val removal = PendingUndo.TaskRemoval(state.tasks[position], position)
         if (commit(engine.removeTask(state, id))) {
             snackbarHostState.currentSnackbarData?.dismiss()
-            pendingTaskRemoval = removal
+            pendingUndo = removal
+        }
+    }
+    fun applyCardCommand(command: CardCommand) {
+        val card = state.cards.firstOrNull { it.id == command.cardId } ?: return
+        val next = engine.apply(state, command)
+        if (next == state) return
+        val taskBefore = state.tasks.firstOrNull { it.id == card.taskId }
+        if (commit(next) && command !is CardCommand.Touch) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            pendingUndo = PendingUndo.CardResolution(card, taskBefore,
+                if (command is CardCommand.Complete) CardStatus.DONE else CardStatus.DISMISSED)
         }
     }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
-                pendingTaskRemoval = null
+                pendingUndo = null
                 snackbarHostState.currentSnackbarData?.dismiss()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-    LaunchedEffect(pendingTaskRemoval) {
-        val removal = pendingTaskRemoval ?: return@LaunchedEffect
+    LaunchedEffect(pendingUndo) {
+        val undo = pendingUndo ?: return@LaunchedEffect
+        val message = when (undo) {
+            is PendingUndo.TaskRemoval -> context.getString(R.string.task_removed, undo.task.title)
+            is PendingUndo.CardResolution -> context.getString(
+                if (undo.outcome == CardStatus.DONE) R.string.card_done_notice else R.string.card_not_today_notice,
+                undo.card.title)
+        }
         val timeout = accessibilityManager?.calculateRecommendedTimeoutMillis(
             originalTimeoutMillis = 5_000L,
             containsIcons = false, containsText = true, containsControls = true,
@@ -215,11 +235,9 @@ fun SlidingTasksApp() {
         }
         try {
             snackbarHostState.showSnackbar(
-                TaskRemovalMessage(removal,
-                    context.getString(R.string.task_removed, removal.task.title),
-                    context.getString(R.string.undo)),
+                UndoMessage(undo, message, context.getString(R.string.undo)),
             )
-            if (pendingTaskRemoval == removal) pendingTaskRemoval = null
+            if (pendingUndo == undo) pendingUndo = null
         } finally {
             expiry.cancel()
         }
@@ -296,11 +314,16 @@ fun SlidingTasksApp() {
                     Snackbar(
                         action = {
                             TextButton(onClick = {
-                                val removal = (data.visuals as TaskRemovalMessage).removal
-                                if (pendingTaskRemoval == removal && commit(engine.restoreTask(state, removal.task, removal.position))) {
-                                    data.performAction()
+                                val undo = (data.visuals as UndoMessage).undo
+                                if (pendingUndo == undo) {
+                                    val restored = when (undo) {
+                                        is PendingUndo.TaskRemoval -> engine.restoreTask(state, undo.task, undo.position)
+                                        is PendingUndo.CardResolution -> engine.undoCardResolution(
+                                            state, undo.card.id, undo.outcome, undo.taskBefore)
+                                    }
+                                    if (commit(restored)) data.performAction()
                                 }
-                            }, modifier = Modifier.testTag("undo-task-removal")) {
+                            }, modifier = Modifier.testTag("undo-last-action")) {
                                 Text(stringResource(R.string.undo))
                             }
                         },
@@ -350,7 +373,7 @@ fun SlidingTasksApp() {
                             task.type == TaskType.ONE_TIME && !task.active && !task.resolved &&
                                 state.cards.none { it.taskId == task.id && it.boardDate == today && it.status == CardStatus.PENDING }
                         },
-                        onCommand = { commit(engine.apply(state, it)) },
+                        onCommand = { applyCardCommand(it) },
                         onCreateOneTime = { title ->
                             commit(engine.createTask(state, title, TaskType.ONE_TIME,
                                 TaskSchedule(ScheduleKind.ONCE, startsOn = today), today))

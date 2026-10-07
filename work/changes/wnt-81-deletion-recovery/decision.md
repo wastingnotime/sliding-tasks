@@ -32,3 +32,12 @@ they are not an in-app task trash.
 WNT-79 implements this decision. It should verify restoration of the original
 task and order, expiry, navigation, a second removal, save failure, and the
 accessibility timeout behavior.
+
+
+## Swipe outcomes (2026-10-06 clarification)
+
+Undo also applies when a Today card is swiped to Done or Not today. The same
+window, entry point, and expiry rules apply. Undo restores the card to pending
+and the previous one-time task activation/resolution flags, while preserving
+other changes and appending an outcome-reversal event. A later card outcome
+or task removal replaces the previous Undo opportunity.

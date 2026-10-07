@@ -178,4 +178,6 @@
     </plurals>
     <string name="task_removed">%1$s removida</string>
     <string name="undo">Desfazer</string>
+    <string name="card_done_notice">%1$s marcada como concluída</string>
+    <string name="card_not_today_notice">%1$s marcada como Não hoje</string>
 </resources>

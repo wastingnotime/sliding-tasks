@@ -19,6 +19,7 @@
     <string name="export_description">Salve suas tarefas, programações, cartões, estado do painel e histórico em um arquivo JSON escolhido por você. O arquivo contém informações privadas das tarefas. Guarde-o com segurança.</string>
     <string name="export_tasks">Exportar tarefas</string>
     <string name="export_success">Tarefas exportadas. Guarde o arquivo em um lugar seguro.</string>
+    <string name="export_in_progress">Preparando seu backup…</string>
     <string name="export_cancelled">Exportação cancelada. Suas tarefas não foram alteradas.</string>
     <string name="export_error">Não foi possível gravar o arquivo de backup. Escolha outro local e tente novamente.</string>
     <string name="backup_heading">Backups automáticos</string>

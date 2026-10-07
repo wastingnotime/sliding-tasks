@@ -258,6 +258,18 @@ cd apps/mobile
 ./gradlew connectedDebugAndroidTest
 ```
 
+To check system bars, cutouts, landscape navigation, and the editor keyboard,
+run the focused inset checks on an Android 15+ emulator:
+
+```bash
+./gradlew connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=org.wastingnotime.slidingtasks.EdgeToEdgeTest
+```
+
+Repeat with gesture navigation, three-button navigation, and a simulated display
+cutout. The checks assert that controls stay within the usable window and that
+the editor does not count navigation bar padding twice when the keyboard opens.
+
 GitHub Actions should build the debug APK and upload it as an artifact from
 `.github/workflows/build-mobile-apk.yml`.
 

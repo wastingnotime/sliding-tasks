@@ -345,7 +345,7 @@ fun SlidingTasksApp() {
                 }
             },
         ) { padding ->
-            Column(Modifier.padding(padding).fillMaxSize()) {
+            Column(Modifier.padding(padding).consumeWindowInsets(padding).fillMaxSize()) {
                 saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
                 if (aboutOpen) AboutScreen(
                     onBack = { aboutOpen = false },
@@ -910,9 +910,9 @@ private fun PlanEditor(
 
     Column(Modifier.fillMaxSize().imePadding().padding(horizontal = 20.dp, vertical = 16.dp)) {
         TextButton(onClick = onCancel, modifier = Modifier.testTag("cancel-edit")) { Text(stringResource(R.string.cancel)) }
-        PageHeader(stringResource(R.string.plan_text), if (task == null) stringResource(R.string.new_task) else stringResource(R.string.edit_task), stringResource(R.string.plan_editor_hint))
-        Spacer(Modifier.height(16.dp))
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            PageHeader(stringResource(R.string.plan_text), if (task == null) stringResource(R.string.new_task) else stringResource(R.string.edit_task), stringResource(R.string.plan_editor_hint))
+            Spacer(Modifier.height(16.dp))
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },

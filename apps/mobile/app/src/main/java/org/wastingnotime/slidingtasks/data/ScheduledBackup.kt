@@ -37,10 +37,12 @@ class ScheduledBackup(private val context: Context) {
         val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         val previous = preferences.getString(KEY_FOLDER, null)
         resolver.takePersistableUriPermission(folder, flags)
-        val writable = runCatching {
-            DocumentFile.fromTreeUri(context, folder)?.let { it.isDirectory && it.canWrite() } == true
+        val usable = runCatching {
+            val selected = DocumentFile.fromTreeUri(context, folder)
+            selected != null && selected.isDirectory && selected.canWrite() &&
+                validateRenameSupport(selected)
         }.getOrDefault(false)
-        if (!writable) {
+        if (!usable) {
             if (previous != folder.toString()) {
                 runCatching { resolver.releasePersistableUriPermission(folder, flags) }
             }
@@ -63,6 +65,24 @@ class ScheduledBackup(private val context: Context) {
         )
         if (previous != null && previous != folder.toString()) {
             runCatching { resolver.releasePersistableUriPermission(Uri.parse(previous), flags) }
+        }
+    }
+
+    private fun validateRenameSupport(folder: DocumentFile): Boolean {
+        val probeId = "${System.currentTimeMillis()}-${java.util.UUID.randomUUID()}"
+        val probeName = "$RENAME_PROBE_PREFIX$probeId.tmp"
+        val renamedName = "$RENAME_PROBE_PREFIX$probeId.json"
+        val probe = folder.createFile("application/json", probeName) ?: return false
+        var renameAttempted = false
+        return try {
+            renameAttempted = true
+            check(probe.renameTo(renamedName))
+            folder.findFile(renamedName) != null
+        } finally {
+            val cleanupNames = listOf(probeName) + if (renameAttempted) listOf(renamedName) else emptyList()
+            cleanupNames.mapNotNull(folder::findFile).forEach {
+                check(it.delete()) { "Could not remove backup folder capability check" }
+            }
         }
     }
 
@@ -97,6 +117,7 @@ class ScheduledBackup(private val context: Context) {
         internal const val KEY_LAST_FAILURE = "last_failure"
         private const val PERIODIC_WORK = "daily_task_backup"
         private const val IMMEDIATE_WORK = "initial_task_backup"
+        private const val RENAME_PROBE_PREFIX = "sliding-tasks-rename-check-"
     }
 }
 
@@ -131,7 +152,7 @@ class BackupWorker(context: Context, parameters: WorkerParameters) : Worker(cont
             .filter { it.isFile && it.name?.startsWith(PENDING_PREFIX) == true }
             .forEach { check(it.delete()) { "Could not remove an incomplete backup" } }
 
-        val pending = folder.createFile("application/octet-stream", "$PENDING_PREFIX$timestamp.tmp")
+        val pending = folder.createFile("application/json", "$PENDING_PREFIX$timestamp.tmp")
             ?: error("Could not create temporary backup file")
         try {
             val json = LocalTaskStore(applicationContext).let { it.export(it.load()) }
@@ -155,11 +176,12 @@ class BackupWorker(context: Context, parameters: WorkerParameters) : Worker(cont
     }
 
     private fun isCompletedBackup(file: DocumentFile) =
-        file.isFile && file.name?.startsWith(BACKUP_PREFIX) == true && file.name?.endsWith(".json") == true
+        file.isFile && file.name?.matches(COMPLETED_BACKUP_NAME) == true
 
     private companion object {
         const val BACKUP_PREFIX = "sliding-tasks-auto-"
         const val PENDING_PREFIX = "sliding-tasks-pending-"
+        val COMPLETED_BACKUP_NAME = Regex("^sliding-tasks-auto-\\d{8}-\\d{6}-\\d{3}\\.json$")
         const val MAX_BACKUPS = 7
     }
 }

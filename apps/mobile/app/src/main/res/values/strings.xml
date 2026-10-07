@@ -32,6 +32,7 @@
     <string name="backup_last_success">Last successful backup: %1$s</string>
     <string name="backup_last_failed">The last backup failed. Check that the folder is available or choose it again.</string>
     <string name="backup_setup_success">Backup folder saved. Backups will run automatically.</string>
+    <string name="backup_setup_in_progress">Checking backup folder…</string>
     <string name="backup_setup_cancelled">Backup folder selection cancelled.</string>
     <string name="backup_setup_error">Could not use that folder. Choose another folder and try again.</string>
     <string name="backup_disabled">Automatic backups are off. Existing backup files were kept.</string>

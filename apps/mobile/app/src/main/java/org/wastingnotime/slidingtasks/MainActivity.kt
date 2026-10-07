@@ -210,11 +210,17 @@ fun SlidingTasksApp() {
         if (uri == null) {
             backupMessage = context.getString(R.string.backup_setup_cancelled)
         } else {
-            backupMessage = runCatching { scheduledBackup.configure(uri) }.fold(
-                onSuccess = { context.getString(R.string.backup_setup_success) },
-                onFailure = { context.getString(R.string.backup_setup_error) },
-            )
-            backupStatus = scheduledBackup.status()
+            backupMessage = context.getString(R.string.backup_setup_in_progress)
+            coroutineScope.launch {
+                val result = withContext(Dispatchers.IO) {
+                    runCatching { scheduledBackup.configure(uri) }
+                }
+                backupMessage = result.fold(
+                    onSuccess = { context.getString(R.string.backup_setup_success) },
+                    onFailure = { context.getString(R.string.backup_setup_error) },
+                )
+                backupStatus = scheduledBackup.status()
+            }
         }
     }
     LaunchedEffect(Unit) {

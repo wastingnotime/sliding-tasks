@@ -19,6 +19,7 @@
     <string name="export_description">Save your tasks, schedules, cards, board state, and history to a JSON file you choose. This file contains private task content. Store it securely.</string>
     <string name="export_tasks">Export tasks</string>
     <string name="export_success">Tasks exported. Keep the file somewhere secure.</string>
+    <string name="export_in_progress">Preparing your backup…</string>
     <string name="export_cancelled">Export cancelled. Your tasks were not changed.</string>
     <string name="export_error">Could not write the backup file. Choose another location and try again.</string>
     <string name="backup_heading">Automatic backups</string>

@@ -63,6 +63,8 @@ import org.wastingnotime.slidingtasks.data.ScheduledBackup
 import org.wastingnotime.slidingtasks.model.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.DayOfWeek
 import java.time.Instant
@@ -115,6 +117,7 @@ private enum class PlanMode(val label: Int) {
 @Composable
 fun SlidingTasksApp() {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val store = remember { LocalTaskStore(context.applicationContext) }
     val scheduledBackup = remember { ScheduledBackup(context.applicationContext) }
     val engine = remember { SlidingTasksEngine() }
@@ -186,15 +189,21 @@ fun SlidingTasksApp() {
         if (uri == null) {
             exportResult = context.getString(R.string.export_cancelled)
         } else {
-            exportResult = runCatching {
-                val raw = store.export(store.load())
-                context.contentResolver.openOutputStream(uri, "wt")?.bufferedWriter(Charsets.UTF_8)?.use {
-                    it.write(raw)
-                } ?: error("Could not open selected file")
-            }.fold(
-                onSuccess = { context.getString(R.string.export_success) },
-                onFailure = { context.getString(R.string.export_error) },
-            )
+            exportResult = context.getString(R.string.export_in_progress)
+            coroutineScope.launch {
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val raw = store.export(store.load())
+                        context.contentResolver.openOutputStream(uri, "wt")?.bufferedWriter(Charsets.UTF_8)?.use {
+                            it.write(raw)
+                        } ?: error("Could not open selected file")
+                    }
+                }
+                exportResult = result.fold(
+                    onSuccess = { context.getString(R.string.export_success) },
+                    onFailure = { context.getString(R.string.export_error) },
+                )
+            }
         }
     }
     val backupFolderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->

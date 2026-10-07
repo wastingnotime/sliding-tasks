@@ -127,22 +127,39 @@ class BackupWorker(context: Context, parameters: WorkerParameters) : Worker(cont
             ?: error("Backup folder is unavailable")
         val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS")
             .withZone(ZoneOffset.UTC).format(Instant.now())
-        val file = folder.createFile("application/json", "sliding-tasks-auto-$timestamp.json")
-            ?: error("Could not create backup file")
+        folder.listFiles()
+            .filter { it.isFile && it.name?.startsWith(PENDING_PREFIX) == true }
+            .forEach { check(it.delete()) { "Could not remove an incomplete backup" } }
+
+        val pending = folder.createFile("application/octet-stream", "$PENDING_PREFIX$timestamp.tmp")
+            ?: error("Could not create temporary backup file")
         try {
             val json = LocalTaskStore(applicationContext).let { it.export(it.load()) }
-            applicationContext.contentResolver.openOutputStream(file.uri, "wt")
+            applicationContext.contentResolver.openOutputStream(pending.uri, "wt")
                 ?.bufferedWriter(Charsets.UTF_8)?.use { it.write(json) }
                 ?: error("Could not write backup file")
+
+            folder.listFiles()
+                .filter { isCompletedBackup(it) }
+                .sortedByDescending { it.name }
+                .drop(MAX_BACKUPS - 1)
+                .forEach { check(it.delete()) { "Could not enforce backup retention" } }
+
+            check(pending.renameTo("$BACKUP_PREFIX$timestamp.json")) {
+                "Could not publish completed backup"
+            }
         } catch (error: Exception) {
-            runCatching { file.delete() }
+            runCatching { pending.delete() }
             throw error
         }
-        folder.listFiles()
-            .filter { it.isFile && it.name?.startsWith("sliding-tasks-auto-") == true &&
-                it.name?.endsWith(".json") == true }
-            .sortedByDescending { it.name }
-            .drop(7)
-            .forEach { it.delete() }
+    }
+
+    private fun isCompletedBackup(file: DocumentFile) =
+        file.isFile && file.name?.startsWith(BACKUP_PREFIX) == true && file.name?.endsWith(".json") == true
+
+    private companion object {
+        const val BACKUP_PREFIX = "sliding-tasks-auto-"
+        const val PENDING_PREFIX = "sliding-tasks-pending-"
+        const val MAX_BACKUPS = 7
     }
 }

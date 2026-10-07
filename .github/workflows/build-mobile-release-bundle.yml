@@ -43,6 +43,8 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: sliding-tasks-release-aab
-          path: apps/mobile/app/build/outputs/bundle/release/app-release.aab
+          path: |
+            apps/mobile/app/build/outputs/bundle/release/app-release.aab
+            apps/mobile/app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: error
           retention-days: 7

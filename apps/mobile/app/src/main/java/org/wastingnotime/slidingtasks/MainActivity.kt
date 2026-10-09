@@ -15,7 +15,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -87,9 +86,11 @@ class MainActivity : ComponentActivity() {
 }
 
 private val LightColors = lightColorScheme(
-    primary = Color(0xFFE85D3F),
+    primary = Color(0xFFB63820),
     onPrimary = Color.White,
     secondary = Color(0xFF377A45),
+    secondaryContainer = Color(0xFFDDE9D7),
+    onSecondaryContainer = Color(0xFF263528),
     background = Color(0xFFFFF8F3),
     onBackground = Color(0xFF231F20),
     surface = Color(0xFFFFFFFF),
@@ -102,6 +103,8 @@ private val DarkColors = darkColorScheme(
     primary = Color(0xFFFFB4A2),
     onPrimary = Color(0xFF5F1607),
     secondary = Color(0xFFA2D5AA),
+    secondaryContainer = Color(0xFF243127),
+    onSecondaryContainer = Color(0xFFD4E8D6),
     background = Color(0xFF181211),
     onBackground = Color(0xFFF1DFDB),
     surface = Color(0xFF241C1A),
@@ -162,6 +165,7 @@ fun SlidingTasksApp() {
     var planEditorOpen by remember { mutableStateOf(false) }
     var planEditorTask by remember { mutableStateOf<PlannedTask?>(null) }
     var aboutOpen by remember { mutableStateOf(false) }
+    var backupOnly by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     var pendingUndo by remember { mutableStateOf<PendingUndo?>(null) }
     val accessibilityManager = LocalAccessibilityManager.current
@@ -348,6 +352,7 @@ fun SlidingTasksApp() {
             Column(Modifier.padding(padding).consumeWindowInsets(padding).fillMaxSize()) {
                 saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
                 if (aboutOpen) AboutScreen(
+                    backupOnly = backupOnly,
                     onBack = { aboutOpen = false },
                     onExport = { exportResult = null; exportLauncher.launch("sliding-tasks-backup.json") },
                     exportResult = exportResult,
@@ -368,7 +373,7 @@ fun SlidingTasksApp() {
                     AppSection.TODAY -> TodayScreen(
                         date = today,
                         cards = engine.pendingCards(state),
-                        onAbout = { aboutOpen = true },
+                        onAbout = { backups -> backupOnly = backups; aboutOpen = true },
                         pausedOneTimeTasks = state.tasks.filter { task ->
                             task.type == TaskType.ONE_TIME && !task.active && !task.resolved &&
                                 state.cards.none { it.taskId == task.id && it.boardDate == today && it.status == CardStatus.PENDING }
@@ -400,7 +405,7 @@ fun SlidingTasksApp() {
                     } else {
                         PlanScreen(
                             tasks = state.tasks.filter { it.type == TaskType.ROUTINE || !it.resolved },
-                            onAbout = { aboutOpen = true },
+                            onAbout = { backups -> backupOnly = backups; aboutOpen = true },
                             onAdd = { planEditorTask = null; planEditorOpen = true },
                             onEdit = { planEditorTask = it; planEditorOpen = true },
                             onSetActive = { id, active -> commit(engine.setTaskActive(state, id, active)) },
@@ -417,7 +422,7 @@ fun SlidingTasksApp() {
                             onRemove = { id -> removeTask(id) },
                         )
                     }
-                    AppSection.REVIEW -> ReviewScreen(state, today, onAbout = { aboutOpen = true })
+                    AppSection.REVIEW -> ReviewScreen(state, today, onAbout = { backups -> backupOnly = backups; aboutOpen = true })
                 }
             }
         }
@@ -426,6 +431,7 @@ fun SlidingTasksApp() {
 
 @Composable
 private fun AboutScreen(
+    backupOnly: Boolean,
     onBack: () -> Unit,
     onExport: () -> Unit,
     exportResult: String?,
@@ -440,79 +446,86 @@ private fun AboutScreen(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        PageHeader(stringResource(R.string.sliding_tasks), stringResource(R.string.about), stringResource(R.string.about_tagline), onBack = onBack)
-        Text(stringResource(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE), color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
-        HorizontalDivider()
-        Text(stringResource(R.string.quick_guide), fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text(stringResource(R.string.guide_plan))
-        Text(stringResource(R.string.guide_today))
-        Text(stringResource(R.string.guide_review))
-        HorizontalDivider()
-        Text(stringResource(R.string.export_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text(stringResource(R.string.export_description))
-        Button(onClick = onExport, modifier = Modifier.testTag("export-tasks")) {
-            Text(stringResource(R.string.export_tasks))
+        PageHeader(stringResource(R.string.sliding_tasks), stringResource(if (backupOnly) R.string.backup_restore else R.string.about),
+            stringResource(if (backupOnly) R.string.backup_restore_hint else R.string.about_tagline), onBack = onBack)
+        if (!backupOnly) {
+            Text(stringResource(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE), color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
+            HorizontalDivider()
+            Text(stringResource(R.string.quick_guide), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.guide_plan))
+            Text(stringResource(R.string.guide_today))
+            Text(stringResource(R.string.guide_review))
+            HorizontalDivider()
         }
-        exportResult?.let { Text(it) }
-        HorizontalDivider()
-        Text(stringResource(R.string.backup_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text(stringResource(R.string.backup_description))
-        if (backupStatus.enabled) {
-            Text(stringResource(R.string.backup_enabled))
-            if (backupStatus.lastSuccessMillis == null && !backupStatus.lastAttemptFailed) {
-                Text(stringResource(R.string.backup_first_pending))
+        if (backupOnly) {
+            Text(stringResource(R.string.export_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.export_description))
+            Button(onClick = onExport, modifier = Modifier.testTag("export-tasks")) {
+                Text(stringResource(R.string.export_tasks))
             }
-            backupStatus.lastSuccessMillis?.let { millis ->
-                val date = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-                    .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(millis))
-                Text(stringResource(R.string.backup_last_success, date))
+            exportResult?.let { Text(it) }
+            HorizontalDivider()
+            Text(stringResource(R.string.backup_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.backup_description))
+            if (backupStatus.enabled) {
+                Text(stringResource(R.string.backup_enabled))
+                if (backupStatus.lastSuccessMillis == null && !backupStatus.lastAttemptFailed) {
+                    Text(stringResource(R.string.backup_first_pending))
+                }
+                backupStatus.lastSuccessMillis?.let { millis ->
+                    val date = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+                        .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(millis))
+                    Text(stringResource(R.string.backup_last_success, date))
+                }
+                if (backupStatus.lastAttemptFailed) {
+                    Text(stringResource(R.string.backup_last_failed), color = MaterialTheme.colorScheme.error)
+                }
+                Button(onClick = onChooseBackupFolder, modifier = Modifier.testTag("change-backup-folder")) {
+                    Text(stringResource(R.string.backup_change_folder))
+                }
+                TextButton(onClick = onDisableScheduledBackup, modifier = Modifier.testTag("disable-backup")) {
+                    Text(stringResource(R.string.backup_turn_off))
+                }
+            } else {
+                Button(onClick = onChooseBackupFolder, modifier = Modifier.testTag("choose-backup-folder")) {
+                    Text(stringResource(R.string.backup_choose_folder))
+                }
             }
-            if (backupStatus.lastAttemptFailed) {
-                Text(stringResource(R.string.backup_last_failed), color = MaterialTheme.colorScheme.error)
+            backupMessage?.let { Text(it) }
+            HorizontalDivider()
+            Text(stringResource(R.string.restore_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.restore_description))
+            if (onImport != null) {
+                Button(onClick = onImport, modifier = Modifier.testTag("import-saved-tasks")) {
+                    Text(stringResource(R.string.import_saved_tasks))
+                }
+            } else {
+                Text(stringResource(R.string.import_requires_empty))
             }
-            Button(onClick = onChooseBackupFolder, modifier = Modifier.testTag("change-backup-folder")) {
-                Text(stringResource(R.string.backup_change_folder))
-            }
-            TextButton(onClick = onDisableScheduledBackup, modifier = Modifier.testTag("disable-backup")) {
-                Text(stringResource(R.string.backup_turn_off))
-            }
-        } else {
-            Button(onClick = onChooseBackupFolder, modifier = Modifier.testTag("choose-backup-folder")) {
-                Text(stringResource(R.string.backup_choose_folder))
-            }
+            importError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            HorizontalDivider()
         }
-        backupMessage?.let { Text(it) }
-        HorizontalDivider()
-        Text(stringResource(R.string.restore_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text(stringResource(R.string.restore_description))
-        if (onImport != null) {
-            Button(onClick = onImport, modifier = Modifier.testTag("import-saved-tasks")) {
-                Text(stringResource(R.string.import_saved_tasks))
+        if (!backupOnly) {
+            Text(stringResource(R.string.wasting_no_time), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.about_wnt))
+            HorizontalDivider()
+            Text(stringResource(R.string.privacy), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.privacy_effective_date))
+            Text(stringResource(R.string.privacy_intro))
+            Text(stringResource(R.string.privacy_storage))
+            if (BuildConfig.DEBUG) {
+                Text(stringResource(R.string.privacy_alpha_diagnostics))
+            } else {
+                Text(stringResource(R.string.privacy_play_diagnostics))
             }
-        } else {
-            Text(stringResource(R.string.import_requires_empty))
+            Text(stringResource(R.string.privacy_erasure))
+            if (BuildConfig.DEBUG) {
+                Text(stringResource(R.string.privacy_firebase_retention))
+            }
+            Text(stringResource(R.string.privacy_changes))
+            Text(stringResource(R.string.privacy_contact))
+            Text(stringResource(R.string.privacy_public_link), color = MaterialTheme.colorScheme.primary)
         }
-        importError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        HorizontalDivider()
-        Text(stringResource(R.string.wasting_no_time), fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text(stringResource(R.string.about_wnt))
-        HorizontalDivider()
-        Text(stringResource(R.string.privacy), fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text(stringResource(R.string.privacy_effective_date))
-        Text(stringResource(R.string.privacy_intro))
-        Text(stringResource(R.string.privacy_storage))
-        if (BuildConfig.DEBUG) {
-            Text(stringResource(R.string.privacy_alpha_diagnostics))
-        } else {
-            Text(stringResource(R.string.privacy_play_diagnostics))
-        }
-        Text(stringResource(R.string.privacy_erasure))
-        if (BuildConfig.DEBUG) {
-            Text(stringResource(R.string.privacy_firebase_retention))
-        }
-        Text(stringResource(R.string.privacy_changes))
-        Text(stringResource(R.string.privacy_contact))
-        Text(stringResource(R.string.privacy_public_link), color = MaterialTheme.colorScheme.primary)
     }
 }
 
@@ -522,14 +535,14 @@ private fun PageHeader(
     title: String,
     subtitle: String,
     subtitleTag: String? = null,
-    onAbout: (() -> Unit)? = null,
+    onAbout: ((Boolean) -> Unit)? = null,
     onBack: (() -> Unit)? = null,
 ) {
     var moreMenuOpen by remember { mutableStateOf(false) }
     val moreOptionsLabel = stringResource(R.string.more_options)
     Box(Modifier.fillMaxWidth()) {
         Column {
-            Text(kicker, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+            if (kicker.isNotEmpty()) Text(kicker, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
             Text(
                 title,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -559,8 +572,13 @@ private fun PageHeader(
             }
             DropdownMenu(expanded = moreMenuOpen, onDismissRequest = { moreMenuOpen = false }) {
                 DropdownMenuItem(
+                    text = { Text(stringResource(R.string.backup_restore)) },
+                    onClick = { moreMenuOpen = false; onAbout(true) },
+                    modifier = Modifier.testTag("backup-menu-item"),
+                )
+                DropdownMenuItem(
                     text = { Text(stringResource(R.string.about)) },
-                    onClick = { moreMenuOpen = false; onAbout() },
+                    onClick = { moreMenuOpen = false; onAbout(false) },
                     modifier = Modifier.testTag("about-menu-item"),
                 )
             }
@@ -572,7 +590,7 @@ private fun PageHeader(
 private fun TodayScreen(
     date: LocalDate,
     cards: List<TaskCard>,
-    onAbout: () -> Unit,
+    onAbout: (Boolean) -> Unit,
     pausedOneTimeTasks: List<PlannedTask>,
     onCommand: (CardCommand) -> Unit,
     onCreateOneTime: (String) -> Boolean,
@@ -631,7 +649,7 @@ private fun TodayScreen(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item { PageHeader(stringResource(R.string.today_text), localizedDate(date, FormatStyle.FULL), count, "remaining-count", onAbout) }
+        item { PageHeader("", stringResource(R.string.today), stringResource(R.string.summary_join, localizedDate(date, FormatStyle.MEDIUM), count), "remaining-count", onAbout) }
         item {
             OutlinedButton(
                 onClick = { oneTimeTitle = ""; addingOneTime = true },
@@ -670,7 +688,7 @@ private fun TodayScreen(
 @Composable
 private fun PlanScreen(
     tasks: List<PlannedTask>,
-    onAbout: () -> Unit,
+    onAbout: (Boolean) -> Unit,
     onAdd: () -> Unit,
     onEdit: (PlannedTask) -> Unit,
     onSetActive: (String, Boolean) -> Unit,
@@ -728,7 +746,8 @@ private fun PlanScreen(
             title = { Text(stringResource(R.string.remove_from_plan)) },
             text = { Text(stringResource(R.string.remove_plan_message, task.title)) },
             confirmButton = {
-                TextButton(onClick = { onRemove(task.id); pendingRemoval = null }) {
+                TextButton(onClick = { onRemove(task.id); pendingRemoval = null },
+                    modifier = Modifier.testTag("confirm-remove")) {
                     Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error)
                 }
             },
@@ -779,9 +798,15 @@ private fun PlanScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 itemsIndexed(tasks, key = { _, task -> task.id }) { index, task ->
+                    var taskMenuOpen by remember(task.id) { mutableStateOf(false) }
+                    val editLabel = stringResource(R.string.edit)
+                    val optionsLabel = stringResource(R.string.task_options, task.title)
+                    val activeLabel = stringResource(R.string.task_active_accessibility, task.title)
                     Card(
                         modifier = Modifier
                             .alpha(if (draggingId == task.id) .25f else 1f)
+                            .testTag("plan-" + task.id)
+                            .clickable(onClickLabel = editLabel) { onEdit(task) }
                             .semantics {
                                 customActions = buildList {
                                     if (index > 0) add(CustomAccessibilityAction(moveUpLabel) {
@@ -800,21 +825,34 @@ private fun PlanScreen(
                     ) {
                         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(painterResource(R.drawable.ic_drag_handle), contentDescription = null,
+                                    modifier = Modifier.padding(end = 8.dp).size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Column(Modifier.weight(1f)) {
                                     Text(task.title, color = MaterialTheme.colorScheme.onSurface,
                                         fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
                                     Text(task.scheduleSummary(), color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f))
                                 }
-                                Switch(checked = task.active, enabled = !task.resolved,
-                                    onCheckedChange = { onSetActive(task.id, it) })
-                            }
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                TextButton(onClick = { onEdit(task) }, modifier = Modifier.testTag("edit-" + task.id)) {
-                                    Text(stringResource(R.string.edit))
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Switch(checked = task.active, enabled = !task.resolved,
+                                        modifier = Modifier.semantics { contentDescription = activeLabel },
+                                        onCheckedChange = { onSetActive(task.id, it) })
+                                    Text(stringResource(if (task.active) R.string.active else R.string.paused),
+                                        style = MaterialTheme.typography.labelSmall)
                                 }
-                                TextButton(onClick = { pendingRemoval = task },
-                                    modifier = Modifier.testTag("remove-" + task.id)) {
-                                    Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error)
+                                Box {
+                                    IconButton(onClick = { taskMenuOpen = true }, modifier = Modifier.testTag("task-options-" + task.id)) {
+                                        Text("⋮", fontSize = 22.sp, modifier = Modifier.semantics {
+                                            contentDescription = optionsLabel
+                                        })
+                                    }
+                                    DropdownMenu(expanded = taskMenuOpen, onDismissRequest = { taskMenuOpen = false }) {
+                                        DropdownMenuItem(text = { Text(stringResource(R.string.edit)) },
+                                            onClick = { taskMenuOpen = false; onEdit(task) },
+                                            modifier = Modifier.testTag("edit-" + task.id))
+                                        DropdownMenuItem(text = { Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error) },
+                                            onClick = { taskMenuOpen = false; pendingRemoval = task },
+                                            modifier = Modifier.testTag("remove-" + task.id))
+                                    }
                                 }
                             }
                         }
@@ -875,6 +913,7 @@ private fun localizedDate(date: LocalDate, style: FormatStyle): String =
 @Composable
 private fun quantity(id: Int, count: Int): String = LocalContext.current.resources.getQuantityString(id, count, count)
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PlanEditor(
     task: PlannedTask?,
@@ -926,7 +965,7 @@ private fun PlanEditor(
                 modifier = Modifier.fillMaxWidth().testTag("task-title"),
             )
             Text(stringResource(R.string.type), modifier = Modifier.padding(top = 14.dp), fontWeight = FontWeight.Bold)
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            FlowRow(Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PlanMode.entries.forEach { candidate ->
                     FilterChip(
@@ -956,7 +995,7 @@ private fun PlanEditor(
             )
             if (mode == PlanMode.ROUTINE) {
                 Text(stringResource(R.string.schedule), modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                FlowRow(Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(ScheduleKind.DAILY, ScheduleKind.WEEKLY_DAYS).forEach { candidate ->
                         FilterChip(
@@ -978,7 +1017,7 @@ private fun PlanEditor(
             if (mode != PlanMode.ONE_TIME) {
                 Text(if (kind == ScheduleKind.DAILY) stringResource(R.string.every_how_many_days) else stringResource(R.string.every_how_many_weeks),
                     modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                FlowRow(Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     intervalOptions.forEach { candidate ->
                         FilterChip(
@@ -1010,7 +1049,7 @@ private fun PlanEditor(
                         stringResource(if (kind == ScheduleKind.WEEKLY_DAYS) R.string.weekly_days_hint else R.string.until_decided_days_hint),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f),
                     )
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    FlowRow(Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(stringResource(R.string.any_day) to allWeekDays, stringResource(R.string.weekdays) to weekdays,
                             stringResource(R.string.weekend) to setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)).forEach { (label, selection) ->
@@ -1021,7 +1060,7 @@ private fun PlanEditor(
                             )
                         }
                     }
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    FlowRow(Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         DayOfWeek.entries.forEach { day ->
                             FilterChip(
@@ -1045,6 +1084,9 @@ private fun PlanEditor(
                     }
                 }
             }
+            Text(schedulePreview(TaskSchedule(kind, interval, days, startsOn)),
+                modifier = Modifier.padding(top = 12.dp).testTag("schedule-preview"),
+                style = MaterialTheme.typography.bodySmall)
         }
         Spacer(Modifier.height(12.dp))
         Button(
@@ -1056,7 +1098,21 @@ private fun PlanEditor(
 }
 
 @Composable
-private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: () -> Unit) {
+private fun schedulePreview(schedule: TaskSchedule): String {
+    if (schedule.kind == ScheduleKind.ONCE) return stringResource(R.string.one_time_explanation)
+    val cadence = if (schedule.kind == ScheduleKind.DAILY) {
+        if (schedule.interval == 1) stringResource(R.string.daily) else stringResource(R.string.every_days, schedule.interval)
+    } else stringResource(R.string.summary_join,
+        if (schedule.interval == 1) stringResource(R.string.every_week) else stringResource(R.string.every_weeks, schedule.interval),
+        if (schedule.days.isEmpty()) stringResource(R.string.select_at_least_one_day) else schedule.days.daySelectionLabel())
+    val outcome = stringResource(if (schedule.kind == ScheduleKind.ONCE_PER_WEEK) R.string.preview_week else R.string.preview_each_day, cadence)
+    return if (schedule.interval > 1) stringResource(R.string.summary_join, outcome,
+        stringResource(if (schedule.kind == ScheduleKind.DAILY) R.string.first_active_day else R.string.first_active_week,
+            localizedDate(schedule.startsOn, FormatStyle.MEDIUM))) else outcome
+}
+
+@Composable
+private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: (Boolean) -> Unit) {
     val review = remember(state.cards, state.tasks, today) { reviewInsights(state, today) }
     var expandedDay by remember { mutableStateOf<LocalDate?>(null) }
 
@@ -1079,41 +1135,42 @@ private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: ()
                 tag = "review-week",
             )
         }
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth().testTag("review-patterns"),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.last_14_full_days), color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontSize = 12.sp)
-                    ReviewPatternRow(stringResource(R.string.missed_most), review.mostMissed, stringResource(R.string.no_clear_pattern_yet), R.string.pattern_missed)
-                    HorizontalDivider()
-                    ReviewPatternRow(stringResource(R.string.most_often_skipped), review.mostSkipped, stringResource(R.string.none_recently), R.string.pattern_skipped)
-                    HorizontalDivider()
-                    ReviewPatternRow(stringResource(R.string.kept_up_with), review.mostDone, stringResource(R.string.not_enough_days), R.string.pattern_done)
+        if (review.mostMissed == null && review.mostSkipped == null && review.mostDone == null && review.trend == null) {
+            item { Text(stringResource(R.string.review_learning), style = MaterialTheme.typography.bodyMedium) }
+        } else {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth().testTag("review-patterns"),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(stringResource(R.string.last_14_full_days), color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontSize = 12.sp)
+                        ReviewPatternRow(stringResource(R.string.missed_most), review.mostMissed, stringResource(R.string.no_clear_pattern_yet), R.string.pattern_missed)
+                        HorizontalDivider()
+                        ReviewPatternRow(stringResource(R.string.most_often_skipped), review.mostSkipped, stringResource(R.string.none_recently), R.string.pattern_skipped)
+                        HorizontalDivider()
+                        ReviewPatternRow(stringResource(R.string.kept_up_with), review.mostDone, stringResource(R.string.not_enough_days), R.string.pattern_done)
+                    }
                 }
             }
+            item {
+                val trend = review.trend
+                ReviewMetricCard(
+                    title = stringResource(R.string.recent_direction),
+                    headline = if (trend == null) stringResource(R.string.not_enough_history_yet) else
+                        stringResource(R.string.trend_compare, trend.recent.donePercent, trend.previous.donePercent),
+                    detail = if (trend == null) stringResource(R.string.trend_insufficient_cards) else
+                        stringResource(R.string.trend_description),
+                    tag = "review-trend",
+                )
+            }
         }
-        item {
-            val trend = review.trend
-            ReviewMetricCard(
-                title = stringResource(R.string.recent_direction),
-                headline = if (trend == null) stringResource(R.string.not_enough_history_yet) else
-                    stringResource(R.string.trend_compare, trend.recent.donePercent, trend.previous.donePercent),
-                detail = if (trend == null) stringResource(R.string.trend_insufficient_cards) else
-                    stringResource(R.string.trend_description),
-                tag = "review-trend",
-            )
-        }
-        item {
+        if (review.days.isNotEmpty()) item {
             Text(stringResource(R.string.recent_days), color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
-        if (review.days.isEmpty()) {
-            item { Text(stringResource(R.string.recent_days_empty),
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f)) }
-        } else {
+        if (review.days.isNotEmpty()) {
             items(review.days, key = { it.first.toString() }) { (date, cards) ->
                 val expanded = expandedDay == date
                 Card(
@@ -1251,17 +1308,13 @@ private fun TaskCardView(card: TaskCard, modifier: Modifier = Modifier) {
     val skipLabel = card.skipScope.localizedLabel()
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(22.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(16.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(9.dp).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50)))
-                Text(card.planLabel().uppercase(), Modifier.padding(start = 8.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
-            }
-            Text(card.title, Modifier.padding(vertical = 18.dp), color = MaterialTheme.colorScheme.onSurface, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
-            Text(stringResource(R.string.card_slide_hint, skipLabel.replaceFirstChar { it.lowercase() }),
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(card.title, color = MaterialTheme.colorScheme.onSurface, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.summary_join, card.planLabel(), skipLabel),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f), fontSize = 14.sp)
         }
     }

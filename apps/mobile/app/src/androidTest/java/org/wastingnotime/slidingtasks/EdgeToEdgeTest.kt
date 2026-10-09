@@ -87,10 +87,10 @@ class EdgeToEdgeTest {
         composeRule.onNodeWithTag("task-title").performImeAction()
         composeRule.onNodeWithTag("cancel-edit").performClick()
         composeRule.onNodeWithTag("more-options").performClick()
-        composeRule.onNodeWithTag("about-menu-item").performClick()
+        composeRule.onNodeWithTag("backup-menu-item").performClick()
         composeRule.onNodeWithTag("export-tasks").performScrollTo()
         assertSafe("export-tasks")
-        screenshot("about")
+        screenshot("backup")
     }
 
     private fun assertSafe(tag: String, keyboard: Boolean = false) {

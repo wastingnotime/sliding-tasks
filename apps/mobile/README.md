@@ -34,13 +34,13 @@ fields and the current schedule fields. If saved data cannot be decoded, the
 app blocks writes and asks the user to keep app storage intact.
 
 An empty installation can import a Sliding Tasks JSON state file from
-**About → Restore tasks → Import saved tasks**. This supports moving data from
+**More → Backup & restore → Import saved tasks**. This supports moving data from
 the earlier `com.wastingnotime.slidingtasks` debug package, whose private
 storage Android cannot share automatically with the Play package. Import is
 only offered while the current installation has no tasks, cards, or events;
 the file is validated before its contents are saved.
 
-**About → Export tasks** saves a versioned JSON file through Android's system
+**More → Backup & restore → Export tasks** saves a versioned JSON file through Android's system
 document picker. It includes planned tasks and schedules, cards, active board
 date, and event history. The file contains private task content; store it
 securely. An empty installation can import this file to recover the state.
@@ -48,12 +48,12 @@ Import into a nonempty installation remains disallowed. A cancelled export or
 import leaves local data unchanged. If writing fails, choose another location
 and export again; an incomplete file at the first location should be discarded.
 
-**About → Automatic backups → Choose backup folder** asks for folder access
+**More → Backup & restore → Automatic backups → Choose backup folder** asks for folder access
 once through Android's system picker. The app writes an immediate backup, then
 uses WorkManager to write another approximately once per day without opening
 the app or asking again. Each file uses the same versioned JSON format as
 manual export. The app keeps the seven newest automatic files in that folder;
-manual exports and other files are untouched. About shows the last successful
+manual exports and other files are untouched. Backup & restore shows the last successful
 backup or a failure notice. Changing the folder leaves old files where they
 were. Turning off automatic backups cancels scheduled work and leaves existing
 files in place. A folder on this device does not protect against device loss;
@@ -155,7 +155,7 @@ event history on the device. Daily mobile operation does not wait for an API
 transport contract. Planning may gain optional synchronization later.
 
 Use the bottom navigation to open **Plan**, where routines and unresolved
-one-time tasks are listed. Tap **Add task** or a task's **Edit** action to open its form.
+one-time tasks are listed. Tap **Add task** or a task entry to open its form.
 Choose **Routine** for a new card on every scheduled day, **Until decided** for
 one occurrence across selected days of an active week, or **One-time** for a
 single task that carries forward until acted on. Today's cards use the same
@@ -166,7 +166,7 @@ recent task patterns, a seven-day comparison, and expandable recent days.
 Plan offers daily routines every 1–7 days, weekly routines with a separate card
 on each selected day every 1–4 weeks, and once-per-week routines with one
 occurrence across selected valid days every 1–4 weeks. The default is 1.
-The Plan editor uses single-choice intervals; existing schedules with larger
+The Plan editor uses wrapping single-choice intervals and shows an outcome preview; existing schedules with larger
 intervals remain intact until changed.
 Weekly selections default to weekdays; choose all days, weekends, or any
 combination such as Tuesday and Friday. When N is greater than 1, choose the
@@ -187,7 +187,7 @@ behavior and stored Focus tasks migrate to Routine. One-time tasks can be
 created in Plan or Today. Older paused one-time entries can be
 resumed or removed there; resolved ones remain in local history.
 Planned tasks can be edited, reordered by touching and holding an entry while
-dragging it, or removed with confirmation. Move up and Move down remain available
+dragging it, or removed from their overflow menu with confirmation. Active/Paused labels explain the switches. Move up and Move down remain available
 as accessibility actions.
 Edits update future cards while keeping existing card snapshots and history.
 Reordering controls future board order; removal preserves cards and history

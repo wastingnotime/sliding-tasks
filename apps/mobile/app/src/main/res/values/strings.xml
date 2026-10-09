@@ -69,7 +69,7 @@
     <string name="add_one_time_task">Add one-time task</string>
     <string name="paused_one_time_entries">PAUSED ONE-TIME ENTRIES</string>
     <string name="resume">Resume</string>
-    <string name="slide_left_to_skip_right_for_done">Slide left to skip · right for done</string>
+    <string name="slide_left_to_skip_right_for_done">Slide ← to skip · slide → for Done</string>
     <string name="remove_from_plan">Remove from plan?</string>
     <string name="plan_text">PLAN</string>
     <string name="your_plans">Your plans</string>
@@ -180,4 +180,13 @@
     <string name="undo">Undo</string>
     <string name="card_done_notice">%1$s marked Done</string>
     <string name="card_not_today_notice">%1$s marked Not today</string>
+    <string name="backup_restore">Backup &amp; restore</string>
+    <string name="backup_restore_hint">Keep a copy of your tasks and history.</string>
+    <string name="active">Active</string>
+    <string name="paused">Paused</string>
+    <string name="task_active_accessibility">Active: %1$s</string>
+    <string name="preview_week">%1$s. One occurrence; Done or Skip closes the active week.</string>
+    <string name="preview_each_day">%1$s. A separate card on each scheduled day.</string>
+    <string name="review_learning">Keep using Today. Patterns and comparisons will appear here as your history grows.</string>
+    <string name="task_options">Options for %1$s</string>
 </resources>

@@ -2,10 +2,12 @@ package org.wastingnotime.slidingtasks
 
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performImeAction
@@ -62,12 +64,12 @@ class SlidingCardTest {
     }
 
     private fun removeSeededTask(id: String) {
+        composeRule.onNodeWithTag("task-options-$id").performClick()
+        composeRule.mainClock.advanceTimeBy(300)
         composeRule.onNodeWithTag("remove-$id").performClick()
-        composeRule.mainClock.advanceTimeBy(50)
-        composeRule.onAllNodesWithText(composeRule.activity.getString(R.string.remove)).let {
-            // The dialog confirmation and underlying row both use this label.
-            it[it.fetchSemanticsNodes().lastIndex].performClick()
-        }
+        composeRule.mainClock.advanceTimeBy(300)
+        composeRule.onNodeWithTag("confirm-remove").performClick()
+        composeRule.mainClock.advanceTimeBy(300)
     }
 
     @Test
@@ -272,9 +274,9 @@ class SlidingCardTest {
             .performTouchInput { swipeRight(durationMillis = 500) }
 
         composeRule.waitUntil(timeoutMillis = 2_000) {
-            composeRule.onAllNodesWithText("0 cards left").fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithText("0 cards left", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onNodeWithTag("remaining-count").assertTextEquals("0 cards left")
+        composeRule.onNodeWithTag("remaining-count").assertTextContains("0 cards left", substring = true)
     }
 
     @Test
@@ -287,7 +289,7 @@ class SlidingCardTest {
         composeRule.activityRule.scenario.recreate()
         composeRule.onNodeWithTag("nav-plan").performClick()
 
-        composeRule.onAllNodesWithText("Persist this plan")[0].assertTextEquals("Persist this plan")
+        composeRule.onAllNodesWithText("Persist this plan")[0].assertTextContains("Persist this plan")
     }
 
     @Test
@@ -356,9 +358,9 @@ class SlidingCardTest {
         composeRule.onNodeWithTag("repeat-interval-4").assertExists()
         composeRule.onNodeWithTag("repeat-interval-5").assertDoesNotExist()
         composeRule.onNodeWithTag("repeat-interval-2").performClick()
-        composeRule.onNodeWithTag("day-monday").performClick()
-        composeRule.onNodeWithTag("day-wednesday").performClick()
-        composeRule.onNodeWithTag("day-thursday").performClick()
+        composeRule.onNodeWithTag("day-monday").performScrollTo().performClick()
+        composeRule.onNodeWithTag("day-wednesday").performScrollTo().performClick()
+        composeRule.onNodeWithTag("day-thursday").performScrollTo().performClick()
         composeRule.onNodeWithTag("add-task").performClick()
 
         composeRule.onAllNodesWithText("Routine · Every 2 weeks · Tue, Fri")[0].assertExists()
@@ -379,7 +381,7 @@ class SlidingCardTest {
         ))))
         composeRule.activityRule.scenario.recreate()
         composeRule.onNodeWithTag("nav-plan").performClick()
-        composeRule.onNodeWithTag("edit-long-interval").performClick()
+        composeRule.onNodeWithTag("plan-long-interval").performClick()
         composeRule.onNodeWithTag("repeat-daily").performClick()
         composeRule.onAllNodesWithText("currently set to every 10 days", substring = true)[0]
             .assertExists()
@@ -399,11 +401,11 @@ class SlidingCardTest {
         composeRule.onAllNodesWithText("One-time")[0].assertExists()
         composeRule.onNodeWithTag("nav-today").performClick()
         composeRule.onAllNodesWithText("Send invoice")[0].assertExists()
-        composeRule.onAllNodesWithText("left to skip task", substring = true)[0].assertExists()
+        composeRule.onAllNodesWithText("Skip task", substring = true)[0].assertExists()
         composeRule.onAllNodesWithText("Send invoice")[0]
             .performTouchInput { swipeRight(durationMillis = 500) }
         composeRule.waitUntil(timeoutMillis = 2_000) {
-            composeRule.onAllNodesWithText("0 cards left").fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithText("0 cards left", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("nav-plan").performClick()
         assertEquals(0, composeRule.onAllNodesWithText("Send invoice").fetchSemanticsNodes().size)
@@ -416,15 +418,15 @@ class SlidingCardTest {
         composeRule.onNodeWithTag("mode-until_decided").performClick()
         composeRule.onNodeWithTag("repeat-weekly_days").assertDoesNotExist()
         composeRule.onNodeWithTag("repeat-interval-2").performClick()
-        composeRule.onAllNodesWithText("Any day")[0].performClick()
-        composeRule.onNodeWithTag("task-title").performTextInput("Check mail")
+        composeRule.onAllNodesWithText("Any day")[0].performScrollTo().performClick()
+        composeRule.onNodeWithTag("task-title").performScrollTo().performTextInput("Check mail")
         composeRule.onNodeWithTag("task-title").performImeAction()
         composeRule.onNodeWithTag("add-task").performClick()
 
         composeRule.onAllNodesWithText("Until decided · Every 2 weeks · Any day")[0]
             .assertExists()
         composeRule.onNodeWithTag("nav-today").performClick()
-        composeRule.onAllNodesWithText("UNTIL DECIDED")[0].assertExists()
-        composeRule.onAllNodesWithText("left to skip this week", substring = true)[0].assertExists()
+        composeRule.onAllNodesWithText("Until decided", substring = true)[0].assertExists()
+        composeRule.onAllNodesWithText("Skip this week", substring = true)[0].assertExists()
     }
 }

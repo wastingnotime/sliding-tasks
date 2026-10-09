@@ -69,7 +69,7 @@
     <string name="add_one_time_task">Adicionar tarefa pontual</string>
     <string name="paused_one_time_entries">TAREFAS PONTUAIS PAUSADAS</string>
     <string name="resume">Retomar</string>
-    <string name="slide_left_to_skip_right_for_done">Deslize para a esquerda para pular · para a direita para concluir</string>
+    <string name="slide_left_to_skip_right_for_done">Deslize ← para pular · deslize → para concluir</string>
     <string name="remove_from_plan">Remover do planejamento?</string>
     <string name="plan_text">PLANEJAR</string>
     <string name="your_plans">Seus planos</string>
@@ -180,4 +180,13 @@
     <string name="undo">Desfazer</string>
     <string name="card_done_notice">%1$s marcada como concluída</string>
     <string name="card_not_today_notice">%1$s marcada como Não hoje</string>
+    <string name="backup_restore">Backup e restauração</string>
+    <string name="backup_restore_hint">Guarde uma cópia das suas tarefas e do histórico.</string>
+    <string name="active">Ativa</string>
+    <string name="paused">Pausada</string>
+    <string name="task_active_accessibility">Ativa: %1$s</string>
+    <string name="preview_week">%1$s. Uma ocorrência; Concluir ou Pular encerra a semana ativa.</string>
+    <string name="preview_each_day">%1$s. Um cartão separado em cada dia programado.</string>
+    <string name="review_learning">Continue usando Hoje. Padrões e comparações aparecerão aqui conforme seu histórico crescer.</string>
+    <string name="task_options">Opções de %1$s</string>
 </resources>

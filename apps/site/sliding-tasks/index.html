@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#fff8f3" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Sliding Tasks — make room for today" />
-    <meta property="og:description" content="A simple offline task board for the things you do and the things you decide to leave for another day." />
+    <meta property="og:description" content="A simple offline task board to plan routines, complete tasks, and review your decisions." />
     <meta property="og:url" content="https://wastingnotime.org/sliding-tasks/" />
     <link rel="canonical" href="https://wastingnotime.org/sliding-tasks/" />
     <link rel="icon" type="image/svg+xml" href="/sliding-tasks/favicon.svg" />
@@ -34,7 +34,7 @@
         <div class="hero-copy">
           <p class="eyebrow">A quieter way to plan</p>
           <h1 id="hero-title">Make room for <em>today.</em></h1>
-          <p class="lede">Plan the routines that matter. See what is ready today. Then slide a card to mark it done or let it go for now.</p>
+          <p class="lede">Plan the routines that matter. See what is ready today. Slide right to complete, or left to skip. Each card shows what skipping means.</p>
           <div class="hero-actions">
             <span class="release-note">Android app · Play release in preparation</span>
             <a href="#how-it-works">See how it works <span aria-hidden="true">↓</span></a>
@@ -43,10 +43,12 @@
 
         <div class="demo" aria-label="Illustration of the Sliding Tasks Today board">
           <div class="demo-top"><span>9:41</span><span aria-hidden="true">●●●</span></div>
-          <div class="demo-heading"><span class="demo-kicker">WEDNESDAY · TODAY</span><strong>What is here for you?</strong><span>3 cards left</span></div>
-          <div class="task-card"><span class="task-kind">ROUTINE</span><strong>Take a short walk</strong><span class="task-hint">Slide right for done <span aria-hidden="true">→</span></span></div>
-          <div class="task-card task-card--shifted"><span class="task-kind">ONE-TIME</span><strong>Send the project brief</strong><span class="task-hint">Your day, one choice at a time</span></div>
-          <div class="task-card task-card--soft"><span class="task-kind">ROUTINE</span><strong>Read for a while</strong><span class="task-hint">Whenever today makes room</span></div>
+          <div class="demo-heading"><strong>Today</strong><span>Oct 9, 2026 · 3 cards left</span></div>
+          <span class="demo-add">Add one-time task</span>
+          <p class="demo-hint">Slide ← to skip · slide → for Done</p>
+          <div class="task-card"><strong>Read a chapter</strong><span class="task-hint">One-time · Skip task</span></div>
+          <div class="task-card"><strong>Take a short walk</strong><span class="task-hint">Routine · Skip today</span></div>
+          <div class="task-card"><strong>Review priorities</strong><span class="task-hint">Until decided · Skip this week</span></div>
           <div class="demo-nav"><span class="active">Today</span><span>Plan</span><span>Review</span></div>
         </div>
       </section>
@@ -57,14 +59,14 @@
           <h2 id="steps-title">Plan ahead. Act in the present.</h2>
           <div class="step-grid">
             <article><span class="step-number">01</span><h3>Set your rhythm</h3><p>Add routines for the days or weeks that fit you, and one-time tasks when something new comes up.</p></article>
-            <article><span class="step-number">02</span><h3>Choose today</h3><p>See your current cards in one ordered board. Slide right for Done or left to skip the current occurrence.</p></article>
-            <article><span class="step-number">03</span><h3>Notice patterns</h3><p>Review recent days and the routines you complete, miss, or deliberately leave for later.</p></article>
+            <article><span class="step-number">02</span><h3>Choose today</h3><p>Slide right for Done or left to skip. Skip today closes today’s card; Skip this week closes the weekly occurrence; Skip task resolves a one-time task.</p></article>
+            <article><span class="step-number">03</span><h3>Notice patterns</h3><p>Review recent days and see which tasks you completed, skipped, or left unfinished.</p></article>
           </div>
         </div>
       </section>
 
       <section class="privacy-note wrap" aria-labelledby="privacy-title">
-        <div><p class="eyebrow">Private by default</p><h2 id="privacy-title">Your plans stay with you.</h2><p>Sliding Tasks works offline. The current app stores tasks and history on your device and has no account, ads, analytics, or sync service.</p></div>
+        <div><p class="eyebrow">Private by default</p><h2 id="privacy-title">Your plans stay with you.</h2><p>Sliding Tasks works offline, with optional file exports and automatic backups. Tasks and history stay on your device unless you export them or choose a backup folder. There is no account, ads, product analytics, or app sync service.</p></div>
         <a class="outline-link" href="/sliding-tasks/privacy/">Read the privacy policy <span aria-hidden="true">↗</span></a>
       </section>
     </main>

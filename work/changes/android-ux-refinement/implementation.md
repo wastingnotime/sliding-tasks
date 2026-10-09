@@ -80,3 +80,20 @@ wrapped choices, target the compact text, and wait for overflow animation before
 confirming removal. The removal tests still assert persisted state and Undo
 expiry/restore behavior. An initial overlapping Gradle invocation caused a
 transient build-output collision; serial builds passed afterward.
+
+## Landing page alignment
+
+The English and Brazilian Portuguese pages now illustrate the compact Today
+board with aligned task cards, contextual skip labels and green navigation
+selection. Hero, review and social-preview copy no longer imply that skipping
+always postpones a task. The daily loop explains all three skip scopes, and the
+privacy summary mentions optional exports and backups. Small orange text uses
+`#B63820`. The bilingual header wraps on narrow phones.
+
+Play availability remains “release in preparation”; no availability claim or
+install link was added. Publish this page revision alongside the app update.
+
+Validation: rendered both languages with Chromium at 320, 390 and 1440 pixels;
+all six views had no horizontal overflow or JavaScript errors. Visually reviewed
+English desktop and Portuguese 320px full-page screenshots. `git diff --check`
+passed. Production rollout remains owned by infra-platform.

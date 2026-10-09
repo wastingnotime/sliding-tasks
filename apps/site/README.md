@@ -23,3 +23,11 @@ Portuguese to the pt-BR page. The language links save an explicit choice in
 browser storage. Keep both privacy pages aligned with `docs/privacy-policy.md`.
 The pages link `/sliding-tasks/favicon.svg` explicitly; the domain-level
 favicon remains owned by the parent site.
+
+## Candidate delivery
+
+See [the site promotion contract](../../contracts/site-promotion.md).
+Successful main-branch site builds publish and validate a digest-pinned image,
+then automatically dispatch infra-platform intake. Intake opens a draft promotion
+PR; review and merge start the infra-owned rollout. The receiver must be present
+on infra-platform main before the producer workflow is merged.

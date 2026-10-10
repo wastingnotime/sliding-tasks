@@ -60,15 +60,22 @@ class ScheduledBackup(private val context: Context) {
             error("Could not save backup folder")
         }
         ensureScheduled()
-        workManager.enqueueUniqueWork(
-            IMMEDIATE_WORK,
-            ExistingWorkPolicy.REPLACE,
-            OneTimeWorkRequestBuilder<BackupWorker>().build(),
-        )
+        backupNow()
         if (previous != null && previous != folder.toString()) {
             runCatching { resolver.releasePersistableUriPermission(Uri.parse(previous), flags) }
         }
     }
+
+    fun backupNow() {
+        check(preferences.contains(KEY_FOLDER)) { "Choose a backup folder first" }
+        workManager.enqueueUniqueWork(
+            IMMEDIATE_WORK,
+            ExistingWorkPolicy.KEEP,
+            OneTimeWorkRequestBuilder<BackupWorker>().build(),
+        )
+    }
+
+    fun immediateWorkStatus() = workManager.getWorkInfosForUniqueWorkLiveData(IMMEDIATE_WORK)
 
     private fun validateRenameSupport(folder: DocumentFile): Boolean {
         val probeId = "${System.currentTimeMillis()}-${java.util.UUID.randomUUID()}"

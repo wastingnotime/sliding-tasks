@@ -189,4 +189,8 @@
     <string name="preview_each_day">%1$s. Um cartão separado em cada dia programado.</string>
     <string name="review_learning">Continue usando Hoje. Padrões e comparações aparecerão aqui conforme seu histórico crescer.</string>
     <string name="task_options">Opções de %1$s</string>
+    <string name="backup_now">Fazer backup agora</string>
+    <string name="backup_running">Salvando backup…</string>
+    <string name="backup_never">Último backup concluído: nenhum ainda</string>
+    <string name="backup_manual_error">Não foi possível iniciar o backup. Tente novamente.</string>
 </resources>

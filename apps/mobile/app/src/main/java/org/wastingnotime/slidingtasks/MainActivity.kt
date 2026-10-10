@@ -174,7 +174,18 @@ fun SlidingTasksApp() {
     var importError by remember { mutableStateOf<String?>(null) }
     var exportResult by remember { mutableStateOf<String?>(null) }
     var backupStatus by remember { mutableStateOf(scheduledBackup.status()) }
+    val manualBackupError = stringResource(R.string.backup_manual_error)
+    var backupRunning by remember { mutableStateOf(false) }
     var backupMessage by remember { mutableStateOf<String?>(null) }
+
+    DisposableEffect(scheduledBackup, lifecycleOwner) {
+        val workStatus = scheduledBackup.immediateWorkStatus()
+        val observer = androidx.lifecycle.Observer<List<androidx.work.WorkInfo>> { jobs ->
+            backupRunning = jobs.any { !it.state.isFinished }
+        }
+        workStatus.observe(lifecycleOwner, observer)
+        onDispose { workStatus.removeObserver(observer) }
+    }
 
     DisposableEffect(scheduledBackup) {
         val preferences = context.getSharedPreferences(ScheduledBackup.PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -358,6 +369,13 @@ fun SlidingTasksApp() {
                     exportResult = exportResult,
                     backupStatus = backupStatus,
                     backupMessage = backupMessage,
+                    backupRunning = backupRunning,
+                    onBackupNow = {
+                        backupMessage = runCatching { scheduledBackup.backupNow() }.fold(
+                            onSuccess = { null },
+                            onFailure = { manualBackupError },
+                        )
+                    },
                     onChooseBackupFolder = { backupMessage = null; backupFolderLauncher.launch(null) },
                     onDisableScheduledBackup = {
                         backupMessage = runCatching { scheduledBackup.disable() }.fold(
@@ -437,6 +455,8 @@ private fun AboutScreen(
     exportResult: String?,
     backupStatus: BackupStatus,
     backupMessage: String?,
+    backupRunning: Boolean,
+    onBackupNow: () -> Unit,
     onChooseBackupFolder: () -> Unit,
     onDisableScheduledBackup: () -> Unit,
     onImport: (() -> Unit)?,
@@ -458,32 +478,28 @@ private fun AboutScreen(
             HorizontalDivider()
         }
         if (backupOnly) {
-            Text(stringResource(R.string.export_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text(stringResource(R.string.export_description))
-            Button(onClick = onExport, modifier = Modifier.testTag("export-tasks")) {
-                Text(stringResource(R.string.export_tasks))
-            }
-            exportResult?.let { Text(it) }
-            HorizontalDivider()
             Text(stringResource(R.string.backup_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.backup_description))
             if (backupStatus.enabled) {
                 Text(stringResource(R.string.backup_enabled))
-                if (backupStatus.lastSuccessMillis == null && !backupStatus.lastAttemptFailed) {
-                    Text(stringResource(R.string.backup_first_pending))
+                if (backupStatus.lastSuccessMillis == null) {
+                    Text(stringResource(R.string.backup_never), modifier = Modifier.testTag("last-backup"))
                 }
                 backupStatus.lastSuccessMillis?.let { millis ->
                     val date = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
                         .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(millis))
-                    Text(stringResource(R.string.backup_last_success, date))
+                    Text(stringResource(R.string.backup_last_success, date), modifier = Modifier.testTag("last-backup"))
                 }
                 if (backupStatus.lastAttemptFailed) {
                     Text(stringResource(R.string.backup_last_failed), color = MaterialTheme.colorScheme.error)
                 }
-                Button(onClick = onChooseBackupFolder, modifier = Modifier.testTag("change-backup-folder")) {
+                Button(onClick = onBackupNow, enabled = !backupRunning, modifier = Modifier.testTag("backup-now")) {
+                    Text(stringResource(if (backupRunning) R.string.backup_running else R.string.backup_now))
+                }
+                Button(onClick = onChooseBackupFolder, enabled = !backupRunning, modifier = Modifier.testTag("change-backup-folder")) {
                     Text(stringResource(R.string.backup_change_folder))
                 }
-                TextButton(onClick = onDisableScheduledBackup, modifier = Modifier.testTag("disable-backup")) {
+                TextButton(onClick = onDisableScheduledBackup, enabled = !backupRunning, modifier = Modifier.testTag("disable-backup")) {
                     Text(stringResource(R.string.backup_turn_off))
                 }
             } else {
@@ -492,6 +508,13 @@ private fun AboutScreen(
                 }
             }
             backupMessage?.let { Text(it) }
+            HorizontalDivider()
+            Text(stringResource(R.string.export_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.export_description))
+            Button(onClick = onExport, modifier = Modifier.testTag("export-tasks")) {
+                Text(stringResource(R.string.export_tasks))
+            }
+            exportResult?.let { Text(it) }
             HorizontalDivider()
             Text(stringResource(R.string.restore_heading), fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.restore_description))

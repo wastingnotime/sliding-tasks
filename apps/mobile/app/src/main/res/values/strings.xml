@@ -189,4 +189,8 @@
     <string name="preview_each_day">%1$s. A separate card on each scheduled day.</string>
     <string name="review_learning">Keep using Today. Patterns and comparisons will appear here as your history grows.</string>
     <string name="task_options">Options for %1$s</string>
+    <string name="backup_now">Back up now</string>
+    <string name="backup_running">Saving backup…</string>
+    <string name="backup_never">Last successful backup: none yet</string>
+    <string name="backup_manual_error">Could not start the backup. Please try again.</string>
 </resources>

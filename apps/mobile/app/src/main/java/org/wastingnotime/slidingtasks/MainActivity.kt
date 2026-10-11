@@ -172,7 +172,7 @@ fun SlidingTasksApp() {
         guideStep = step
     }
     fun finishGuide() {
-        guidePreferences.edit().putBoolean("completed", true).remove("step").remove("decisions").remove("date").remove("practice_plan").remove("plan_editing").apply()
+        guidePreferences.edit().putBoolean("completed", true).remove("step").remove("decisions").remove("date").remove("practice_plan").remove("plan_editing").remove("plan_exercise").apply()
         guideStep = -1
     }
     var section by remember { mutableStateOf(AppSection.TODAY) }
@@ -334,13 +334,8 @@ fun SlidingTasksApp() {
         if (state.hasUserData()) guidePreferences.edit().putBoolean("completed", true).apply()
         runCatching { scheduledBackup.ensureScheduled() }
     }
-    BackHandler(enabled = planEditorOpen || aboutOpen || guideStep > 0) {
-        when {
-            aboutOpen -> aboutOpen = false
-            guideStep == 1 && state.hasUserData() -> finishGuide()
-            guideStep > 0 -> changeGuideStep(guideStep - 1)
-            else -> planEditorOpen = false
-        }
+    BackHandler(enabled = aboutOpen || (guideStep < 0 && planEditorOpen)) {
+        if (aboutOpen) aboutOpen = false else planEditorOpen = false
     }
 
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors) {
@@ -412,7 +407,7 @@ fun SlidingTasksApp() {
                         snackbarHostState.currentSnackbarData?.dismiss()
                         pendingUndo = null
                         aboutOpen = false
-                        guidePreferences.edit().remove("decisions").remove("date").remove("practice_plan").remove("plan_editing").apply()
+                        guidePreferences.edit().remove("decisions").remove("date").remove("practice_plan").remove("plan_editing").remove("plan_exercise").apply()
                         changeGuideStep(1)
                     },
                 ) else if (guideStep >= 0) PracticeGuide(
@@ -994,6 +989,7 @@ private fun PlanEditor(
     onSave: (String, TaskSchedule) -> Unit,
     introduction: (@Composable () -> Unit)? = null,
     saveLabel: String? = null,
+    requiredMode: PlanMode? = null,
 ) {
     var title by rememberSaveable(task?.id) { mutableStateOf(task?.title ?: "") }
     var mode by rememberSaveable(task?.id) {
@@ -1165,13 +1161,17 @@ private fun PlanEditor(
                 style = MaterialTheme.typography.bodySmall)
         }
         Spacer(Modifier.height(12.dp))
+        if (requiredMode != null && mode != requiredMode) {
+            Text(stringResource(R.string.guide_choose_type, stringResource(requiredMode.label)),
+                modifier = Modifier.testTag("guide-required-type"))
+        }
         Button(
             onClick = {
                 focusManager.clearFocus()
                 keyboardController?.hide()
                 onSave(title.trim(), TaskSchedule(kind, interval, days, startsOn))
             },
-            enabled = title.isNotBlank() && scheduleValid,
+            enabled = title.isNotBlank() && scheduleValid && (requiredMode == null || mode == requiredMode),
             modifier = Modifier.fillMaxWidth().testTag(if (task == null) "add-task" else "save-task"),
         ) { Text(saveLabel ?: if (task == null) stringResource(R.string.add_task) else stringResource(R.string.save_changes)) }
     }
@@ -1440,9 +1440,11 @@ private fun PracticeGuide(
 ) {
     val context = LocalContext.current
     val codec = remember { LocalTaskStore(context.applicationContext) }
+    var planExercise by remember { mutableIntStateOf(preferences.getInt("plan_exercise", 0).coerceIn(0, 2)) }
+    val requiredMode = PlanMode.entries[planExercise]
     var practicePlan by remember {
         mutableStateOf(preferences.getString("practice_plan", null)?.let { raw ->
-            runCatching { codec.readImport(raw).tasks.single() }.getOrNull()
+            runCatching { codec.readImport(raw).tasks.single().takeIf { it.id == "practice-plan-$planExercise" } }.getOrNull()
         })
     }
     var planEditing by remember { mutableStateOf(preferences.getBoolean("plan_editing", false)) }
@@ -1450,7 +1452,12 @@ private fun PracticeGuide(
         preferences.edit().putBoolean("plan_editing", editing).apply()
         planEditing = editing
     }
-    BackHandler(enabled = step == 1 && planEditing) { editPlan(false) }
+    fun changePlanExercise(index: Int) {
+        preferences.edit().putInt("plan_exercise", index).remove("practice_plan").remove("plan_editing").apply()
+        planExercise = index
+        practicePlan = null
+        planEditing = false
+    }
     // Guide progress has its own preferences; no demo data enters LocalTaskStore or its backups.
     var decisions by remember {
         mutableStateOf(preferences.getString("decisions", "").orEmpty().split(",").filter { it.isNotEmpty() })
@@ -1459,6 +1466,21 @@ private fun PracticeGuide(
         preferences.edit().putString("decisions", next.joinToString(",")).apply()
         decisions = next
     }
+    fun startSliding() {
+        decide(emptyList())
+        onStep(2)
+    }
+    fun goBack() {
+        when {
+            step == 1 && planEditing -> editPlan(false)
+            step == 1 && planExercise > 0 -> changePlanExercise(planExercise - 1)
+            step == 1 && hasUserData -> onSkip()
+            step == 3 -> startSliding()
+            else -> onStep(step - 1)
+        }
+    }
+    BackHandler(enabled = step > 0) { goBack() }
+
     val practiceDate = remember {
         LocalDate.parse(preferences.getString("date", null) ?: date.toString().also {
             preferences.edit().putString("date", it).apply()
@@ -1471,14 +1493,14 @@ private fun PracticeGuide(
         if (demo.cards.getOrNull(decisions.size)?.id == cardId) decide(decisions + outcome.name)
     }
     val explanations = listOf(R.string.routine_explanation, R.string.until_decided_explanation, R.string.one_time_explanation)
+    val planInstructions = listOf(R.string.guide_plan_routine, R.string.guide_plan_week, R.string.guide_plan_once)
     val actionHints = listOf(R.string.guide_slide_done, R.string.guide_slide_skip, R.string.guide_slide_choice)
 
     Column(Modifier.fillMaxSize().testTag("practice-guide")) {
         if (step > 0) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.guide_progress, step), modifier = Modifier.weight(1f))
-                TextButton(onClick = { if (step == 1 && planEditing) editPlan(false)
-                    else if (step == 1 && hasUserData) onSkip() else onStep(step - 1) }, modifier = Modifier.testTag("guide-back")) {
+                TextButton(onClick = { goBack() }, modifier = Modifier.testTag("guide-back")) {
                     Text(stringResource(R.string.back))
                 }
                 TextButton(onClick = onSkip, modifier = Modifier.testTag("skip-guide")) {
@@ -1499,28 +1521,32 @@ private fun PracticeGuide(
                 task = practicePlan,
                 currentDate = practiceDate,
                 introduction = {
-                    Text(stringResource(R.string.guide_plan_hint), modifier = Modifier.padding(bottom = 16.dp))
+                    Text(stringResource(R.string.guide_exercise, planExercise + 1, stringResource(requiredMode.label)),
+                        style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(planInstructions[planExercise]), modifier = Modifier.padding(vertical = 16.dp))
                 },
                 saveLabel = stringResource(R.string.guide_save_plan),
+                requiredMode = requiredMode,
                 onCancel = { editPlan(false) },
                 onSave = { title, schedule ->
-                    val planned = PlannedTask("practice-plan", title,
+                    val planned = PlannedTask("practice-plan-$planExercise", title,
                         if (schedule.kind == ScheduleKind.ONCE) TaskType.ONE_TIME else TaskType.ROUTINE,
                         schedule, active = true, createdOn = practiceDate)
-                    preferences.edit().putString("practice_plan",
+                    preferences.edit().putInt("plan_exercise", planExercise).putString("practice_plan",
                         codec.export(SlidingTasksState(tasks = listOf(planned)))).apply()
                     practicePlan = planned
                     editPlan(false)
                 },
             )
         } else {
+            val guideScrollState = key(step, planExercise) { rememberScrollState() }
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+                Modifier.fillMaxSize().verticalScroll(guideScrollState).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(stringResource(when (step) {
                     0 -> R.string.guide_welcome
-                    1 -> if (practicePlan == null) R.string.guide_types_title else R.string.guide_plan_saved
+                    1 -> R.string.guide_types_title
                     else -> R.string.guide_practice_title
                 }), style = MaterialTheme.typography.headlineMedium)
                 if (step > 0) Text(stringResource(R.string.guide_practice_safe))
@@ -1539,12 +1565,10 @@ private fun PracticeGuide(
                         importError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("guide-restore-error")) }
                     }
                     1 -> {
-                        if (practicePlan == null) {
-                            demo.cards.forEachIndexed { index, card ->
-                                TaskCardView(card)
-                                Text(stringResource(explanations[index]))
-                            }
-                        }
+                        Text(stringResource(R.string.guide_exercise, planExercise + 1, stringResource(requiredMode.label)),
+                            style = MaterialTheme.typography.titleLarge, modifier = Modifier.testTag("plan-exercise"))
+                        Text(stringResource(explanations[planExercise]))
+                        if (practicePlan == null) Text(stringResource(planInstructions[planExercise]))
                         practicePlan?.let { planned ->
                             Card(modifier = Modifier.fillMaxWidth().testTag("practice-plan-result")) {
                                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1553,13 +1577,17 @@ private fun PracticeGuide(
                                     Text(schedulePreview(planned.schedule))
                                 }
                             }
-                            Text(stringResource(R.string.guide_plan_next))
+                            Text(stringResource(if (planExercise == 2) R.string.guide_plan_next else R.string.guide_plan_accomplished))
                         }
                         Button(onClick = { editPlan(true) }, modifier = Modifier.fillMaxWidth().testTag("guide-plan")) {
                             Text(stringResource(if (practicePlan == null) R.string.guide_try_plan else R.string.guide_edit_plan))
                         }
-                        OutlinedButton(onClick = { onStep(2) }, modifier = Modifier.fillMaxWidth().testTag("guide-practice")) {
-                            Text(stringResource(R.string.guide_try_sliding))
+                        if (practicePlan != null) {
+                            Button(onClick = {
+                                if (planExercise < 2) changePlanExercise(planExercise + 1) else startSliding()
+                            }, modifier = Modifier.fillMaxWidth().testTag(if (planExercise < 2) "guide-next-plan" else "guide-practice")) {
+                                Text(stringResource(if (planExercise < 2) R.string.guide_next_exercise else R.string.guide_try_sliding))
+                            }
                         }
                     }
                     2 -> {

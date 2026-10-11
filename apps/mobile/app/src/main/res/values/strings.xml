@@ -216,4 +216,10 @@
     <string name="guide_create_first">Create your first task</string>
     <string name="guide_back_to_tasks">Back to your tasks</string>
     <string name="guide_restore">Restore backup</string>
+    <string name="guide_try_plan">Try planning a task</string>
+    <string name="guide_edit_plan">Edit practice plan</string>
+    <string name="guide_save_plan">Save practice plan</string>
+    <string name="guide_plan_hint">Practice only. Enter a task, choose its type and schedule, then save your practice plan. It will not become a real task.</string>
+    <string name="guide_plan_saved">Your practice plan</string>
+    <string name="guide_plan_next">This plan is just for practice. Next, use the three example cards to try sliding in Today.</string>
 </resources>

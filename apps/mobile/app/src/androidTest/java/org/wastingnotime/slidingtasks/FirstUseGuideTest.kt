@@ -34,11 +34,17 @@ class FirstUseGuideTest {
         compose.runOnUiThread { context.setContent { key("guide-test") { SlidingTasksApp() } } }
         Intents.init()
     }
-    @After fun releaseIntents() { Intents.release() }
+    @After fun releaseIntents() {
+        Intents.release()
+        compose.activity.getSharedPreferences("first_use", 0).edit().clear().commit()
+    }
 
     private fun click(tag: String) {
+        if (tag == "finish-guide") {
+            compose.onNodeWithTag("review-list").performScrollToNode(hasTestTag(tag))
+        }
         val node = compose.onNodeWithTag(tag)
-        if (tag != "skip-guide" && tag != "guide-back") node.performScrollTo()
+        if (tag !in listOf("skip-guide", "guide-back", "finish-guide", "add-task", "save-task", "cancel-edit")) node.performScrollTo()
         node.performClick()
     }
     private fun startPractice() { click("learn-guide"); click("guide-practice") }
@@ -87,12 +93,65 @@ class FirstUseGuideTest {
         screenshot("review")
         compose.onNodeWithTag("review-day-${LocalDate.now()}").performScrollTo().performClick()
         compose.onNodeWithText("Book a dentist appointment").assertExists()
+        compose.onNodeWithTag("review-list").performScrollToNode(hasTestTag("finish-guide"))
+        val dayBottom = compose.onNodeWithTag("review-day-${LocalDate.now()}").getUnclippedBoundsInRoot().bottom
+        val finishTop = compose.onNodeWithTag("finish-guide").getUnclippedBoundsInRoot().top
+        assertTrue("Finish follows all expanded Review results", finishTop >= dayBottom)
+        screenshot("review-finish")
         assertNoUserTasks()
         click("finish-guide")
         compose.onNodeWithTag("task-title").assertIsDisplayed()
         assertNoUserTasks()
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("practice-guide").assertDoesNotExist()
+    }
+
+    @Test fun planning_practice_preserves_drafts_and_saved_plans_without_creating_real_tasks() {
+        // Use the production composition before testing saved editor state across recreation.
+        compose.activityRule.scenario.recreate()
+        click("learn-guide")
+        click("guide-plan")
+        compose.onNodeWithTag("task-title").performTextInput("Call a friend")
+        click("mode-until_decided")
+        click("repeat-interval-2")
+        click("day-sunday")
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithTag("task-title").assertTextContains("Call a friend")
+        compose.onNodeWithTag("mode-until_decided").assertIsSelected()
+        compose.onNodeWithTag("repeat-interval-2").assertIsSelected()
+        compose.onNodeWithTag("day-sunday").assertIsSelected()
+        click("add-task")
+        compose.onNodeWithText("Call a friend").assertIsDisplayed()
+        screenshot("practice-plan")
+        assertNoUserTasks()
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("Call a friend").assertIsDisplayed()
+        click("guide-plan")
+        // An empty weekly selection should explain what is missing and disable saving.
+        listOf("monday", "tuesday", "wednesday", "thursday", "friday", "sunday").forEach { click("day-$it") }
+        compose.onNodeWithTag("save-task").assertIsNotEnabled()
+        click("mode-one_time")
+        click("save-task")
+        val preferences = compose.activity.getSharedPreferences("first_use", 0)
+        val saved = LocalTaskStore(compose.activity).readImport(requireNotNull(preferences.getString("practice_plan", null)))
+        assertEquals(ScheduleKind.ONCE, saved.tasks.single().schedule.kind)
+        click("guide-plan")
+        compose.onNodeWithTag("task-title").performTextReplacement("Discard this edit")
+        click("cancel-edit")
+        compose.onNodeWithText("Call a friend").assertIsDisplayed()
+        click("guide-plan")
+        click("guide-back")
+        compose.onNodeWithTag("practice-plan-result").assertIsDisplayed()
+        click("skip-guide")
+        assertFalse(preferences.contains("practice_plan"))
+        assertFalse(preferences.contains("plan_editing"))
+        assertNoUserTasks()
+        compose.onNodeWithTag("more-options").performClick()
+        compose.onNodeWithTag("about-menu-item").performClick()
+        click("reopen-guide")
+        compose.onNodeWithTag("practice-plan-result").assertDoesNotExist()
+        click("guide-plan")
+        compose.onNodeWithTag("add-task").assertIsNotEnabled()
     }
 
     @Test fun cancelled_and_failed_restores_keep_welcome_choices_available() {
@@ -138,12 +197,25 @@ class FirstUseGuideTest {
             val localized = compose.activity.createConfigurationContext(config)
             compose.activity.setContent {
                 key("localized-guide") {
-                    CompositionLocalProvider(androidx.compose.ui.platform.LocalContext provides localized, LocalConfiguration provides config, androidx.activity.compose.LocalActivityResultRegistryOwner provides compose.activity) { SlidingTasksApp() }
+                    CompositionLocalProvider(
+                        androidx.compose.ui.platform.LocalContext provides localized,
+                        LocalConfiguration provides config,
+                        androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
+                            compose.activity.resources.displayMetrics.density, config.fontScale),
+                        androidx.activity.compose.LocalActivityResultRegistryOwner provides compose.activity,
+                    ) { SlidingTasksApp() }
                 }
             }
         }
         compose.onNodeWithText("Mostre como funciona").performScrollTo().performClick()
         screenshot("types-pt-large-dark")
+        click("guide-plan")
+        compose.onNodeWithTag("task-title").performScrollTo().performTextInput("Ler um livro")
+        click("mode-one_time")
+        screenshot("plan-editor-pt-large-dark")
+        click("add-task")
+        compose.onNodeWithText("Ler um livro").assertExists()
+        screenshot("practice-plan-pt-large-dark")
         click("guide-practice")
         click("practice-done")
         click("practice-skip")
@@ -152,6 +224,8 @@ class FirstUseGuideTest {
         screenshot("review-pt-large-dark")
         click("finish-guide")
         compose.onNodeWithTag("task-title").assertExists()
+        assertFalse(compose.activity.getSharedPreferences("first_use", 0).contains("practice_plan"))
+        assertNoUserTasks()
     }
 
     private fun hasTestTagPrefix(prefix: String) = SemanticsMatcher("Tag starts with $prefix") {

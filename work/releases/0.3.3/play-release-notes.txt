@@ -1,0 +1,6 @@
+<en-US>
+Learn the task types with an optional first-use guide. Practice sliding, Done, Skip and Undo, then see your results in Review. You can skip the guide, start immediately or restore a backup. Practice never changes your real tasks. Reopen the guide from About.
+</en-US>
+<pt-BR>
+Aprenda os tipos de tarefa com um guia opcional no primeiro uso. Pratique deslizar, concluir, pular e desfazer, depois veja os resultados em Revisão. Você pode pular o guia, começar agora ou restaurar um backup. A prática não altera suas tarefas reais. Reabra o guia em Sobre.
+</pt-BR>

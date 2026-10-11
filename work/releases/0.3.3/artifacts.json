@@ -1,0 +1,18 @@
+{
+  "versionName": "0.3.3",
+  "versionCode": 6,
+  "sourceRevision": "24aafdd19285152630ec7ded11f5e0df6c24c839",
+  "buildUrl": "https://github.com/wastingnotime/sliding-tasks/actions/runs/38149855236",
+  "artifacts": [
+    {
+      "path": "build/releases/0.3.3/bundle/release/app-release.aab",
+      "size": 3834055,
+      "sha256": "8b2b86b29ef19cfebe5dc10cc2ada8e94802c7a401d8fe16d48c9543b598a80d"
+    },
+    {
+      "path": "build/releases/0.3.3/mapping/release/mapping.txt",
+      "size": 33922686,
+      "sha256": "ce15850893c8a8450338f82bf4ebe41bc1611cbbc52e7f6dfaf9cef3b2c03a17"
+    }
+  ]
+}

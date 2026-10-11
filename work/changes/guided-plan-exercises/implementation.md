@@ -28,6 +28,11 @@ navigation handler. Normal card progression, Undo and interrupted-session
 recovery within Step 2 are preserved. Review still ends with the completion
 button below all results.
 
+Step 2 teaches the gesture itself: visible Done/Skip buttons are removed, and
+English/Portuguese instructions direct the learner to slide right or left.
+Undo remains visible. The shared card retains its custom accessibility actions
+so assistive-technology users can resolve practice cards.
+
 Copy is available in English and Brazilian Portuguese. Exercise transitions
 reset the explanation's scroll position.
 

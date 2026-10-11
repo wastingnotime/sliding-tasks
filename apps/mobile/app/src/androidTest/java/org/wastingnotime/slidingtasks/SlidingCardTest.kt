@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
@@ -48,6 +49,9 @@ class SlidingCardTest {
             .clear()
             .commit()
         composeRule.activityRule.scenario.recreate()
+        if (composeRule.onAllNodesWithTag("start-without-guide").fetchSemanticsNodes().isNotEmpty()) {
+            composeRule.onNodeWithTag("start-without-guide").performClick()
+        }
     }
 
     private fun seedRemovalTasks(): LocalTaskStore {

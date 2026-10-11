@@ -17,6 +17,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import java.io.File
 import org.junit.Assert.assertTrue
+import org.junit.Before
+import androidx.compose.ui.test.onAllNodesWithTag
 import org.junit.Rule
 import org.junit.Test
 
@@ -25,6 +27,12 @@ import org.junit.Test
 class EdgeToEdgeTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
+
+    @Before fun skipFirstUseGuide() {
+        if (composeRule.onAllNodesWithTag("start-without-guide").fetchSemanticsNodes().isNotEmpty()) {
+            composeRule.onNodeWithTag("start-without-guide").performScrollTo().performClick()
+        }
+    }
 
     @Test
     fun landscape_navigation_stays_clear_of_side_insets() {

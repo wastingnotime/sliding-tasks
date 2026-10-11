@@ -113,6 +113,23 @@ contract gaps.
   immutable event history remains stored locally for later web analytics, but
   the device review does not expose the raw event stream as its primary view.
 
+## First-use learning
+
+- An empty installation offers an optional practice guide, immediate Start, and
+  Restore backup. Installations containing tasks or history bypass the welcome.
+- Practice teaches Routine, Until decided and One-time with example cards,
+  the actual Today swipe interaction, equivalent visible buttons, Undo, and
+  the actual local Review presentation.
+- Practice state is isolated from operational task storage and backup/export
+  files. It must never create real tasks or history. First-use preferences may
+  retain tutorial progress independently of operational state.
+- Skip remains available throughout; About can reopen the guide. Finishing or
+  skipping remembers the choice per installation. Successful restore bypasses
+  the guide; failed or cancelled restore keeps Learn and Start available.
+- Completing the guide opens task creation when operational state is empty,
+  otherwise returns to the existing app. Human comprehension evidence remains
+  separate from automated verification.
+
 ## Failure and freshness states
 
 - A missing active board is shown as an explicit unavailable state, not as an

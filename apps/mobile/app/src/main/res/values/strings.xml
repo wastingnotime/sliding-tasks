@@ -193,4 +193,27 @@
     <string name="backup_running">Saving backup…</string>
     <string name="backup_never">Last successful backup: none yet</string>
     <string name="backup_manual_error">Could not start the backup. Please try again.</string>
+    <string name="guide_welcome">Welcome to Sliding Tasks</string>
+    <string name="guide_welcome_hint">Try three example tasks, or start right away. Already used the app? Restore your backup here.</string>
+    <string name="guide_practice_safe">Practice only — these examples never become your tasks.</string>
+    <string name="guide_learn">Show me how</string>
+    <string name="guide_start">Start using the app</string>
+    <string name="guide_skip">Skip guide</string>
+    <string name="guide_try">Try the practice guide</string>
+    <string name="guide_progress">Step %1$d of 3</string>
+    <string name="guide_types_title">Three ways to plan a task</string>
+    <string name="guide_example_routine">Take a short walk</string>
+    <string name="guide_example_week">Review this week’s priorities</string>
+    <string name="guide_example_once">Book a dentist appointment</string>
+    <string name="guide_try_sliding">Try sliding a card</string>
+    <string name="guide_practice_title">Practice in Today</string>
+    <string name="guide_slide_done">Imagine you took your walk. Slide right for Done, or use the button below.</string>
+    <string name="guide_slide_skip">Imagine you chose not to review priorities this week. Slide left for Skip this week, or use the button below.</string>
+    <string name="guide_slide_choice">Now try the one-time task. Done and Skip task both close this task. Undo brings it back.</string>
+    <string name="guide_practice_complete">You handled all three example cards. Try Undo, or see your decisions in Review.</string>
+    <string name="guide_see_review">See practice in Review</string>
+    <string name="guide_review_practice">This is Review with your practice decisions. Open the day below to see each result. Patterns grow as you use the app.</string>
+    <string name="guide_create_first">Create your first task</string>
+    <string name="guide_back_to_tasks">Back to your tasks</string>
+    <string name="guide_restore">Restore backup</string>
 </resources>

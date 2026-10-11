@@ -216,4 +216,10 @@
     <string name="guide_create_first">Criar sua primeira tarefa</string>
     <string name="guide_back_to_tasks">Voltar às suas tarefas</string>
     <string name="guide_restore">Restaurar backup</string>
+    <string name="guide_try_plan">Experimentar planejar uma tarefa</string>
+    <string name="guide_edit_plan">Editar plano de prática</string>
+    <string name="guide_save_plan">Salvar plano de prática</string>
+    <string name="guide_plan_hint">Apenas prática. Digite uma tarefa, escolha o tipo e a programação e salve seu plano de prática. Ele não será uma tarefa real.</string>
+    <string name="guide_plan_saved">Seu plano de prática</string>
+    <string name="guide_plan_next">Este plano é apenas para praticar. A seguir, use os três cartões de exemplo para experimentar deslizar em Hoje.</string>
 </resources>

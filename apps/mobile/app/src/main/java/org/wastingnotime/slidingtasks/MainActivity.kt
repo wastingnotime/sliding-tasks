@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -171,7 +172,7 @@ fun SlidingTasksApp() {
         guideStep = step
     }
     fun finishGuide() {
-        guidePreferences.edit().putBoolean("completed", true).remove("step").remove("decisions").remove("date").apply()
+        guidePreferences.edit().putBoolean("completed", true).remove("step").remove("decisions").remove("date").remove("practice_plan").remove("plan_editing").apply()
         guideStep = -1
     }
     var section by remember { mutableStateOf(AppSection.TODAY) }
@@ -411,7 +412,7 @@ fun SlidingTasksApp() {
                         snackbarHostState.currentSnackbarData?.dismiss()
                         pendingUndo = null
                         aboutOpen = false
-                        guidePreferences.edit().remove("decisions").remove("date").apply()
+                        guidePreferences.edit().remove("decisions").remove("date").remove("practice_plan").remove("plan_editing").apply()
                         changeGuideStep(1)
                     },
                 ) else if (guideStep >= 0) PracticeGuide(
@@ -991,28 +992,31 @@ private fun PlanEditor(
     currentDate: LocalDate,
     onCancel: () -> Unit,
     onSave: (String, TaskSchedule) -> Unit,
+    introduction: (@Composable () -> Unit)? = null,
+    saveLabel: String? = null,
 ) {
-    var title by remember(task?.id) { mutableStateOf(task?.title ?: "") }
-    var mode by remember(task?.id) {
+    var title by rememberSaveable(task?.id) { mutableStateOf(task?.title ?: "") }
+    var mode by rememberSaveable(task?.id) {
         mutableStateOf(when (task?.schedule?.kind) {
             ScheduleKind.ONCE -> PlanMode.ONE_TIME
             ScheduleKind.ONCE_PER_WEEK -> PlanMode.UNTIL_DECIDED
             else -> PlanMode.ROUTINE
         })
     }
-    var routineCadence by remember(task?.id) {
+    var routineCadence by rememberSaveable(task?.id) {
         mutableStateOf(
             if (task?.schedule?.kind == ScheduleKind.WEEKLY_DAYS) ScheduleKind.WEEKLY_DAYS else ScheduleKind.DAILY
         )
     }
-    var interval by remember(task?.id) { mutableIntStateOf(task?.schedule?.interval ?: 1) }
-    var days by remember(task?.id) { mutableStateOf(task?.schedule?.days ?: weekdays) }
-    var startsOn by remember(task?.id) { mutableStateOf(task?.schedule?.startsOn ?: currentDate) }
+    var interval by rememberSaveable(task?.id) { mutableIntStateOf(task?.schedule?.interval ?: 1) }
+    var days by rememberSaveable(task?.id) { mutableStateOf(task?.schedule?.days ?: weekdays) }
+    var startsOn by rememberSaveable(task?.id) { mutableStateOf(task?.schedule?.startsOn ?: currentDate) }
     val kind = when (mode) {
         PlanMode.ROUTINE -> routineCadence
         PlanMode.UNTIL_DECIDED -> ScheduleKind.ONCE_PER_WEEK
         PlanMode.ONE_TIME -> ScheduleKind.ONCE
     }
+    val scheduleValid = kind == ScheduleKind.ONCE || kind == ScheduleKind.DAILY || days.isNotEmpty()
     val intervalOptions = if (kind == ScheduleKind.DAILY) 1..7 else 1..4
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -1021,6 +1025,7 @@ private fun PlanEditor(
     Column(Modifier.fillMaxSize().imePadding().padding(horizontal = 20.dp, vertical = 16.dp)) {
         TextButton(onClick = onCancel, modifier = Modifier.testTag("cancel-edit")) { Text(stringResource(R.string.cancel)) }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            introduction?.invoke()
             PageHeader(stringResource(R.string.plan_text), if (task == null) stringResource(R.string.new_task) else stringResource(R.string.edit_task), stringResource(R.string.plan_editor_hint))
             Spacer(Modifier.height(16.dp))
             OutlinedTextField(
@@ -1155,16 +1160,20 @@ private fun PlanEditor(
                     }
                 }
             }
-            Text(schedulePreview(TaskSchedule(kind, interval, days, startsOn)),
+            if (scheduleValid) Text(schedulePreview(TaskSchedule(kind, interval, days, startsOn)),
                 modifier = Modifier.padding(top = 12.dp).testTag("schedule-preview"),
                 style = MaterialTheme.typography.bodySmall)
         }
         Spacer(Modifier.height(12.dp))
         Button(
-            onClick = { onSave(title, TaskSchedule(kind, interval, days, startsOn)) },
-            enabled = title.isNotBlank() && (kind == ScheduleKind.ONCE || kind == ScheduleKind.DAILY || days.isNotEmpty()),
+            onClick = {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+                onSave(title.trim(), TaskSchedule(kind, interval, days, startsOn))
+            },
+            enabled = title.isNotBlank() && scheduleValid,
             modifier = Modifier.fillMaxWidth().testTag(if (task == null) "add-task" else "save-task"),
-        ) { Text(if (task == null) stringResource(R.string.add_task) else stringResource(R.string.save_changes)) }
+        ) { Text(saveLabel ?: if (task == null) stringResource(R.string.add_task) else stringResource(R.string.save_changes)) }
     }
 }
 
@@ -1188,12 +1197,13 @@ private fun ReviewScreen(
     today: LocalDate,
     onAbout: ((Boolean) -> Unit)? = null,
     introduction: (@Composable () -> Unit)? = null,
+    conclusion: (@Composable () -> Unit)? = null,
 ) {
     val review = remember(state.cards, state.tasks, today) { reviewInsights(state, today) }
     var expandedDay by remember { mutableStateOf<LocalDate?>(null) }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag("review-list"),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -1285,6 +1295,7 @@ private fun ReviewScreen(
                 }
             }
         }
+        conclusion?.let { item { it() } }
     }
 }
 
@@ -1427,6 +1438,19 @@ private fun PracticeGuide(
     onRestore: () -> Unit,
     onFinish: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val codec = remember { LocalTaskStore(context.applicationContext) }
+    var practicePlan by remember {
+        mutableStateOf(preferences.getString("practice_plan", null)?.let { raw ->
+            runCatching { codec.readImport(raw).tasks.single() }.getOrNull()
+        })
+    }
+    var planEditing by remember { mutableStateOf(preferences.getBoolean("plan_editing", false)) }
+    fun editPlan(editing: Boolean) {
+        preferences.edit().putBoolean("plan_editing", editing).apply()
+        planEditing = editing
+    }
+    BackHandler(enabled = step == 1 && planEditing) { editPlan(false) }
     // Guide progress has its own preferences; no demo data enters LocalTaskStore or its backups.
     var decisions by remember {
         mutableStateOf(preferences.getString("decisions", "").orEmpty().split(",").filter { it.isNotEmpty() })
@@ -1453,7 +1477,8 @@ private fun PracticeGuide(
         if (step > 0) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.guide_progress, step), modifier = Modifier.weight(1f))
-                TextButton(onClick = { if (step == 1 && hasUserData) onSkip() else onStep(step - 1) }, modifier = Modifier.testTag("guide-back")) {
+                TextButton(onClick = { if (step == 1 && planEditing) editPlan(false)
+                    else if (step == 1 && hasUserData) onSkip() else onStep(step - 1) }, modifier = Modifier.testTag("guide-back")) {
                     Text(stringResource(R.string.back))
                 }
                 TextButton(onClick = onSkip, modifier = Modifier.testTag("skip-guide")) {
@@ -1464,10 +1489,30 @@ private fun PracticeGuide(
         if (step == 3) {
             ReviewScreen(demo, practiceDate, introduction = {
                 Text(stringResource(R.string.guide_review_practice))
+            }, conclusion = {
                 Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().testTag("finish-guide")) {
                     Text(stringResource(if (hasUserData) R.string.guide_back_to_tasks else R.string.guide_create_first))
                 }
             })
+        } else if (step == 1 && planEditing) {
+            PlanEditor(
+                task = practicePlan,
+                currentDate = practiceDate,
+                introduction = {
+                    Text(stringResource(R.string.guide_plan_hint), modifier = Modifier.padding(bottom = 16.dp))
+                },
+                saveLabel = stringResource(R.string.guide_save_plan),
+                onCancel = { editPlan(false) },
+                onSave = { title, schedule ->
+                    val planned = PlannedTask("practice-plan", title,
+                        if (schedule.kind == ScheduleKind.ONCE) TaskType.ONE_TIME else TaskType.ROUTINE,
+                        schedule, active = true, createdOn = practiceDate)
+                    preferences.edit().putString("practice_plan",
+                        codec.export(SlidingTasksState(tasks = listOf(planned)))).apply()
+                    practicePlan = planned
+                    editPlan(false)
+                },
+            )
         } else {
             Column(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
@@ -1475,7 +1520,7 @@ private fun PracticeGuide(
             ) {
                 Text(stringResource(when (step) {
                     0 -> R.string.guide_welcome
-                    1 -> R.string.guide_types_title
+                    1 -> if (practicePlan == null) R.string.guide_types_title else R.string.guide_plan_saved
                     else -> R.string.guide_practice_title
                 }), style = MaterialTheme.typography.headlineMedium)
                 if (step > 0) Text(stringResource(R.string.guide_practice_safe))
@@ -1494,11 +1539,26 @@ private fun PracticeGuide(
                         importError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("guide-restore-error")) }
                     }
                     1 -> {
-                        demo.cards.forEachIndexed { index, card ->
-                            TaskCardView(card)
-                            Text(stringResource(explanations[index]))
+                        if (practicePlan == null) {
+                            demo.cards.forEachIndexed { index, card ->
+                                TaskCardView(card)
+                                Text(stringResource(explanations[index]))
+                            }
                         }
-                        Button(onClick = { onStep(2) }, modifier = Modifier.fillMaxWidth().testTag("guide-practice")) {
+                        practicePlan?.let { planned ->
+                            Card(modifier = Modifier.fillMaxWidth().testTag("practice-plan-result")) {
+                                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(planned.title, style = MaterialTheme.typography.titleLarge)
+                                    Text(planned.scheduleSummary())
+                                    Text(schedulePreview(planned.schedule))
+                                }
+                            }
+                            Text(stringResource(R.string.guide_plan_next))
+                        }
+                        Button(onClick = { editPlan(true) }, modifier = Modifier.fillMaxWidth().testTag("guide-plan")) {
+                            Text(stringResource(if (practicePlan == null) R.string.guide_try_plan else R.string.guide_edit_plan))
+                        }
+                        OutlinedButton(onClick = { onStep(2) }, modifier = Modifier.fillMaxWidth().testTag("guide-practice")) {
                             Text(stringResource(R.string.guide_try_sliding))
                         }
                     }

@@ -66,6 +66,19 @@ class FirstUseGuideTest {
             if (index < 2) click("guide-next-plan")
         }
     }
+    private fun slidePractice(right: Boolean) {
+        val card = compose.onAllNodes(hasTestTagPrefix("card-practice-")).fetchSemanticsNodes().single()
+        val tag = card.config[androidx.compose.ui.semantics.SemanticsProperties.TestTag]
+        // The exercise has no visible outcome buttons; the shared card still exposes accessibility actions.
+        compose.onNodeWithTag("practice-done").assertDoesNotExist()
+        compose.onNodeWithTag("practice-skip").assertDoesNotExist()
+        assertEquals(2, card.config[androidx.compose.ui.semantics.SemanticsActions.CustomActions].size)
+        compose.onNodeWithTag(tag).performScrollTo().performTouchInput {
+            if (right) swipeRight(durationMillis = 500) else swipeLeft(durationMillis = 500)
+        }
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isEmpty() }
+    }
+
     private fun assertNoUserTasks() {
         val state = LocalTaskStore(compose.activity).load()
         assertTrue(state.tasks.isEmpty()); assertTrue(state.cards.isEmpty()); assertTrue(state.events.isEmpty())
@@ -91,22 +104,19 @@ class FirstUseGuideTest {
         completePlanExercises()
         click("guide-practice")
         val first = compose.onAllNodes(hasTestTagPrefix("card-practice-")).fetchSemanticsNodes().single().config[androidx.compose.ui.semantics.SemanticsProperties.TestTag]
-        compose.onNodeWithTag(first).performTouchInput { swipeRight(durationMillis = 500) }
-        compose.waitUntil(5_000) { compose.onAllNodesWithTag("practice-result").fetchSemanticsNodes().isNotEmpty() }
+        slidePractice(right = true)
         compose.onNodeWithTag("practice-result").assertTextContains("Take a short walk", substring = true)
         click("practice-undo")
         compose.onNodeWithTag(first).assertExists()
-        click("practice-done")
+        slidePractice(right = true)
         screenshot("practice")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("practice-result").assertTextContains("Take a short walk", substring = true)
-        val second = compose.onAllNodes(hasTestTagPrefix("card-practice-")).fetchSemanticsNodes().single().config[androidx.compose.ui.semantics.SemanticsProperties.TestTag]
-        compose.onNodeWithTag(second).performTouchInput { swipeLeft(durationMillis = 500) }
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("Skip task").fetchSemanticsNodes().isNotEmpty() }
-        click("practice-skip")
+        slidePractice(right = false)
+        slidePractice(right = false)
         click("practice-undo")
-        compose.onNodeWithTag("practice-done").assertExists()
-        click("practice-done")
+        compose.onAllNodes(hasTestTagPrefix("card-practice-")).assertCountEquals(1)
+        slidePractice(right = true)
         click("guide-review")
         compose.onNodeWithTag("review-week").assertExists()
         screenshot("review")
@@ -182,7 +192,7 @@ class FirstUseGuideTest {
         click("learn-guide")
         completePlanExercises()
         click("guide-practice")
-        click("practice-done")
+        slidePractice(right = true)
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("practice-result").assertExists()
         compose.onNodeWithText("Review this week’s priorities").assertExists()
@@ -193,9 +203,9 @@ class FirstUseGuideTest {
         compose.onNodeWithTag("practice-result").assertDoesNotExist()
         compose.onNodeWithTag("practice-undo").assertDoesNotExist()
         compose.onNodeWithTag("guide-review").assertIsNotEnabled()
-        click("practice-done")
-        click("practice-skip")
-        click("practice-done")
+        slidePractice(right = true)
+        slidePractice(right = false)
+        slidePractice(right = true)
         click("guide-review")
         compose.onNodeWithTag("review-week").assertExists()
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
@@ -267,9 +277,9 @@ class FirstUseGuideTest {
         compose.onNodeWithTag("guide-practice").performScrollTo()
         screenshot("practice-plan-pt-large-dark")
         click("guide-practice")
-        click("practice-done")
-        click("practice-skip")
-        click("practice-done")
+        slidePractice(right = true)
+        slidePractice(right = false)
+        slidePractice(right = true)
         click("guide-review")
         screenshot("review-pt-large-dark")
         click("finish-guide")

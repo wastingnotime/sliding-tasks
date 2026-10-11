@@ -207,9 +207,9 @@
     <string name="guide_example_once">Marcar uma consulta no dentista</string>
     <string name="guide_try_sliding">Experimentar deslizar um cartão</string>
     <string name="guide_practice_title">Praticar em Hoje</string>
-    <string name="guide_slide_done">Imagine que você fez sua caminhada. Deslize para a direita para concluir ou use o botão abaixo.</string>
-    <string name="guide_slide_skip">Imagine que você decidiu não revisar as prioridades nesta semana. Deslize para a esquerda para pular esta semana ou use o botão abaixo.</string>
-    <string name="guide_slide_choice">Agora experimente a tarefa única. Concluir e pular tarefa encerram esta tarefa. Desfazer a traz de volta.</string>
+    <string name="guide_slide_done">Imagine que você fez sua caminhada. Deslize o cartão para a direita para concluir.</string>
+    <string name="guide_slide_skip">Imagine que você decidiu não revisar as prioridades nesta semana. Deslize o cartão para a esquerda para pular esta semana.</string>
+    <string name="guide_slide_choice">Agora deslize o cartão pontual para a direita para concluir ou para a esquerda para pular a tarefa. As duas opções encerram esta tarefa. Desfazer a traz de volta.</string>
     <string name="guide_practice_complete">Você resolveu os três cartões de exemplo. Experimente desfazer ou veja suas decisões em Revisão.</string>
     <string name="guide_see_review">Ver a prática em Revisão</string>
     <string name="guide_review_practice">Esta é a Revisão com suas decisões de prática. Abra o dia abaixo para ver cada resultado. Os padrões aparecem conforme você usa o app.</string>

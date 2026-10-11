@@ -145,7 +145,7 @@ INSTRUMENTATION_STATUS: test=editor_preview_explains_scope_and_initial_review_ha
 INSTRUMENTATION_STATUS_CODE: 0
 INSTRUMENTATION_RESULT: stream=
 
-Time: 46.201
+Time: 46.175
 
 OK (10 tests)
 

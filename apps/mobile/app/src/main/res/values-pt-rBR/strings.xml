@@ -193,4 +193,27 @@
     <string name="backup_running">Salvando backup…</string>
     <string name="backup_never">Último backup concluído: nenhum ainda</string>
     <string name="backup_manual_error">Não foi possível iniciar o backup. Tente novamente.</string>
+    <string name="guide_welcome">Bem-vindo ao Sliding Tasks</string>
+    <string name="guide_welcome_hint">Experimente três tarefas de exemplo ou comece agora. Já usou o app? Restaure seu backup aqui.</string>
+    <string name="guide_practice_safe">Apenas prática — estes exemplos não serão salvos como suas tarefas.</string>
+    <string name="guide_learn">Mostre como funciona</string>
+    <string name="guide_start">Começar a usar o app</string>
+    <string name="guide_skip">Pular guia</string>
+    <string name="guide_try">Experimentar o guia prático</string>
+    <string name="guide_progress">Etapa %1$d de 3</string>
+    <string name="guide_types_title">Três formas de planejar uma tarefa</string>
+    <string name="guide_example_routine">Fazer uma caminhada curta</string>
+    <string name="guide_example_week">Revisar as prioridades da semana</string>
+    <string name="guide_example_once">Marcar uma consulta no dentista</string>
+    <string name="guide_try_sliding">Experimentar deslizar um cartão</string>
+    <string name="guide_practice_title">Praticar em Hoje</string>
+    <string name="guide_slide_done">Imagine que você fez sua caminhada. Deslize para a direita para concluir ou use o botão abaixo.</string>
+    <string name="guide_slide_skip">Imagine que você decidiu não revisar as prioridades nesta semana. Deslize para a esquerda para pular esta semana ou use o botão abaixo.</string>
+    <string name="guide_slide_choice">Agora experimente a tarefa única. Concluir e pular tarefa encerram esta tarefa. Desfazer a traz de volta.</string>
+    <string name="guide_practice_complete">Você resolveu os três cartões de exemplo. Experimente desfazer ou veja suas decisões em Revisão.</string>
+    <string name="guide_see_review">Ver a prática em Revisão</string>
+    <string name="guide_review_practice">Esta é a Revisão com suas decisões de prática. Abra o dia abaixo para ver cada resultado. Os padrões aparecem conforme você usa o app.</string>
+    <string name="guide_create_first">Criar sua primeira tarefa</string>
+    <string name="guide_back_to_tasks">Voltar às suas tarefas</string>
+    <string name="guide_restore">Restaurar backup</string>
 </resources>

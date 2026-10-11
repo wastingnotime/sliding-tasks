@@ -161,6 +161,19 @@ fun SlidingTasksApp() {
         return
     }
     var state by remember { mutableStateOf(initialState.getOrThrow()) }
+    val guidePreferences = remember { context.getSharedPreferences("first_use", Context.MODE_PRIVATE) }
+    var guideStep by remember {
+        mutableIntStateOf(guidePreferences.getInt("step", -1).takeIf { it >= 0 }
+            ?: if (guidePreferences.getBoolean("completed", false) || state.hasUserData()) -1 else 0)
+    }
+    fun changeGuideStep(step: Int) {
+        guidePreferences.edit().putInt("step", step).apply()
+        guideStep = step
+    }
+    fun finishGuide() {
+        guidePreferences.edit().putBoolean("completed", true).remove("step").remove("decisions").remove("date").apply()
+        guideStep = -1
+    }
     var section by remember { mutableStateOf(AppSection.TODAY) }
     var planEditorOpen by remember { mutableStateOf(false) }
     var planEditorTask by remember { mutableStateOf<PlannedTask?>(null) }
@@ -270,6 +283,7 @@ fun SlidingTasksApp() {
             }.onSuccess { imported ->
                 if (commit(imported)) {
                     importError = null
+                    finishGuide()
                     aboutOpen = false
                     section = AppSection.TODAY
                 }
@@ -316,10 +330,16 @@ fun SlidingTasksApp() {
     }
     LaunchedEffect(Unit) {
         commit(state)
+        if (state.hasUserData()) guidePreferences.edit().putBoolean("completed", true).apply()
         runCatching { scheduledBackup.ensureScheduled() }
     }
-    BackHandler(enabled = planEditorOpen || aboutOpen) {
-        if (aboutOpen) aboutOpen = false else planEditorOpen = false
+    BackHandler(enabled = planEditorOpen || aboutOpen || guideStep > 0) {
+        when {
+            aboutOpen -> aboutOpen = false
+            guideStep == 1 && state.hasUserData() -> finishGuide()
+            guideStep > 0 -> changeGuideStep(guideStep - 1)
+            else -> planEditorOpen = false
+        }
     }
 
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors) {
@@ -347,7 +367,7 @@ fun SlidingTasksApp() {
             },
             containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
-                if (!planEditorOpen && !aboutOpen) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                if (!planEditorOpen && !aboutOpen && guideStep < 0) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     AppSection.entries.forEach { item ->
                         NavigationBarItem(
                             selected = section == item,
@@ -387,6 +407,30 @@ fun SlidingTasksApp() {
                     onImport = if (state.tasks.isEmpty() && state.cards.isEmpty() && state.events.isEmpty())
                         ({ importError = null; importLauncher.launch(arrayOf("application/json", "text/plain")) }) else null,
                     importError = importError,
+                    onPractice = {
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        pendingUndo = null
+                        aboutOpen = false
+                        guidePreferences.edit().remove("decisions").remove("date").apply()
+                        changeGuideStep(1)
+                    },
+                ) else if (guideStep >= 0) PracticeGuide(
+                    step = guideStep,
+                    date = today,
+                    importError = importError,
+                    hasUserData = state.hasUserData(),
+                    onStep = { changeGuideStep(it) },
+                    preferences = guidePreferences,
+                    onSkip = { finishGuide() },
+                    onRestore = { importError = null; importLauncher.launch(arrayOf("application/json", "text/plain")) },
+                    onFinish = {
+                        finishGuide()
+                        if (!state.hasUserData()) {
+                            section = AppSection.PLAN
+                            planEditorTask = null
+                            planEditorOpen = true
+                        }
+                    },
                 ) else when (section) {
                     AppSection.TODAY -> TodayScreen(
                         date = today,
@@ -461,6 +505,7 @@ private fun AboutScreen(
     onDisableScheduledBackup: () -> Unit,
     onImport: (() -> Unit)?,
     importError: String?,
+    onPractice: () -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 24.dp),
@@ -475,6 +520,9 @@ private fun AboutScreen(
             Text(stringResource(R.string.guide_plan))
             Text(stringResource(R.string.guide_today))
             Text(stringResource(R.string.guide_review))
+            OutlinedButton(onClick = onPractice, modifier = Modifier.testTag("reopen-guide")) {
+                Text(stringResource(R.string.guide_try))
+            }
             HorizontalDivider()
         }
         if (backupOnly) {
@@ -1135,7 +1183,12 @@ private fun schedulePreview(schedule: TaskSchedule): String {
 }
 
 @Composable
-private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: (Boolean) -> Unit) {
+private fun ReviewScreen(
+    state: SlidingTasksState,
+    today: LocalDate,
+    onAbout: ((Boolean) -> Unit)? = null,
+    introduction: (@Composable () -> Unit)? = null,
+) {
     val review = remember(state.cards, state.tasks, today) { reviewInsights(state, today) }
     var expandedDay by remember { mutableStateOf<LocalDate?>(null) }
 
@@ -1144,6 +1197,7 @@ private fun ReviewScreen(state: SlidingTasksState, today: LocalDate, onAbout: (B
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        introduction?.let { item { it() } }
         item {
             PageHeader(stringResource(R.string.review_text), stringResource(R.string.your_recent_patterns), stringResource(R.string.review_intro), onAbout = onAbout)
         }
@@ -1356,6 +1410,128 @@ private fun EmptyBoard() {
         Column {
             Text(stringResource(R.string.all_clear), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 28.sp, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.the_present_is_handled), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f), fontSize = 17.sp)
+        }
+    }
+}
+
+
+@Composable
+private fun PracticeGuide(
+    step: Int,
+    date: LocalDate,
+    importError: String?,
+    hasUserData: Boolean,
+    onStep: (Int) -> Unit,
+    preferences: SharedPreferences,
+    onSkip: () -> Unit,
+    onRestore: () -> Unit,
+    onFinish: () -> Unit,
+) {
+    // Guide progress has its own preferences; no demo data enters LocalTaskStore or its backups.
+    var decisions by remember {
+        mutableStateOf(preferences.getString("decisions", "").orEmpty().split(",").filter { it.isNotEmpty() })
+    }
+    fun decide(next: List<String>) {
+        preferences.edit().putString("decisions", next.joinToString(",")).apply()
+        decisions = next
+    }
+    val practiceDate = remember {
+        LocalDate.parse(preferences.getString("date", null) ?: date.toString().also {
+            preferences.edit().putString("date", it).apply()
+        })
+    }
+    val titles = listOf(stringResource(R.string.guide_example_routine),
+        stringResource(R.string.guide_example_week), stringResource(R.string.guide_example_once))
+    val demo = remember(titles, decisions, practiceDate) { practiceGuideState(practiceDate, titles, decisions) }
+    fun resolvePractice(cardId: String, outcome: CardStatus) {
+        if (demo.cards.getOrNull(decisions.size)?.id == cardId) decide(decisions + outcome.name)
+    }
+    val explanations = listOf(R.string.routine_explanation, R.string.until_decided_explanation, R.string.one_time_explanation)
+    val actionHints = listOf(R.string.guide_slide_done, R.string.guide_slide_skip, R.string.guide_slide_choice)
+
+    Column(Modifier.fillMaxSize().testTag("practice-guide")) {
+        if (step > 0) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.guide_progress, step), modifier = Modifier.weight(1f))
+                TextButton(onClick = { if (step == 1 && hasUserData) onSkip() else onStep(step - 1) }, modifier = Modifier.testTag("guide-back")) {
+                    Text(stringResource(R.string.back))
+                }
+                TextButton(onClick = onSkip, modifier = Modifier.testTag("skip-guide")) {
+                    Text(stringResource(R.string.guide_skip))
+                }
+            }
+        }
+        if (step == 3) {
+            ReviewScreen(demo, practiceDate, introduction = {
+                Text(stringResource(R.string.guide_review_practice))
+                Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().testTag("finish-guide")) {
+                    Text(stringResource(if (hasUserData) R.string.guide_back_to_tasks else R.string.guide_create_first))
+                }
+            })
+        } else {
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(stringResource(when (step) {
+                    0 -> R.string.guide_welcome
+                    1 -> R.string.guide_types_title
+                    else -> R.string.guide_practice_title
+                }), style = MaterialTheme.typography.headlineMedium)
+                if (step > 0) Text(stringResource(R.string.guide_practice_safe))
+                when (step) {
+                    0 -> {
+                        Text(stringResource(R.string.guide_welcome_hint))
+                        Button(onClick = { onStep(1) }, modifier = Modifier.fillMaxWidth().testTag("learn-guide")) {
+                            Text(stringResource(R.string.guide_learn))
+                        }
+                        OutlinedButton(onClick = onSkip, modifier = Modifier.fillMaxWidth().testTag("start-without-guide")) {
+                            Text(stringResource(R.string.guide_start))
+                        }
+                        OutlinedButton(onClick = onRestore, modifier = Modifier.fillMaxWidth().testTag("guide-restore")) {
+                            Text(stringResource(R.string.guide_restore))
+                        }
+                        importError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("guide-restore-error")) }
+                    }
+                    1 -> {
+                        demo.cards.forEachIndexed { index, card ->
+                            TaskCardView(card)
+                            Text(stringResource(explanations[index]))
+                        }
+                        Button(onClick = { onStep(2) }, modifier = Modifier.fillMaxWidth().testTag("guide-practice")) {
+                            Text(stringResource(R.string.guide_try_sliding))
+                        }
+                    }
+                    2 -> {
+                        val card = demo.cards.getOrNull(decisions.size)
+                        if (card != null) {
+                            Text(stringResource(actionHints[decisions.size]))
+                            Text(stringResource(explanations[decisions.size]))
+                            SwipeableTaskCard(card) { command ->
+                                if (command !is CardCommand.Touch) {
+                                    resolvePractice(command.cardId, if (command is CardCommand.Complete) CardStatus.DONE else CardStatus.DISMISSED)
+                                }
+                            }
+                            OutlinedButton(onClick = { resolvePractice(card.id, CardStatus.DONE) },
+                                modifier = Modifier.fillMaxWidth().testTag("practice-done")) { Text(stringResource(R.string.mark_done)) }
+                            OutlinedButton(onClick = { resolvePractice(card.id, CardStatus.DISMISSED) },
+                                modifier = Modifier.fillMaxWidth().testTag("practice-skip")) { Text(card.skipScope.localizedLabel()) }
+                        } else {
+                            Text(stringResource(R.string.guide_practice_complete))
+                        }
+                        if (decisions.isNotEmpty()) {
+                            val last = demo.cards[decisions.lastIndex]
+                            Text(stringResource(R.string.summary_join, last.title, if (last.status == CardStatus.DONE) stringResource(R.string.done) else last.skipScope.localizedLabel()),
+                                modifier = Modifier.testTag("practice-result"))
+                            TextButton(onClick = { decide(decisions.dropLast(1)) }, modifier = Modifier.testTag("practice-undo")) {
+                                Text(stringResource(R.string.undo))
+                            }
+                        }
+                        Button(onClick = { onStep(3) }, enabled = decisions.size == 3,
+                            modifier = Modifier.fillMaxWidth().testTag("guide-review")) { Text(stringResource(R.string.guide_see_review)) }
+                    }
+                }
+            }
         }
     }
 }

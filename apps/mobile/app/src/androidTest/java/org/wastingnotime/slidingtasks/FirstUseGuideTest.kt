@@ -47,7 +47,25 @@ class FirstUseGuideTest {
         if (tag !in listOf("skip-guide", "guide-back", "finish-guide", "add-task", "save-task", "cancel-edit")) node.performScrollTo()
         node.performClick()
     }
-    private fun startPractice() { click("learn-guide"); click("guide-practice") }
+    private fun completePlanExercises(titles: List<String> = listOf("Daily walk", "Weekly priorities", "Dentist appointment")) {
+        listOf("routine", "until_decided", "one_time").forEachIndexed { index, mode ->
+            compose.onNodeWithTag("plan-exercise").assertTextContains("${index + 1}", substring = true)
+            compose.onNodeWithTag("guide-practice").assertDoesNotExist()
+            click("guide-plan")
+            compose.onNodeWithTag("add-task").assertIsNotEnabled()
+            compose.onNodeWithTag("task-title").performScrollTo().performTextInput(titles[index])
+            compose.onNodeWithTag("task-title").performImeAction()
+            if (index > 0) compose.onNodeWithTag("add-task").assertIsNotEnabled()
+            click("mode-$mode")
+            screenshot("plan-before-save-$index")
+            compose.onNodeWithTag("mode-$mode").assertIsSelected()
+            compose.onNodeWithTag("add-task").assertIsEnabled()
+            click("add-task")
+            compose.onNodeWithText(titles[index]).assertExists()
+            if (titles.first() == "Daily walk") screenshot("plan-$mode")
+            if (index < 2) click("guide-next-plan")
+        }
+    }
     private fun assertNoUserTasks() {
         val state = LocalTaskStore(compose.activity).load()
         assertTrue(state.tasks.isEmpty()); assertTrue(state.cards.isEmpty()); assertTrue(state.events.isEmpty())
@@ -70,6 +88,7 @@ class FirstUseGuideTest {
     @Test fun swiping_undo_review_and_recreation_keep_practice_out_of_real_storage() {
         click("learn-guide")
         screenshot("types")
+        completePlanExercises()
         click("guide-practice")
         val first = compose.onAllNodes(hasTestTagPrefix("card-practice-")).fetchSemanticsNodes().single().config[androidx.compose.ui.semantics.SemanticsProperties.TestTag]
         compose.onNodeWithTag(first).performTouchInput { swipeRight(durationMillis = 500) }
@@ -113,11 +132,15 @@ class FirstUseGuideTest {
         click("guide-plan")
         compose.onNodeWithTag("task-title").performTextInput("Call a friend")
         click("mode-until_decided")
+        compose.onNodeWithTag("add-task").assertIsNotEnabled()
+        compose.onNodeWithTag("guide-required-type").assertExists()
+        click("mode-routine")
+        click("repeat-weekly_days")
         click("repeat-interval-2")
         click("day-sunday")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("task-title").assertTextContains("Call a friend")
-        compose.onNodeWithTag("mode-until_decided").assertIsSelected()
+        compose.onNodeWithTag("mode-routine").assertIsSelected()
         compose.onNodeWithTag("repeat-interval-2").assertIsSelected()
         compose.onNodeWithTag("day-sunday").assertIsSelected()
         click("add-task")
@@ -130,11 +153,11 @@ class FirstUseGuideTest {
         // An empty weekly selection should explain what is missing and disable saving.
         listOf("monday", "tuesday", "wednesday", "thursday", "friday", "sunday").forEach { click("day-$it") }
         compose.onNodeWithTag("save-task").assertIsNotEnabled()
-        click("mode-one_time")
+        click("day-monday")
         click("save-task")
         val preferences = compose.activity.getSharedPreferences("first_use", 0)
         val saved = LocalTaskStore(compose.activity).readImport(requireNotNull(preferences.getString("practice_plan", null)))
-        assertEquals(ScheduleKind.ONCE, saved.tasks.single().schedule.kind)
+        assertEquals(ScheduleKind.WEEKLY_DAYS, saved.tasks.single().schedule.kind)
         click("guide-plan")
         compose.onNodeWithTag("task-title").performTextReplacement("Discard this edit")
         click("cancel-edit")
@@ -145,6 +168,7 @@ class FirstUseGuideTest {
         click("skip-guide")
         assertFalse(preferences.contains("practice_plan"))
         assertFalse(preferences.contains("plan_editing"))
+        assertFalse(preferences.contains("plan_exercise"))
         assertNoUserTasks()
         compose.onNodeWithTag("more-options").performClick()
         compose.onNodeWithTag("about-menu-item").performClick()
@@ -152,6 +176,36 @@ class FirstUseGuideTest {
         compose.onNodeWithTag("practice-plan-result").assertDoesNotExist()
         click("guide-plan")
         compose.onNodeWithTag("add-task").assertIsNotEnabled()
+    }
+
+    @Test fun sliding_practice_restarts_when_reentered_from_plan_or_review() {
+        click("learn-guide")
+        completePlanExercises()
+        click("guide-practice")
+        click("practice-done")
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithTag("practice-result").assertExists()
+        compose.onNodeWithText("Review this week’s priorities").assertExists()
+        // Back to Plan, then start sliding again: no previous decisions or card state.
+        click("guide-back")
+        click("guide-practice")
+        compose.onNodeWithText("Take a short walk").assertExists()
+        compose.onNodeWithTag("practice-result").assertDoesNotExist()
+        compose.onNodeWithTag("practice-undo").assertDoesNotExist()
+        compose.onNodeWithTag("guide-review").assertIsNotEnabled()
+        click("practice-done")
+        click("practice-skip")
+        click("practice-done")
+        click("guide-review")
+        compose.onNodeWithTag("review-week").assertExists()
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        screenshot("sliding-after-back")
+        compose.onNodeWithText("Take a short walk").assertExists()
+        compose.onNodeWithTag("practice-result").assertDoesNotExist()
+        compose.onNodeWithTag("practice-undo").assertDoesNotExist()
+        compose.onNodeWithTag("guide-review").assertIsNotEnabled()
+        assertEquals("", compose.activity.getSharedPreferences("first_use", 0).getString("decisions", null))
+        assertNoUserTasks()
     }
 
     @Test fun cancelled_and_failed_restores_keep_welcome_choices_available() {
@@ -209,12 +263,8 @@ class FirstUseGuideTest {
         }
         compose.onNodeWithText("Mostre como funciona").performScrollTo().performClick()
         screenshot("types-pt-large-dark")
-        click("guide-plan")
-        compose.onNodeWithTag("task-title").performScrollTo().performTextInput("Ler um livro")
-        click("mode-one_time")
-        screenshot("plan-editor-pt-large-dark")
-        click("add-task")
-        compose.onNodeWithText("Ler um livro").assertExists()
+        completePlanExercises(listOf("Caminhar", "Revisar prioridades", "Marcar consulta"))
+        compose.onNodeWithTag("guide-practice").performScrollTo()
         screenshot("practice-plan-pt-large-dark")
         click("guide-practice")
         click("practice-done")

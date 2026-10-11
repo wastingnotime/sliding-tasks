@@ -219,7 +219,12 @@
     <string name="guide_try_plan">Experimentar planejar uma tarefa</string>
     <string name="guide_edit_plan">Editar plano de prática</string>
     <string name="guide_save_plan">Salvar plano de prática</string>
-    <string name="guide_plan_hint">Apenas prática. Digite uma tarefa, escolha o tipo e a programação e salve seu plano de prática. Ele não será uma tarefa real.</string>
-    <string name="guide_plan_saved">Seu plano de prática</string>
     <string name="guide_plan_next">Este plano é apenas para praticar. A seguir, use os três cartões de exemplo para experimentar deslizar em Hoje.</string>
+    <string name="guide_exercise">Exercício %1$d de 3: %2$s</string>
+    <string name="guide_plan_routine">Experimente uma caminhada diária. Digite “Fazer uma caminhada curta”, escolha Rotina e mantenha Diária com intervalo de 1. Salve seu plano de prática. Uma nova ocorrência aparece a cada dia; concluir ou pular encerra apenas aquele dia.</string>
+    <string name="guide_plan_week">Experimente revisar prioridades uma vez na semana. Digite “Revisar as prioridades da semana”, escolha Até decidir e mantenha o intervalo de 1 semana. Selecione os dias em que deseja vê-la e salve. Concluir ou pular encerra a semana ativa inteira.</string>
+    <string name="guide_plan_once">Experimente marcar uma consulta. Digite “Marcar uma consulta no dentista”, escolha Pontual e salve. Ela fica disponível até você concluir ou pular a tarefa; depois, não se repete.</string>
+    <string name="guide_choose_type">Neste exercício, escolha %1$s para salvar.</string>
+    <string name="guide_plan_accomplished">Você planejou este tipo de tarefa. Continue para experimentar o próximo tipo.</string>
+    <string name="guide_next_exercise">Próximo exercício</string>
 </resources>

@@ -301,6 +301,7 @@ class FirstUseGuideTest {
         repeat(3) { click("practice-done") }
         click("guide-review")
         compose.onNodeWithTag("review-list").performScrollToNode(hasTestTag("finish-guide"))
+        compose.onNodeWithTag("finish-guide").assertTextContains("Back to your tasks")
         click("finish-guide")
         compose.onNodeWithTag("task-title").assertDoesNotExist()
         compose.onNodeWithTag("nav-today").assertIsDisplayed()

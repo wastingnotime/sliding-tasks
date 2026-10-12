@@ -106,9 +106,9 @@ class FirstUseGuideTest {
     private fun slidePractice(right: Boolean) {
         val card = compose.onAllNodes(hasTestTagPrefix("card-practice-")).fetchSemanticsNodes().single()
         val tag = card.config[androidx.compose.ui.semantics.SemanticsProperties.TestTag]
-        // The exercise has no visible outcome buttons; the shared card still exposes accessibility actions.
-        compose.onNodeWithTag("practice-done").assertDoesNotExist()
-        compose.onNodeWithTag("practice-skip").assertDoesNotExist()
+        // Both swipe and visible controls can resolve the practice card.
+        compose.onNodeWithTag("practice-done").assertIsDisplayed()
+        compose.onNodeWithTag("practice-skip").assertIsDisplayed()
         assertEquals(2, card.config[androidx.compose.ui.semantics.SemanticsActions.CustomActions].size)
         compose.onNodeWithTag(tag).performScrollTo().performTouchInput {
             if (right) swipeRight(durationMillis = 500) else swipeLeft(durationMillis = 500)
@@ -287,6 +287,24 @@ class FirstUseGuideTest {
         compose.runOnUiThread { compose.activity.setContent { key("existing-user") { SlidingTasksApp() } } }
         compose.onNodeWithTag("practice-guide").assertDoesNotExist()
         compose.onNodeWithTag("nav-today").assertIsDisplayed()
+    }
+
+    @Test fun finishing_reopened_guide_returns_to_existing_app_without_opening_task_editor() {
+        val day = LocalDate.now()
+        LocalTaskStore(compose.activity).save(practiceGuideState(day, listOf("Existing walk", "Existing week", "Existing once"), listOf("DONE")))
+        compose.runOnUiThread { compose.activity.setContent { key("existing-user-guide") { SlidingTasksApp() } } }
+        compose.onNodeWithTag("more-options").performClick()
+        compose.onNodeWithTag("about-menu-item").performClick()
+        click("reopen-guide")
+        completePlanExercises()
+        click("guide-practice")
+        repeat(3) { click("practice-done") }
+        click("guide-review")
+        compose.onNodeWithTag("review-list").performScrollToNode(hasTestTag("finish-guide"))
+        click("finish-guide")
+        compose.onNodeWithTag("task-title").assertDoesNotExist()
+        compose.onNodeWithTag("nav-today").assertIsDisplayed()
+        assertTrue(compose.activity.getSharedPreferences("first_use", 0).getBoolean("completed", false))
     }
 
     @Test fun portuguese_large_text_dark_guide_keeps_actions_reachable() {

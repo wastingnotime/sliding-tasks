@@ -31,3 +31,19 @@ locally under `build/releases/0.3.5/`, ignored by Git. CI artifacts expire after
 seven days. Submission evidence is retained in `play-submission.png`.
 
 [Publishing overview](https://play.google.com/console/u/0/developers/8460748010140158851/app/4975120587850699857/publishing)
+
+## Availability and production readiness recheck
+
+On October 12, the owner's Brave `wasting no time` profile confirmed version
+`8 (0.3.5) closed test` is **Available to testers on Google Play**, with a full
+rollout to 178 countries/regions synced with production. Bundle 8 is Active.
+Publishing overview reports last published October 12, with managed publishing
+off. This supersedes the pending-availability statement above.
+
+The production track remains Inactive. **Create new release** is available,
+and the dashboard lists production countries/regions as completed. The remaining
+dashboard steps are creating a release, previewing/confirming it, sending it to
+Google for review, and publication. No production release was created or
+submitted during this read-only check. WNT-117's real tester feedback remains
+the project's only open issue; it is a product-readiness follow-up, not a
+displayed Play Console production-access restriction.

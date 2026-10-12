@@ -1,0 +1,6 @@
+<en-US>
+Practice sliding cards in step 2 of the guide. Slide right to complete or left to skip. Undo and accessibility actions remain available.
+</en-US>
+<pt-BR>
+Pratique deslizar cartões na etapa 2 do guia. Deslize para a direita para concluir ou para a esquerda para pular. Desfazer e ações de acessibilidade continuam disponíveis.
+</pt-BR>

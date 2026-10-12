@@ -125,7 +125,7 @@ produce a signed `.aab` artifact for Play Console internal testing. The workflow
 uses a dedicated upload key from GitHub Actions secrets, runs release unit
 tests, verifies the bundle signature, and records its SHA-256 digest. Download
 the artifact from the workflow run within seven days. The bundle uses package
-`org.wastingnotime.slidingtasks`, version code `7`, and version name `0.3.4`.
+`org.wastingnotime.slidingtasks`, version code `8`, and version name `0.3.5`.
 
 Release builds use R8 code shrinking, optimization, and obfuscation plus resource
 shrinking. The release artifact includes `mapping.txt` for decoding obfuscated

@@ -67,18 +67,20 @@ contract gaps.
   after a missed day and preserves card history. One-time creation and management
   do not require the Plan tab; older paused one-time entries can be resumed or
   removed from Today.
-- Plan lists and creates recurring routines only. Its editor offers recurrence,
-  availability, and first active date; task type is fixed to Routine.
-- Mobile routines may repeat daily, on weekdays, on weekends, every two days,
-  once per week, or once per two weeks. Two-day intervals use a chosen first
-  day. Two-week intervals use the Monday–Sunday week containing the chosen
-  first date as their anchor; the selected week and every second week after it
-  are active.
-- Weekly and two-week routines have one occurrence per active week. Their
-  availability is any day, weekdays, Saturday, or Sunday. Dismissing or
-  completing a card closes the occurrence until the next active week. A missed
-  card can recur on the next available day of that week. Separate Saturday and
-  Sunday routines can share an anchor week for paired events.
+- Plan lists routines and unresolved one-time tasks. Its editor offers Routine,
+  Once per week, and One-time. Once per week is a weekly schedule for a stored
+  Routine task, not a separate stored task type.
+- Routine offers daily repetition every 1–7 days or a separate occurrence on
+  each selected weekday every 1–4 weeks. Once per week offers one occurrence
+  across selected eligible weekdays every 1–4 weeks. Existing schedules with
+  larger intervals remain intact until changed. Daily intervals use the chosen
+  first date as their anchor; weekly intervals use the Monday–Sunday week
+  containing that date. Neither schedule generates cards before its first date.
+- Weekly day selections support any combination, with any-day, weekday, and
+  weekend presets. For Routine, Done or Skip today closes only that day's card.
+  For Once per week, Done or Skip this week closes the occurrence until the
+  next active week; a missed card can recur on the next selected day. Separate
+  Saturday and Sunday routines can share an anchor week for paired events.
 - Planned tasks can be reordered by dragging, with Move up and Move down
   accessibility actions. Plan order determines generation order for future
   boards and does not rewrite an already-generated board.
@@ -117,9 +119,10 @@ contract gaps.
 
 - An empty installation offers an optional practice guide, immediate Start, and
   Restore backup. Installations containing tasks or history bypass the welcome.
-- Practice teaches Routine, Once per week and One-time with example cards,
-  the actual Today swipe interaction, equivalent visible buttons, Undo, and
-  the actual local Review presentation.
+- Practice teaches Routine, Once per week and One-time through separate Plan
+  exercises, then example cards using the actual Today swipe interaction,
+  equivalent custom accessibility actions, Undo, and the actual local Review
+  presentation. Swipe practice has no persistent Done or Skip buttons.
 - Practice state is isolated from operational task storage and backup/export
   files. It must never create real tasks or history. First-use preferences may
   retain tutorial progress independently of operational state.

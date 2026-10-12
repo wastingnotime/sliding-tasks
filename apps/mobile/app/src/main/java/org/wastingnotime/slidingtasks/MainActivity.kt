@@ -172,7 +172,7 @@ fun SlidingTasksApp() {
         guideStep = step
     }
     fun finishGuide() {
-        guidePreferences.edit().putBoolean("completed", true).remove("step").remove("decisions").remove("date").remove("practice_plan").remove("plan_editing").remove("plan_exercise").apply()
+        guidePreferences.edit().putBoolean("completed", true).remove("step").remove("decisions").remove("day_passed").remove("date").remove("practice_plan").remove("plan_editing").remove("plan_exercise").apply()
         guideStep = -1
     }
     var section by remember { mutableStateOf(AppSection.TODAY) }
@@ -407,7 +407,7 @@ fun SlidingTasksApp() {
                         snackbarHostState.currentSnackbarData?.dismiss()
                         pendingUndo = null
                         aboutOpen = false
-                        guidePreferences.edit().remove("decisions").remove("date").remove("practice_plan").remove("plan_editing").remove("plan_exercise").apply()
+                        guidePreferences.edit().remove("decisions").remove("day_passed").remove("date").remove("practice_plan").remove("plan_editing").remove("plan_exercise").apply()
                         changeGuideStep(1)
                     },
                 ) else if (guideStep >= 0) PracticeGuide(
@@ -1470,8 +1470,14 @@ private fun PracticeGuide(
         preferences.edit().putString("decisions", next.joinToString(",")).apply()
         decisions = next
     }
+    var dayPassed by remember { mutableStateOf(preferences.getBoolean("day_passed", false)) }
+    fun changeDayPassed(passed: Boolean) {
+        preferences.edit().putBoolean("day_passed", passed).apply()
+        dayPassed = passed
+    }
     fun startSliding() {
         decide(emptyList())
+        changeDayPassed(false)
         onStep(2)
     }
     fun goBack() {
@@ -1492,7 +1498,7 @@ private fun PracticeGuide(
     }
     val titles = listOf(stringResource(R.string.guide_example_routine),
         stringResource(R.string.guide_example_week), stringResource(R.string.guide_example_once))
-    val demo = remember(titles, decisions, practiceDate) { practiceGuideState(practiceDate, titles, decisions) }
+    val demo = remember(titles, decisions, practiceDate, dayPassed) { practiceGuideState(practiceDate, titles, decisions, dayPassed) }
     fun resolvePractice(cardId: String, outcome: CardStatus) {
         if (demo.cards.getOrNull(decisions.size)?.id == cardId) decide(decisions + outcome.name)
     }
@@ -1513,7 +1519,7 @@ private fun PracticeGuide(
             }
         }
         if (step == 3) {
-            ReviewScreen(demo, practiceDate, introduction = {
+            ReviewScreen(demo, demo.activeDate ?: practiceDate, introduction = {
                 Text(stringResource(R.string.guide_review_practice))
             }, conclusion = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1601,7 +1607,7 @@ private fun PracticeGuide(
                         }
                     }
                     2 -> {
-                        val card = demo.cards.getOrNull(decisions.size)
+                        val card = if (dayPassed) null else demo.cards.getOrNull(decisions.size)
                         if (card != null) {
                             Text(stringResource(actionHints[decisions.size]))
                             Text(stringResource(explanations[decisions.size]))
@@ -1610,18 +1616,27 @@ private fun PracticeGuide(
                                     resolvePractice(command.cardId, if (command is CardCommand.Complete) CardStatus.DONE else CardStatus.DISMISSED)
                                 }
                             }
+                            Text(stringResource(R.string.guide_miss_hint))
+                            OutlinedButton(onClick = { changeDayPassed(true) },
+                                modifier = Modifier.fillMaxWidth().testTag("practice-let-day-pass")) {
+                                Text(stringResource(R.string.guide_let_day_pass))
+                            }
                         } else {
-                            Text(stringResource(R.string.guide_practice_complete))
+                            Text(stringResource(if (dayPassed) R.string.guide_day_passed else R.string.guide_practice_complete))
                         }
                         if (decisions.isNotEmpty()) {
                             val last = demo.cards[decisions.lastIndex]
                             Text(stringResource(R.string.summary_join, last.title, if (last.status == CardStatus.DONE) stringResource(R.string.done) else last.skipScope.localizedLabel()),
                                 modifier = Modifier.testTag("practice-result"))
-                            TextButton(onClick = { decide(decisions.dropLast(1)) }, modifier = Modifier.testTag("practice-undo")) {
+                        }
+                        if (dayPassed || decisions.isNotEmpty()) {
+                            TextButton(onClick = {
+                                if (dayPassed) changeDayPassed(false) else decide(decisions.dropLast(1))
+                            }, modifier = Modifier.testTag("practice-undo")) {
                                 Text(stringResource(R.string.undo))
                             }
                         }
-                        Button(onClick = { onStep(3) }, enabled = decisions.size == 3,
+                        Button(onClick = { onStep(3) }, enabled = dayPassed || decisions.size == 3,
                             modifier = Modifier.fillMaxWidth().testTag("guide-review")) { Text(stringResource(R.string.guide_see_review)) }
                     }
                 }

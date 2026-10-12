@@ -31,9 +31,8 @@ and returns existing users to their tasks; the button label reflects that
 destination.
 
 Step 2 teaches swiping with English/Portuguese instructions to slide right or
-left. Visible Done and Skip buttons provide equivalent actions for users who
-cannot reliably swipe; the shared card also retains custom accessibility
-actions. Undo remains visible.
+left. It has no visible Done or Skip buttons, while the shared card retains
+custom accessibility actions. Undo remains visible.
 
 Copy is available in English and Brazilian Portuguese. Exercise transitions
 reset the explanation's scroll position.

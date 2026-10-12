@@ -106,9 +106,9 @@ class FirstUseGuideTest {
     private fun slidePractice(right: Boolean) {
         val card = compose.onAllNodes(hasTestTagPrefix("card-practice-")).fetchSemanticsNodes().single()
         val tag = card.config[androidx.compose.ui.semantics.SemanticsProperties.TestTag]
-        // Both swipe and visible controls can resolve the practice card.
-        compose.onNodeWithTag("practice-done").assertIsDisplayed()
-        compose.onNodeWithTag("practice-skip").assertIsDisplayed()
+        // Step 2 teaches the swipe; assistive technology still has card actions.
+        compose.onNodeWithTag("practice-done").assertDoesNotExist()
+        compose.onNodeWithTag("practice-skip").assertDoesNotExist()
         assertEquals(2, card.config[androidx.compose.ui.semantics.SemanticsActions.CustomActions].size)
         compose.onNodeWithTag(tag).performScrollTo().performTouchInput {
             if (right) swipeRight(durationMillis = 500) else swipeLeft(durationMillis = 500)
@@ -298,7 +298,7 @@ class FirstUseGuideTest {
         click("reopen-guide")
         completePlanExercises()
         click("guide-practice")
-        repeat(3) { click("practice-done") }
+        repeat(3) { slidePractice(right = true) }
         click("guide-review")
         compose.onNodeWithTag("review-list").performScrollToNode(hasTestTag("finish-guide"))
         compose.onNodeWithTag("finish-guide").assertTextContains("Back to your tasks")

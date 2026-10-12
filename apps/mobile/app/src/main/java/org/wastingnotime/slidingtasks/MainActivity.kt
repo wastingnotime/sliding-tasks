@@ -1640,16 +1640,6 @@ private fun PracticeGuide(
                                     resolvePractice(command.cardId, if (command is CardCommand.Complete) CardStatus.DONE else CardStatus.DISMISSED)
                                 }
                             }
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(
-                                    onClick = { resolvePractice(card.id, CardStatus.DONE) },
-                                    modifier = Modifier.weight(1f).testTag("practice-done"),
-                                ) { Text(stringResource(R.string.mark_done)) }
-                                OutlinedButton(
-                                    onClick = { resolvePractice(card.id, CardStatus.DISMISSED) },
-                                    modifier = Modifier.weight(1f).testTag("practice-skip"),
-                                ) { Text(card.skipScope.localizedLabel()) }
-                            }
                             Text(stringResource(R.string.guide_miss_hint))
                             OutlinedButton(onClick = { changeDayPassed(true) },
                                 modifier = Modifier.fillMaxWidth().testTag("practice-let-day-pass")) {

@@ -427,10 +427,10 @@ class SlidingCardTest {
         composeRule.onNodeWithTag("task-title").performImeAction()
         composeRule.onNodeWithTag("add-task").performClick()
 
-        composeRule.onAllNodesWithText("Until decided · Every 2 weeks · Any day")[0]
+        composeRule.onAllNodesWithText("Once per week · Every 2 weeks · Any day")[0]
             .assertExists()
         composeRule.onNodeWithTag("nav-today").performClick()
-        composeRule.onAllNodesWithText("Until decided", substring = true)[0].assertExists()
+        composeRule.onAllNodesWithText("Once per week", substring = true)[0].assertExists()
         composeRule.onAllNodesWithText("Skip this week", substring = true)[0].assertExists()
     }
 }

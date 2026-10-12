@@ -117,7 +117,7 @@ contract gaps.
 
 - An empty installation offers an optional practice guide, immediate Start, and
   Restore backup. Installations containing tasks or history bypass the welcome.
-- Practice teaches Routine, Until decided and One-time with example cards,
+- Practice teaches Routine, Once per week and One-time with example cards,
   the actual Today swipe interaction, equivalent visible buttons, Undo, and
   the actual local Review presentation.
 - Practice state is isolated from operational task storage and backup/export

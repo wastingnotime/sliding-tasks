@@ -4,7 +4,7 @@
     <string name="plan">Plan</string>
     <string name="review">Review</string>
     <string name="routine">Routine</string>
-    <string name="until_decided">Until decided</string>
+    <string name="until_decided">Once per week</string>
     <string name="one_time">One-time</string>
     <string name="save_error">Could not save that change. Please try again.</string>
     <string name="storage_error_title">Could not open your saved tasks</string>
@@ -41,7 +41,7 @@
     <string name="about">About</string>
     <string name="about_tagline">The past is observed. The future is configured. The present is acted upon.</string>
     <string name="quick_guide">Quick guide</string>
-    <string name="guide_plan">Plan: add routines, until-decided tasks, or one-time tasks.</string>
+    <string name="guide_plan">Plan: add routines, once-per-week tasks, or one-time tasks.</string>
     <string name="guide_today">Today: add one-time tasks, slide a card right for Done, or left to skip its current occurrence.</string>
     <string name="guide_review">Review: see recent decisions and patterns over time.</string>
     <string name="wasting_no_time">Wasting No Time</string>
@@ -92,7 +92,7 @@
     <string name="what_do_you_want_to_do">What do you want to do?</string>
     <string name="type">Type</string>
     <string name="routine_explanation">A new card appears on each scheduled day.</string>
-    <string name="until_decided_explanation">One card per active week. Done or Skip this week closes it.</string>
+    <string name="until_decided_explanation">Available on eligible days until Done or Skip this week. Returns in the next active week.</string>
     <string name="one_time_explanation">One card carries forward until you mark it Done or Skip task.</string>
     <string name="schedule">Schedule</string>
     <string name="every_how_many_days">Every how many days?</string>
@@ -135,7 +135,7 @@
     <string name="remove_one_time_message">%1$s will be removed. Existing cards and history are preserved.</string>
     <string name="remove_plan_message">%1$s will stop appearing on future days. Existing cards and history are preserved.</string>
     <string name="routine_cadence">Routine · %1$s</string>
-    <string name="until_decided_cadence">Until decided · %1$s</string>
+    <string name="until_decided_cadence">Once per week · %1$s</string>
     <string name="every_days">Every %1$d days</string>
     <string name="every_weeks">Every %1$d weeks</string>
     <string name="summary_join">%1$s · %2$s</string>
@@ -213,7 +213,7 @@
     <string name="guide_practice_complete">You handled all three example cards. Try Undo, or see your decisions in Review.</string>
     <string name="guide_miss_hint">What if you leave a card unanswered? Let the practice day pass to see what happens.</string>
     <string name="guide_let_day_pass">Let the day pass</string>
-    <string name="guide_day_passed">The practice day ended. Unanswered cards are now Missed. New routine cards appear on scheduled days; unresolved until-decided and one-time tasks remain available. Try Undo, or see the results in Review.</string>
+    <string name="guide_day_passed">The practice day ended. Unanswered cards are now Missed. New routine cards appear on scheduled days; unresolved weekly and one-time tasks remain available. Try Undo, or see the results in Review.</string>
     <string name="guide_see_review">See practice in Review</string>
     <string name="guide_review_practice">This is Review with your practice decisions. Open the day below to see each result. Patterns grow as you use the app.</string>
     <string name="guide_create_first">Create your first task</string>
@@ -227,7 +227,7 @@
     <string name="guide_plan_next">This plan is just for practice. Next, use the three example cards to try sliding in Today.</string>
     <string name="guide_exercise">Exercise %1$d of 3: %2$s</string>
     <string name="guide_plan_routine">Try a daily walk. Enter “Take a short walk”, choose Routine, and keep Daily with an interval of 1. Save your practice plan. A new occurrence appears each day; Done or Skip only closes that day.</string>
-    <string name="guide_plan_week">Try reviewing priorities once during the week. Enter “Review this week’s priorities”, choose Until decided, and keep an interval of 1 week. Select the days when you want to see it, then save. Done or Skip closes the whole active week.</string>
+    <string name="guide_plan_week">Try reviewing priorities once during the week. Enter “Review this week’s priorities”, choose Once per week, and keep an interval of 1 week. Select the days when you want to see it, then save. Done or Skip closes the whole active week.</string>
     <string name="guide_plan_once">Try booking an appointment. Enter “Book a dentist appointment”, choose One-time, then save. It stays available until you choose Done or Skip task; it does not repeat afterward.</string>
     <string name="guide_choose_type">For this exercise, choose %1$s to save.</string>
     <string name="guide_plan_accomplished">You planned this type of task. Continue to try the next type.</string>

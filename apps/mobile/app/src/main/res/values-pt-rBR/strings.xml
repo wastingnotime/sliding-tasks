@@ -4,7 +4,7 @@
     <string name="plan">Planejar</string>
     <string name="review">Revisar</string>
     <string name="routine">Rotina</string>
-    <string name="until_decided">Até decidir</string>
+    <string name="until_decided">Uma vez por semana</string>
     <string name="one_time">Pontual</string>
     <string name="save_error">Não foi possível salvar a alteração. Tente novamente.</string>
     <string name="storage_error_title">Não foi possível abrir suas tarefas salvas</string>
@@ -41,7 +41,7 @@
     <string name="about">Sobre</string>
     <string name="about_tagline">O passado é observado. O futuro é planejado. O presente é vivido.</string>
     <string name="quick_guide">Guia rápido</string>
-    <string name="guide_plan">Planejar: adicione rotinas, tarefas até decidir ou tarefas pontuais.</string>
+    <string name="guide_plan">Planejar: adicione rotinas, tarefas semanais ou tarefas pontuais.</string>
     <string name="guide_today">Hoje: adicione tarefas pontuais, deslize um cartão para a direita para concluir ou para a esquerda para pular esta ocorrência.</string>
     <string name="guide_review">Revisar: veja decisões recentes e padrões ao longo do tempo.</string>
     <string name="wasting_no_time">Wasting No Time</string>
@@ -92,7 +92,7 @@
     <string name="what_do_you_want_to_do">O que você quer fazer?</string>
     <string name="type">Tipo</string>
     <string name="routine_explanation">Um novo cartão aparece em cada dia programado.</string>
-    <string name="until_decided_explanation">Um cartão por semana ativa. Concluir ou pular esta semana encerra o cartão.</string>
+    <string name="until_decided_explanation">Disponível nos dias escolhidos até você concluir ou pular esta semana. Retorna na próxima semana ativa.</string>
     <string name="one_time_explanation">Um cartão continua aparecendo até você concluir ou pular a tarefa.</string>
     <string name="schedule">Programação</string>
     <string name="every_how_many_days">A cada quantos dias?</string>
@@ -135,7 +135,7 @@
     <string name="remove_one_time_message">%1$s será removida. Os cartões existentes e o histórico serão preservados.</string>
     <string name="remove_plan_message">%1$s deixará de aparecer nos próximos dias. Os cartões existentes e o histórico serão preservados.</string>
     <string name="routine_cadence">Rotina · %1$s</string>
-    <string name="until_decided_cadence">Até decidir · %1$s</string>
+    <string name="until_decided_cadence">Uma vez por semana · %1$s</string>
     <string name="every_days">A cada %1$d dias</string>
     <string name="every_weeks">A cada %1$d semanas</string>
     <string name="summary_join">%1$s · %2$s</string>
@@ -213,7 +213,7 @@
     <string name="guide_practice_complete">Você resolveu os três cartões de exemplo. Experimente desfazer ou veja suas decisões em Revisão.</string>
     <string name="guide_miss_hint">E se você deixar um cartão sem resposta? Deixe o dia de prática passar para ver o que acontece.</string>
     <string name="guide_let_day_pass">Deixar o dia passar</string>
-    <string name="guide_day_passed">O dia de prática terminou. Os cartões sem resposta agora aparecem como Perdidos. Novos cartões de rotina aparecem nos dias programados; tarefas até decidir e pontuais ainda não resolvidas continuam disponíveis. Experimente desfazer ou veja os resultados em Revisão.</string>
+    <string name="guide_day_passed">O dia de prática terminou. Os cartões sem resposta agora aparecem como Perdidos. Novos cartões de rotina aparecem nos dias programados; tarefas semanais e pontuais ainda não resolvidas continuam disponíveis. Experimente desfazer ou veja os resultados em Revisão.</string>
     <string name="guide_see_review">Ver a prática em Revisão</string>
     <string name="guide_review_practice">Esta é a Revisão com suas decisões de prática. Abra o dia abaixo para ver cada resultado. Os padrões aparecem conforme você usa o app.</string>
     <string name="guide_create_first">Criar sua primeira tarefa</string>
@@ -227,7 +227,7 @@
     <string name="guide_plan_next">Este plano é apenas para praticar. A seguir, use os três cartões de exemplo para experimentar deslizar em Hoje.</string>
     <string name="guide_exercise">Exercício %1$d de 3: %2$s</string>
     <string name="guide_plan_routine">Experimente uma caminhada diária. Digite “Fazer uma caminhada curta”, escolha Rotina e mantenha Diária com intervalo de 1. Salve seu plano de prática. Uma nova ocorrência aparece a cada dia; concluir ou pular encerra apenas aquele dia.</string>
-    <string name="guide_plan_week">Experimente revisar prioridades uma vez na semana. Digite “Revisar as prioridades da semana”, escolha Até decidir e mantenha o intervalo de 1 semana. Selecione os dias em que deseja vê-la e salve. Concluir ou pular encerra a semana ativa inteira.</string>
+    <string name="guide_plan_week">Experimente revisar prioridades uma vez na semana. Digite “Revisar as prioridades da semana”, escolha Uma vez por semana e mantenha o intervalo de 1 semana. Selecione os dias em que deseja vê-la e salve. Concluir ou pular encerra a semana ativa inteira.</string>
     <string name="guide_plan_once">Experimente marcar uma consulta. Digite “Marcar uma consulta no dentista”, escolha Pontual e salve. Ela fica disponível até você concluir ou pular a tarefa; depois, não se repete.</string>
     <string name="guide_choose_type">Neste exercício, escolha %1$s para salvar.</string>
     <string name="guide_plan_accomplished">Você planejou este tipo de tarefa. Continue para experimentar o próximo tipo.</string>

@@ -214,6 +214,8 @@
     <string name="guide_see_review">See practice in Review</string>
     <string name="guide_review_practice">This is Review with your practice decisions. Open the day below to see each result. Patterns grow as you use the app.</string>
     <string name="guide_create_first">Create your first task</string>
+    <string name="guide_complete">Practice complete. You’re ready to use Sliding Tasks.</string>
+    <string name="guide_go_to_today">Go to Today</string>
     <string name="guide_back_to_tasks">Back to your tasks</string>
     <string name="guide_restore">Restore backup</string>
     <string name="guide_try_plan">Try planning a task</string>

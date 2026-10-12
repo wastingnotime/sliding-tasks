@@ -40,13 +40,32 @@ class FirstUseGuideTest {
     }
 
     private fun click(tag: String) {
-        if (tag == "finish-guide") {
+        if (tag in listOf("finish-guide", "guide-go-to-today")) {
             compose.onNodeWithTag("review-list").performScrollToNode(hasTestTag(tag))
         }
         val node = compose.onNodeWithTag(tag)
-        if (tag !in listOf("skip-guide", "guide-back", "finish-guide", "add-task", "save-task", "cancel-edit")) node.performScrollTo()
+        if (tag !in listOf("skip-guide", "guide-back", "finish-guide", "guide-go-to-today", "add-task", "save-task", "cancel-edit")) node.performScrollTo()
         node.performClick()
     }
+    @Test fun completed_practice_can_go_to_today_without_creating_a_task() {
+        compose.activity.getSharedPreferences("first_use", 0).edit()
+            .putInt("step", 3)
+            .putString("decisions", "DONE,DISMISSED,DONE")
+            .commit()
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithTag("review-list").performScrollToNode(hasTestTag("guide-go-to-today"))
+        compose.onNodeWithText("Practice complete. You’re ready to use Sliding Tasks.").assertExists()
+        compose.onNodeWithTag("finish-guide").assertTextContains("Create your first task")
+        click("guide-go-to-today")
+        compose.onNodeWithTag("practice-guide").assertDoesNotExist()
+        compose.onNodeWithTag("task-title").assertDoesNotExist()
+        compose.onNodeWithText("The present is handled.").assertExists()
+        assertTrue(compose.activity.getSharedPreferences("first_use", 0).getBoolean("completed", false))
+        assertNoUserTasks()
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithTag("practice-guide").assertDoesNotExist()
+    }
+
     private fun completePlanExercises(titles: List<String> = listOf("Daily walk", "Weekly priorities", "Dentist appointment")) {
         listOf("routine", "until_decided", "one_time").forEachIndexed { index, mode ->
             compose.onNodeWithTag("plan-exercise").assertTextContains("${index + 1}", substring = true)

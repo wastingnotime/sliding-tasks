@@ -421,11 +421,14 @@ fun SlidingTasksApp() {
                     onRestore = { importError = null; importLauncher.launch(arrayOf("application/json", "text/plain")) },
                     onFinish = {
                         finishGuide()
-                        if (!state.hasUserData()) {
-                            section = AppSection.PLAN
-                            planEditorTask = null
-                            planEditorOpen = true
-                        }
+                        section = AppSection.PLAN
+                        planEditorTask = null
+                        planEditorOpen = true
+                    },
+                    onGoToToday = {
+                        finishGuide()
+                        section = AppSection.TODAY
+                        planEditorOpen = false
                     },
                 ) else when (section) {
                     AppSection.TODAY -> TodayScreen(
@@ -1437,6 +1440,7 @@ private fun PracticeGuide(
     onSkip: () -> Unit,
     onRestore: () -> Unit,
     onFinish: () -> Unit,
+    onGoToToday: () -> Unit,
 ) {
     val context = LocalContext.current
     val codec = remember { LocalTaskStore(context.applicationContext) }
@@ -1512,8 +1516,14 @@ private fun PracticeGuide(
             ReviewScreen(demo, practiceDate, introduction = {
                 Text(stringResource(R.string.guide_review_practice))
             }, conclusion = {
-                Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().testTag("finish-guide")) {
-                    Text(stringResource(if (hasUserData) R.string.guide_back_to_tasks else R.string.guide_create_first))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.guide_complete))
+                    Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().testTag("finish-guide")) {
+                        Text(stringResource(if (hasUserData) R.string.add_task else R.string.guide_create_first))
+                    }
+                    TextButton(onClick = onGoToToday, modifier = Modifier.fillMaxWidth().testTag("guide-go-to-today")) {
+                        Text(stringResource(R.string.guide_go_to_today))
+                    }
                 }
             })
         } else if (step == 1 && planEditing) {

@@ -214,6 +214,8 @@
     <string name="guide_see_review">Ver a prática em Revisão</string>
     <string name="guide_review_practice">Esta é a Revisão com suas decisões de prática. Abra o dia abaixo para ver cada resultado. Os padrões aparecem conforme você usa o app.</string>
     <string name="guide_create_first">Criar sua primeira tarefa</string>
+    <string name="guide_complete">Prática concluída. Você já pode usar o Sliding Tasks.</string>
+    <string name="guide_go_to_today">Ir para Hoje</string>
     <string name="guide_back_to_tasks">Voltar às suas tarefas</string>
     <string name="guide_restore">Restaurar backup</string>
     <string name="guide_try_plan">Experimentar planejar uma tarefa</string>

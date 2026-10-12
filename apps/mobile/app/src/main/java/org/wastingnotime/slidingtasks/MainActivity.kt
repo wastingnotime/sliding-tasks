@@ -1530,7 +1530,7 @@ private fun PracticeGuide(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.guide_complete))
                     Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().testTag("finish-guide")) {
-                        Text(stringResource(if (hasUserData) R.string.add_task else R.string.guide_create_first))
+                        Text(stringResource(if (hasUserData) R.string.guide_back_to_tasks else R.string.guide_create_first))
                     }
                     TextButton(onClick = onGoToToday, modifier = Modifier.fillMaxWidth().testTag("guide-go-to-today")) {
                         Text(stringResource(R.string.guide_go_to_today))

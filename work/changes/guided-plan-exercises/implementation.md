@@ -26,12 +26,14 @@ Entering Step 2 from Plan or returning from Review clears previous sliding
 decisions. Both the visible Back button and Android Back use the guide's
 navigation handler. Normal card progression, Undo and interrupted-session
 recovery within Step 2 are preserved. Review still ends with the completion
-button below all results.
+button below all results. Finishing opens task creation for an empty installation
+and returns existing users to their tasks; the button label reflects that
+destination.
 
-Step 2 teaches the gesture itself: visible Done/Skip buttons are removed, and
-English/Portuguese instructions direct the learner to slide right or left.
-Undo remains visible. The shared card retains its custom accessibility actions
-so assistive-technology users can resolve practice cards.
+Step 2 teaches swiping with English/Portuguese instructions to slide right or
+left. Visible Done and Skip buttons provide equivalent actions for users who
+cannot reliably swipe; the shared card also retains custom accessibility
+actions. Undo remains visible.
 
 Copy is available in English and Brazilian Portuguese. Exercise transitions
 reset the explanation's scroll position.

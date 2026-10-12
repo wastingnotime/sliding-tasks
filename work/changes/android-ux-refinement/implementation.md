@@ -46,8 +46,9 @@ help was needed. Observe at least one new user and one returning user.
 
 Success signals: first task completed without coaching, correct skip predictions,
 intended schedule saved without help, no accidental destructive actions, and no
-clipped essential controls. Tester results are pending; automated checks cannot
-establish comprehension or speed.
+clipped essential controls. The owner's qualitative tester feedback and launch
+decision are recorded in `tester-feedback-2026-10-12.md`. Automated checks do
+not establish comprehension or speed.
 
 ## Android guidance
 

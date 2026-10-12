@@ -1,0 +1,10 @@
+<en-US>
+Meet Sliding Tasks: an offline task board for routines, one-time tasks, and tasks to complete once per week.
+Plan when tasks appear, swipe to mark Done or Skip, and learn from Review.
+Get started with the hands-on practice guide and video walkthrough. Your tasks stay on your device, with optional export and backup.
+</en-US>
+<pt-BR>
+Conheça o Sliding Tasks: um quadro de tarefas offline para rotinas, tarefas pontuais e tarefas para concluir uma vez por semana.
+Planeje quando as tarefas aparecem, deslize para concluir ou pular e aprenda ao revisar.
+Comece com o guia prático e o vídeo de apresentação. Suas tarefas ficam no dispositivo, com exportação e backup opcionais.
+</pt-BR>

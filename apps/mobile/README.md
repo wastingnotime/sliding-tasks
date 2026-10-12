@@ -156,10 +156,10 @@ transport contract. Planning may gain optional synchronization later.
 
 Use the bottom navigation to open **Plan**, where routines and unresolved
 one-time tasks are listed. Tap **Add task** or a task entry to open its form.
-Choose **Routine** for a new card on every scheduled day, **Until decided** for
+Choose **Routine** for a new card on every scheduled day, **Once per week** for
 one occurrence across selected days of an active week, or **One-time** for a
 single task that carries forward until acted on. Today's cards use the same
-type labels, including **Until decided**. In **Today**, **Add one-time
+type labels, including **Once per week**. In **Today**, **Add one-time
 task** remains a shortcut for an ad-hoc card. Act on today's cards there. Use
 **Review** for this week's outcomes,
 recent task patterns, a seven-day comparison, and expandable recent days.
@@ -172,7 +172,7 @@ Weekly selections default to weekdays; choose all days, weekends, or any
 combination such as Tuesday and Friday. When N is greater than 1, choose the
 first active day or week to align the cycle.
 
-For **Until decided**, **Done** and **Skip this week** close the week's
+For **Once per week**, **Done** and **Skip this week** close the week's
 occurrence. A card left open becomes missed at day end and can appear again on
 the next selected day that week. For a weekly routine with separate selected
 days, **Skip today** closes only that day's card.
@@ -181,7 +181,7 @@ For example, plan a vitamin every two days; a haircut every two weeks on
 weekdays; separate Saturday pickup and Sunday drop-off routines anchored in the
 same two-week cycle; and trash once per week on any day. Morning and night can
 be included in the titles; the app does not schedule time-of-day reminders.
-Routine and one-time are the stored task types in Milestone 1; **Until decided**
+Routine and one-time are the stored task types in Milestone 1; **Once per week**
 is a weekly schedule for a routine. The earlier Focus label had no distinct
 behavior and stored Focus tasks migrate to Routine. One-time tasks can be
 created in Plan or Today. Older paused one-time entries can be

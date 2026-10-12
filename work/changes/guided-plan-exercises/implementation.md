@@ -8,7 +8,7 @@ from Plan or Review.
 
 ## Behavior
 
-Step 1 now presents Routine, Until decided and One-time as three sequential
+Step 1 now presents Routine, Once per week and One-time as three sequential
 exercises. Each explains its scope and provides a concrete example with
 instructions for the real Plan editor. Save requires the exercise's task type;
 a visible hint explains a type mismatch. Titles and valid schedules can be

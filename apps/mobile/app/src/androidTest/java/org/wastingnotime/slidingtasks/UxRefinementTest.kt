@@ -32,7 +32,7 @@ class UxRefinementTest {
     @Test fun task_scope_and_backup_destination_are_discoverable() {
         compose.onNodeWithText("One-time · Skip task").assertExists()
         compose.onNodeWithText("Routine · Skip today").assertExists()
-        compose.onNodeWithText("Until decided · Skip this week").assertExists()
+        compose.onNodeWithText("Once per week · Skip this week").assertExists()
         screenshot("today")
         compose.onNodeWithTag("nav-plan").performClick()
         screenshot("plan")

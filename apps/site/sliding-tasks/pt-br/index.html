@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Sliding Tasks é um painel de tarefas tranquilo e offline para rotinas e planos pontuais." />
+    <meta name="description" content="Planeje quando as tarefas aparecem, decida o que fazer hoje e reveja o que concluiu, pulou ou deixou sem resposta. Funciona offline no Android." />
     <meta name="theme-color" content="#fff8f3" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Sliding Tasks — abra espaço para o hoje" />
-    <meta property="og:description" content="Um painel de tarefas simples e offline para planejar rotinas, concluir tarefas e rever suas decisões." />
+    <meta property="og:description" content="Planeje quando as tarefas aparecem. Decida o que fazer hoje. Veja o que concluiu, escolheu pular ou deixou sem resposta." />
     <meta property="og:url" content="https://wastingnotime.org/sliding-tasks/pt-br/" />
     <link rel="canonical" href="https://wastingnotime.org/sliding-tasks/pt-br/" />
     <link rel="icon" type="image/svg+xml" href="/sliding-tasks/favicon.svg" />
@@ -29,7 +29,7 @@
         <div class="hero-copy">
           <p class="eyebrow">Um jeito mais leve de planejar</p>
           <h1 id="hero-title">Abra espaço para <em>o hoje.</em></h1>
-          <p class="lede">Planeje as rotinas que importam. Veja o que está pronto para hoje. Deslize para a direita para concluir ou para a esquerda para pular. Cada cartão mostra o que será pulado.</p>
+          <p class="lede">Planeje quando as tarefas aparecem. Decida o que fazer hoje. Veja o que concluiu, escolheu pular ou deixou sem resposta.</p>
           <div class="hero-actions">
             <span class="release-note">App para Android · lançamento na Play Store em preparação</span>
             <a href="#how-it-works">Veja como funciona <span aria-hidden="true">↓</span></a>
@@ -41,7 +41,7 @@
           <div class="demo-heading"><strong>Hoje</strong><span>9 de out. de 2026 · 3 cartões restantes</span></div>
           <span class="demo-add">Adicionar tarefa pontual</span>
           <p class="demo-hint">Deslize ← para pular · → para concluir</p>
-          <div class="task-card"><strong>Ler um capítulo</strong><span class="task-hint">Pontual · Pular tarefa</span></div>
+          <div class="task-card"><strong>Marcar uma consulta no dentista</strong><span class="task-hint">Pontual · Pular tarefa</span></div>
           <div class="task-card"><strong>Fazer uma caminhada curta</strong><span class="task-hint">Rotina · Pular hoje</span></div>
           <div class="task-card"><strong>Revisar prioridades</strong><span class="task-hint">Uma vez por semana · Pular esta semana</span></div>
           <div class="demo-nav"><span class="active">Hoje</span><span>Planejar</span><span>Revisar</span></div>
@@ -53,11 +53,28 @@
           <p class="eyebrow">Um pequeno ciclo diário</p>
           <h2 id="steps-title">Planeje antes. Aja no presente.</h2>
           <div class="step-grid">
-            <article><span class="step-number">01</span><h3>Encontre seu ritmo</h3><p>Adicione rotinas para os dias ou semanas que combinam com você e tarefas pontuais quando surgir algo novo.</p></article>
-            <article><span class="step-number">02</span><h3>Escolha hoje</h3><p>Deslize para a direita para concluir ou para a esquerda para pular. Pular hoje encerra o cartão do dia; Pular esta semana encerra a ocorrência semanal; Pular tarefa encerra uma tarefa pontual.</p></article>
-            <article><span class="step-number">03</span><h3>Perceba padrões</h3><p>Reveja os últimos dias e veja quais tarefas você concluiu, pulou ou deixou sem concluir.</p></article>
+            <article><span class="step-number">01</span><h3>Planeje seu ritmo</h3><p>Escolha uma rotina para dias programados, uma tarefa para resolver uma vez em cada semana ativa ou uma tarefa pontual.</p></article>
+            <article><span class="step-number">02</span><h3>Decida em Hoje</h3><p>Deslize para a direita para concluir ou para a esquerda para pular. Cada cartão mostra o que será pulado. Errou? Use Desfazer enquanto estiver disponível.</p></article>
+            <article><span class="step-number">03</span><h3>Aprenda ao revisar</h3><p>Reveja tarefas concluídas, escolhas de pular e cartões sem resposta. Perceba padrões que podem ajudar a ajustar seus planos.</p></article>
           </div>
         </div>
+      </section>
+
+      <section class="decisions wrap" aria-labelledby="decisions-title">
+        <p class="eyebrow">Cada escolha tem seu lugar</p>
+        <h2 id="decisions-title">Pular é uma decisão.</h2>
+        <p class="section-intro">Concluir significa que você fez. Pular significa que escolheu não fazer. O que vem depois depende do seu plano.</p>
+        <div class="decision-grid">
+          <article><p class="decision-label">Rotina</p><h3>“Hoje não.”</h3><p>Faça uma caminhada curta nos dias programados. Concluir ou <strong>Pular hoje</strong> encerra o cartão do dia. Um novo cartão aparece no próximo dia programado.</p></article>
+          <article><p class="decision-label">Uma vez por semana</p><h3>“Esta semana não.”</h3><p>Revise as prioridades em um dos dias selecionados. Concluir ou <strong>Pular esta semana</strong> encerra toda a semana ativa. A tarefa volta na próxima semana ativa do seu plano.</p></article>
+          <article><p class="decision-label">Pontual</p><h3>“Vou deixar esta tarefa de lado.”</h3><p>Marque uma consulta no dentista quando puder. Concluir finaliza a tarefa; <strong>Pular tarefa</strong> a encerra porque você escolheu não fazê-la. Nos dois casos, ela deixa de voltar.</p></article>
+        </div>
+        <div class="unanswered-note">
+          <h3>Deixou sem resposta?</h3>
+          <p>Um cartão que continua aberto ao fim do dia fica registrado como <strong>Perdido</strong>. Uma rotina volta no próximo dia programado; uma tarefa pontual sem decisão passa para o dia seguinte. Uma tarefa semanal pode voltar no próximo dia disponível até você escolher concluir ou pular naquela semana.</p>
+          <p class="week-example"><strong>Por exemplo:</strong> escolha terça e sexta para revisar prioridades. Deixe terça sem resposta e a tarefa aparece sexta. Conclua ou pule na terça e ela espera até a próxima semana ativa. As semanas vão de segunda a domingo; você escolhe o intervalo entre elas.</p>
+        </div>
+        <p class="practice-note">Experimente no app: o guia opcional passa por Planejar, Hoje, Desfazer e Revisar com exemplos que ficam separados das suas tarefas reais.</p>
       </section>
 
       <section class="privacy-note wrap" aria-labelledby="privacy-title">

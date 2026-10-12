@@ -20,7 +20,11 @@ symbols, as in previous releases.
 The focused Portuguese large-text dark-mode guide instrumentation test passed
 before release preparation, checking swipe progression, absence of visible
 Done/Skip buttons, and the card's two accessibility actions. The earlier full
-guide suite had six failures on the Portuguese emulator; see release notes.
+guide suite had six failures on the Portuguese emulator. A subsequent complete
+guide rerun passed all 11 tests with the emulator's default locale set to English;
+the Portuguese large-text dark-mode test sets its own configuration. These were
+test-environment failures, not outstanding product defects; see
+`guide-validation-recheck.md`.
 
 Bundle and mapping digests are recorded in `artifacts.json`. Files are archived
 locally under `build/releases/0.3.5/`, ignored by Git. CI artifacts expire after

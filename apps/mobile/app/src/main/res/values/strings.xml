@@ -232,4 +232,8 @@
     <string name="guide_choose_type">For this exercise, choose %1$s to save.</string>
     <string name="guide_plan_accomplished">You planned this type of task. Continue to try the next type.</string>
     <string name="guide_next_exercise">Next exercise</string>
+    <string name="watch_walkthrough">Watch walkthrough ↗</string>
+    <string name="walkthrough_internet">Opens YouTube · requires internet</string>
+    <string name="walkthrough_url">https://www.youtube.com/watch?v=RxyXm0tKKXg</string>
+    <string name="walkthrough_open_error">No app is available to open this video.</string>
 </resources>

@@ -2,6 +2,10 @@ package org.wastingnotime.slidingtasks
 
 import android.os.Bundle
 import android.app.DatePickerDialog
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -511,6 +515,9 @@ private fun AboutScreen(
     importError: String?,
     onPractice: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val walkthroughUrl = stringResource(R.string.walkthrough_url)
+    val walkthroughOpenError = stringResource(R.string.walkthrough_open_error)
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -527,6 +534,18 @@ private fun AboutScreen(
             OutlinedButton(onClick = onPractice, modifier = Modifier.testTag("reopen-guide")) {
                 Text(stringResource(R.string.guide_try))
             }
+            OutlinedButton(onClick = {
+                try {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(walkthroughUrl))
+                        .addCategory(Intent.CATEGORY_BROWSABLE))
+                } catch (_: ActivityNotFoundException) {
+                    Toast.makeText(context, walkthroughOpenError, Toast.LENGTH_SHORT).show()
+                }
+            }, modifier = Modifier.testTag("watch-walkthrough")) {
+                Text(stringResource(R.string.watch_walkthrough))
+            }
+            Text(stringResource(R.string.walkthrough_internet), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = .68f))
             HorizontalDivider()
         }
         if (backupOnly) {

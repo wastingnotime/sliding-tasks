@@ -171,3 +171,11 @@ mobile event history -> event receiver API -> web analytics projection
 
 The mobile surface should expose a debug APK artifact after unit tests pass.
 Use `wnt mobile apk-ci init` when this workflow is missing.
+
+## Optional video walkthrough
+
+About places a localized “Watch walkthrough” link alongside the offline practice
+guide. It opens the English or Brazilian Portuguese YouTube video externally,
+using the app's resource language, and states that internet is required. A
+missing external handler reports an error without affecting task data. The
+interactive practice guide remains available offline.

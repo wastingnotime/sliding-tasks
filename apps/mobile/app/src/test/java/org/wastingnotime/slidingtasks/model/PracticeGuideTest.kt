@@ -31,4 +31,16 @@ class PracticeGuideTest {
         assertFalse(SlidingTasksState(activeDate = date).hasUserData())
         assertTrue(SlidingTasksState(cards = practiceGuideState(date, titles, emptyList()).cards).hasUserData())
     }
+
+    @Test fun letting_day_pass_misses_unanswered_cards_and_carries_unresolved_tasks_forward() {
+        val state = practiceGuideState(date, titles, listOf("DONE"), letDayPass = true)
+        assertEquals(date.plusDays(1), state.activeDate)
+        assertEquals(listOf(CardStatus.DONE, CardStatus.MISSED, CardStatus.MISSED), state.cards.take(3).map { it.status })
+        assertFalse(state.tasks.last().resolved)
+        assertTrue(state.cards.any { it.title == "Dentist" && it.boardDate == date.plusDays(1) && it.status == CardStatus.PENDING })
+        assertTrue(state.events.any { it.type == "TaskCarriedForward" })
+        val undone = practiceGuideState(date, titles, listOf("DONE"))
+        assertEquals(listOf(CardStatus.DONE, CardStatus.PENDING, CardStatus.PENDING), undone.cards.map { it.status })
+        assertEquals(state.cards.take(3).map { it.id }, undone.cards.map { it.id })
+    }
 }

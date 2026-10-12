@@ -211,6 +211,9 @@
     <string name="guide_slide_skip">Imagine you chose not to review priorities this week. Slide the card left for Skip this week.</string>
     <string name="guide_slide_choice">Now slide the one-time card right for Done or left for Skip task. Either choice closes this task. Undo brings it back.</string>
     <string name="guide_practice_complete">You handled all three example cards. Try Undo, or see your decisions in Review.</string>
+    <string name="guide_miss_hint">What if you leave a card unanswered? Let the practice day pass to see what happens.</string>
+    <string name="guide_let_day_pass">Let the day pass</string>
+    <string name="guide_day_passed">The practice day ended. Unanswered cards are now Missed. New routine cards appear on scheduled days; unresolved until-decided and one-time tasks remain available. Try Undo, or see the results in Review.</string>
     <string name="guide_see_review">See practice in Review</string>
     <string name="guide_review_practice">This is Review with your practice decisions. Open the day below to see each result. Patterns grow as you use the app.</string>
     <string name="guide_create_first">Create your first task</string>

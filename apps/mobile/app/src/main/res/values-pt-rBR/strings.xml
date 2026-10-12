@@ -211,6 +211,9 @@
     <string name="guide_slide_skip">Imagine que você decidiu não revisar as prioridades nesta semana. Deslize o cartão para a esquerda para pular esta semana.</string>
     <string name="guide_slide_choice">Agora deslize o cartão pontual para a direita para concluir ou para a esquerda para pular a tarefa. As duas opções encerram esta tarefa. Desfazer a traz de volta.</string>
     <string name="guide_practice_complete">Você resolveu os três cartões de exemplo. Experimente desfazer ou veja suas decisões em Revisão.</string>
+    <string name="guide_miss_hint">E se você deixar um cartão sem resposta? Deixe o dia de prática passar para ver o que acontece.</string>
+    <string name="guide_let_day_pass">Deixar o dia passar</string>
+    <string name="guide_day_passed">O dia de prática terminou. Os cartões sem resposta agora aparecem como Perdidos. Novos cartões de rotina aparecem nos dias programados; tarefas até decidir e pontuais ainda não resolvidas continuam disponíveis. Experimente desfazer ou veja os resultados em Revisão.</string>
     <string name="guide_see_review">Ver a prática em Revisão</string>
     <string name="guide_review_practice">Esta é a Revisão com suas decisões de prática. Abra o dia abaixo para ver cada resultado. Os padrões aparecem conforme você usa o app.</string>
     <string name="guide_create_first">Criar sua primeira tarefa</string>

@@ -66,6 +66,24 @@ class FirstUseGuideTest {
         compose.onNodeWithTag("practice-guide").assertDoesNotExist()
     }
 
+    @Test fun sliding_practice_can_miss_cards_recreate_undo_and_review_without_saving_tasks() {
+        compose.activity.getSharedPreferences("first_use", 0).edit().putInt("step", 2).commit()
+        compose.activityRule.scenario.recreate()
+        click("practice-let-day-pass")
+        compose.onAllNodes(hasTestTagPrefix("card-practice-")).assertCountEquals(0)
+        compose.onNodeWithTag("guide-review").assertIsEnabled()
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithTag("practice-let-day-pass").assertDoesNotExist()
+        click("practice-undo")
+        compose.onAllNodes(hasTestTagPrefix("card-practice-")).assertCountEquals(1)
+        compose.onNodeWithTag("guide-review").assertIsNotEnabled()
+        click("practice-let-day-pass")
+        click("guide-review")
+        compose.onNodeWithTag("review-day-${LocalDate.now()}").performScrollTo().performClick()
+        compose.onAllNodesWithText("MISSED", useUnmergedTree = true).assertCountEquals(3)
+        assertNoUserTasks()
+    }
+
     private fun completePlanExercises(titles: List<String> = listOf("Daily walk", "Weekly priorities", "Dentist appointment")) {
         listOf("routine", "until_decided", "one_time").forEachIndexed { index, mode ->
             compose.onNodeWithTag("plan-exercise").assertTextContains("${index + 1}", substring = true)

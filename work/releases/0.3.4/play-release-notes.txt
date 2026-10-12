@@ -1,0 +1,6 @@
+<en-US>
+Improved practice guide with clearer task examples, Plan exercises and sliding practice. Clearer choices after Review. Weekly tasks are now called Once per week. Watch an English video walkthrough from About.
+</en-US>
+<pt-BR>
+Guia prático aprimorado com exemplos mais claros, exercícios no Planejamento e prática de deslizar. Opções mais claras após a Revisão. Tarefas semanais agora se chamam Uma vez por semana. Assista ao vídeo em português em Sobre.
+</pt-BR>

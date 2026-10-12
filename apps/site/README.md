@@ -24,6 +24,14 @@ browser storage. Keep both privacy pages aligned with `docs/privacy-policy.md`.
 The pages link `/sliding-tasks/favicon.svg` explicitly; the domain-level
 favicon remains owned by the parent site.
 
+The image build gives the shared stylesheet a content-hashed filename and updates
+all landing and privacy pages to use it. This keeps new sections and headings
+paired with their CSS when visitors or the CDN have cached an older stylesheet.
+Edit `sliding-tasks/styles.css` normally; the build generates the URL. The video
+poster and iframe fill the same responsive 16:9 frame before and after loading.
+Requests for a stylesheet hash from an older image fall back to the current CSS
+so previously cached HTML remains styled after a rollout.
+
 ## Candidate delivery
 
 See [the site promotion contract](../../contracts/site-promotion.md).

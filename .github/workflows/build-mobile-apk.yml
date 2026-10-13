@@ -36,12 +36,35 @@ jobs:
           packages: "platform-tools platforms;android-37.0 build-tools;36.0.0"
 
       - name: Run unit tests and assemble debug APK
+        if: github.event_name == 'pull_request'
         working-directory: apps/mobile
         run: ./gradlew --no-daemon testDebugUnitTest assembleDebug
+
+      - name: Build and verify persistent-key Firebase APK
+        if: github.event_name != 'pull_request'
+        working-directory: apps/mobile
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.SLIDING_TASKS_UPLOAD_KEYSTORE_BASE64 }}
+          SLIDING_TASKS_UPLOAD_STORE_PASSWORD: ${{ secrets.SLIDING_TASKS_UPLOAD_STORE_PASSWORD }}
+          SLIDING_TASKS_UPLOAD_KEY_PASSWORD: ${{ secrets.SLIDING_TASKS_UPLOAD_KEY_PASSWORD }}
+          SLIDING_TASKS_UPLOAD_KEY_ALIAS: sliding-tasks-upload
+          SLIDING_TASKS_SIGN_FIREBASE_APK: 'true'
+        run: |
+          set -euo pipefail
+          : "${UPLOAD_KEYSTORE_BASE64:?missing upload keystore secret}"
+          : "${SLIDING_TASKS_UPLOAD_STORE_PASSWORD:?missing store password secret}"
+          : "${SLIDING_TASKS_UPLOAD_KEY_PASSWORD:?missing key password secret}"
+          export SLIDING_TASKS_UPLOAD_KEYSTORE="$RUNNER_TEMP/sliding-tasks-upload.p12"
+          umask 077
+          printf '%s' "$UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$SLIDING_TASKS_UPLOAD_KEYSTORE"
+          trap 'rm -f "$SLIDING_TASKS_UPLOAD_KEYSTORE"' EXIT
+          ./gradlew --no-daemon testDebugUnitTest assembleDebug
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs \
+            app/build/outputs/apk/debug/app-debug.apk | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: sliding-tasks-mobile-debug-apk
+          name: ${{ github.event_name == 'pull_request' && 'sliding-tasks-mobile-debug-apk' || 'sliding-tasks-mobile-firebase-apk' }}
           path: apps/mobile/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error

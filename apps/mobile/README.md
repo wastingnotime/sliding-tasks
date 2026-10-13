@@ -73,28 +73,37 @@ locally also send reports when online. The Firebase Android configuration in
 `app/google-services.json` contains project identifiers, not credentials.
 The release bundle excludes the Crashlytics SDK.
 
-Build and upload the debug APK:
+Run **Build Sliding Tasks Mobile APK** on `main` and download the
+`sliding-tasks-mobile-firebase-apk` artifact. Push and manual builds sign this
+APK with the persistent `sliding-tasks-upload` key already stored in GitHub
+Actions secrets for Play uploads. The workflow verifies the APK signature and
+prints its certificate SHA-256 fingerprint in the run summary. Register that
+fingerprint for `org.wastingnotime.slidingtasks` in Play Console's Android
+developer verification page before distributing the new APK.
 
-```bash
-cd apps/mobile
-./gradlew assembleDebug
-```
+Pull-request builds produce `sliding-tasks-mobile-debug-apk` using a temporary
+debug key for validation. Use the Firebase artifact from a push or manual run
+for tester distribution. Missing signing secrets fail the Firebase build.
 
 In the Firebase console, open **App Distribution** for **Sliding Tasks
-Android**, upload `app/build/outputs/apk/debug/app-debug.apk`, select the
-intended testers, add short release notes, and distribute. Firebase sends
-testers an invitation email. Release notes should say what to try and how to
-send feedback. Increment `versionCode` in `app/build.gradle.kts` for each new
-build testers should install as an update. Firebase App Distribution keeps
-releases for 150 days, so retain any build that needs longer-term archiving
-separately.
+Android**, upload the APK, select the intended testers, add short release notes,
+and distribute. Firebase sends testers an invitation email. Release notes
+should say what to try and how to send feedback. Increment `versionCode` in
+`app/build.gradle.kts` for each new build testers should install as an update.
+Firebase App Distribution keeps releases for 150 days, so retain any build
+that needs longer-term archiving separately.
 
-The debug APK is signed with Android's debug key. A later build signed with the
-release key, or an install from Google Play, cannot update that installation in
-place; the tester must uninstall and reinstall, which erases tasks stored on
-that device. Use a consistent release signing key for successive Firebase
-release APKs once testers need in-place updates. Do not distribute the debug
-APK as a public release.
+Existing testers using the old debug-signed APK must uninstall it before
+installing the first persistent-key APK; uninstalling erases tasks stored on
+the device, so export a backup first. Subsequent Firebase APKs use the same key
+and can update in place. Google Play's app signing key can differ from the
+upload key, so switching to a Play install may still require reinstalling.
+
+For a local Firebase APK, set the four `SLIDING_TASKS_UPLOAD_*` variables
+listed below, set `SLIDING_TASKS_SIGN_FIREBASE_APK=true`, and run
+`./gradlew assembleDebug`. Without that opt-in, local debug builds continue
+using the local Android debug key. Firebase APKs retain debug Crashlytics;
+the Play release bundle continues to exclude it.
 
 ## Play testing and production
 

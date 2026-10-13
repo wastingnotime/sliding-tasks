@@ -15,6 +15,10 @@ val hasUploadSigning = listOf(
     uploadKeyPassword,
     uploadKeyAlias,
 ).all { !it.isNullOrBlank() }
+val signFirebaseApk = System.getenv("SLIDING_TASKS_SIGN_FIREBASE_APK") == "true"
+check(!signFirebaseApk || hasUploadSigning) {
+    "Firebase APK signing requires all SLIDING_TASKS_UPLOAD_* signing settings."
+}
 
 android {
     namespace = "org.wastingnotime.slidingtasks"
@@ -47,6 +51,11 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            if (signFirebaseApk) {
+                signingConfig = signingConfigs.getByName("playUpload")
+            }
+        }
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true

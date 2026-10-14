@@ -236,4 +236,5 @@
     <string name="walkthrough_internet">Abre o YouTube · requer internet</string>
     <string name="walkthrough_url">https://www.youtube.com/watch?v=Sm0Mm8f_FAs</string>
     <string name="walkthrough_open_error">Nenhum app está disponível para abrir este vídeo.</string>
+    <string name="import_backup_setup_required">Tarefas e histórico restaurados. Os backups automáticos estão desativados nesta instalação. Escolha uma pasta de backup para ativá-los; o acesso à pasta não é restaurado pelo arquivo de backup.</string>
 </resources>

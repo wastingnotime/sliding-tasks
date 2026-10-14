@@ -275,10 +275,25 @@ class FirstUseGuideTest {
             Intent().setData(Uri.parse("content://org.wastingnotime.slidingtasks.test.restore/valid"))))
         click("guide-restore")
         compose.onNodeWithTag("practice-guide").assertDoesNotExist()
+        compose.onNodeWithText(compose.activity.getString(R.string.import_backup_setup_required)).assertExists()
+        compose.onNodeWithTag("choose-backup-folder").assertExists()
+        compose.onNodeWithText(compose.activity.getString(R.string.back)).performClick()
         compose.onNodeWithText("Restored task").assertExists()
         assertEquals("restored", LocalTaskStore(compose.activity).load().tasks.single().id)
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("practice-guide").assertDoesNotExist()
+    }
+
+    @Test fun successful_restore_preserves_existing_backup_configuration() {
+        val folder = "content://org.wastingnotime.slidingtasks.test/backup-folder"
+        compose.activity.getSharedPreferences("scheduled_backup", 0).edit()
+            .putString("folder_uri", folder).commit()
+        Intents.intending(hasAction(Intent.ACTION_OPEN_DOCUMENT)).respondWith(ActivityResult(Activity.RESULT_OK,
+            Intent().setData(Uri.parse("content://org.wastingnotime.slidingtasks.test.restore/valid"))))
+        click("guide-restore")
+        compose.onNodeWithText("Restored task").assertExists()
+        compose.onNodeWithText(compose.activity.getString(R.string.import_backup_setup_required)).assertDoesNotExist()
+        assertEquals(folder, compose.activity.getSharedPreferences("scheduled_backup", 0).getString("folder_uri", null))
     }
 
     @Test fun existing_history_bypasses_first_use() {

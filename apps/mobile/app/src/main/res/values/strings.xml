@@ -236,4 +236,5 @@
     <string name="walkthrough_internet">Opens YouTube · requires internet</string>
     <string name="walkthrough_url">https://www.youtube.com/watch?v=RxyXm0tKKXg</string>
     <string name="walkthrough_open_error">No app is available to open this video.</string>
+    <string name="import_backup_setup_required">Tasks and history restored. Automatic backups are off on this installation. Choose a backup folder to turn them on; folder access is not restored from a backup file.</string>
 </resources>

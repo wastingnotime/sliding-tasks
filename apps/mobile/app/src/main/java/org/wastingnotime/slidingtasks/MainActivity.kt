@@ -289,7 +289,11 @@ fun SlidingTasksApp() {
                 if (commit(imported)) {
                     importError = null
                     finishGuide()
-                    aboutOpen = false
+                    backupStatus = scheduledBackup.status()
+                    backupOnly = !backupStatus.enabled
+                    aboutOpen = !backupStatus.enabled
+                    backupMessage = if (backupStatus.enabled) null else
+                        context.getString(R.string.import_backup_setup_required)
                     section = AppSection.TODAY
                 }
             }.onFailure { importError = context.getString(R.string.import_error) }

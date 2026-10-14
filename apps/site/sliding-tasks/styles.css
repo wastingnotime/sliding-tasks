@@ -64,6 +64,9 @@ h1,h2,h3 { font-family:Outfit,system-ui,sans-serif; }
 .policy-date { margin-bottom:44px; color:var(--muted); }
 .policy h2 { margin:42px 0 10px; font-size:25px; letter-spacing:-.03em; }
 .policy p { font-size:17px; }
+.policy details { margin-top:32px; padding:20px; border:1px solid var(--line); border-radius:12px; }
+.policy summary { color:var(--green); font-weight:700; cursor:pointer; }
+.policy details p { margin:16px 0 0; }
 .policy a { color:var(--green); font-weight:700; }
 @media(max-width:900px) { .hero { grid-template-columns:1fr; gap:42px; padding-block:48px 80px; } .hero h1 { max-width:760px; } .step-grid { grid-template-columns:1fr; } .privacy-note { flex-direction:column; align-items:flex-start; } }
 @media(max-width:520px) { .wrap { width:min(100% - 32px,1160px); } .site-header { min-height:72px; height:auto; flex-wrap:wrap; gap:12px; padding-block:16px; } .brand { font-size:19px; } .header-links { gap:12px; font-size:13px; } .hero { padding-top:38px; } .hero h1 { font-size:60px; } .lede { font-size:18px; } .steps { padding-block:72px; } .privacy-note { padding-block:72px; } .site-footer { flex-direction:column; } .policy { padding-block:56px 80px; } }

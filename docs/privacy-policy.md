@@ -3,7 +3,9 @@
 Effective October 6, 2026.
 
 Sliding Tasks is provided by Wasting No Time. It works offline and does not
-require an account.
+require an account. This policy covers the official Android release available on
+[Google Play](https://play.google.com/store/apps/details?id=org.wastingnotime.slidingtasks)
+and applies across app versions unless the data practices described here change.
 
 ## Information stored on your device
 
@@ -16,15 +18,7 @@ or sync these files. The app itself does
 not send task data to Wasting No Time or other companies. The app
 has no ads, product analytics, or sync service.
 
-## Diagnostic reports in the private alpha
-
-The private alpha APK distributed through Firebase App Distribution includes
-Firebase Crashlytics. It automatically sends crash and app-not-responding
-reports to Google so we can diagnose and fix errors. Reports may include stack
-traces, app version, device and Android details, timestamps, and installation
-identifiers. We do not add task content to these reports. The app remains
-usable offline. Google describes Crashlytics data and retention in its
-[Firebase privacy documentation](https://firebase.google.com/support/privacy).
+## Diagnostics in the Google Play release
 
 The Google Play build does not include Crashlytics. Android vitals may provide
 diagnostic reports from users who choose to share usage and diagnostics with
@@ -38,6 +32,16 @@ storage, or uninstall the app. This does not delete exported files or automatic
 backups. Delete those separately from the folder you chose and from any
 document provider or cloud storage where they were synced. Android device
 backup is disabled for this app.
+
+## Earlier private alpha builds
+
+The private alpha APK distributed through Firebase App Distribution includes
+Firebase Crashlytics. It automatically sends crash and app-not-responding
+reports to Google so we can diagnose and fix errors. Reports may include stack
+traces, app version, device and Android details, timestamps, and installation
+identifiers. We do not add task content to these reports. The app remains
+usable offline. Google describes Crashlytics data and retention in its
+[Firebase privacy documentation](https://firebase.google.com/support/privacy).
 
 Clearing app storage or uninstalling does not erase crash reports already sent
 to Firebase. Contact us if you have questions about those reports.

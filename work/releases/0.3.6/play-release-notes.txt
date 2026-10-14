@@ -1,0 +1,6 @@
+<en-US>
+After restoring your tasks and history, Sliding Tasks now reminds you to choose a backup folder if automatic backups are off.
+</en-US>
+<pt-BR>
+Após restaurar suas tarefas e histórico, o Sliding Tasks agora lembra você de escolher uma pasta de backup se os backups automáticos estiverem desativados.
+</pt-BR>

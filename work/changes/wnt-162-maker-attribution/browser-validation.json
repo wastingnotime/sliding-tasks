@@ -1,0 +1,66 @@
+[
+  {
+    "locale": "en",
+    "page": "landing",
+    "width": 1280,
+    "result": "passed",
+    "keyboard": "Tab, Shift+Tab, Enter",
+    "accessible_name": "localized aria-label containing visible text"
+  },
+  {
+    "locale": "en",
+    "page": "landing",
+    "width": 320,
+    "result": "passed",
+    "keyboard": "Tab, Shift+Tab, Enter",
+    "accessible_name": "localized aria-label containing visible text"
+  },
+  {
+    "locale": "en",
+    "page": "privacy",
+    "width": 1280,
+    "result": "passed",
+    "keyboard": "Tab, Shift+Tab, Enter",
+    "accessible_name": "localized aria-label containing visible text"
+  },
+  {
+    "locale": "en",
+    "page": "privacy",
+    "width": 320,
+    "result": "passed",
+    "keyboard": "Tab, Shift+Tab, Enter",
+    "accessible_name": "localized aria-label containing visible text"
+  },
+  {
+    "locale": "pt-br",
+    "page": "landing",
+    "width": 1280,
+    "result": "passed",
+    "keyboard": "Tab, Shift+Tab, Enter",
+    "accessible_name": "localized aria-label containing visible text"
+  },
+  {
+    "locale": "pt-br",
+    "page": "landing",
+    "width": 320,
+    "result": "passed",
+    "keyboard": "Tab, Shift+Tab, Enter",
+    "accessible_name": "localized aria-label containing visible text"
+  },
+  {
+    "locale": "pt-br",
+    "page": "privacy",
+    "width": 1280,
+    "result": "passed",
+    "keyboard": "Tab, Shift+Tab, Enter",
+    "accessible_name": "localized aria-label containing visible text"
+  },
+  {
+    "locale": "pt-br",
+    "page": "privacy",
+    "width": 320,
+    "result": "passed",
+    "keyboard": "Tab, Shift+Tab, Enter",
+    "accessible_name": "localized aria-label containing visible text"
+  }
+]

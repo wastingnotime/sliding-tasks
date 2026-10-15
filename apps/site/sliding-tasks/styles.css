@@ -56,11 +56,17 @@ h1,h2,h3 { font-family:Outfit,system-ui,sans-serif; }
 .privacy-note { display:flex; justify-content:space-between; align-items:center; gap:50px; padding-block:100px; }
 .privacy-note p:last-child { max-width:620px; margin-bottom:0; color:var(--muted); font-size:18px; }
 .outline-link { flex:none; padding:16px 20px; border:1px solid var(--green); border-radius:12px; color:var(--green); font-weight:800; text-decoration:none; }
-.site-footer { display:flex; justify-content:space-between; gap:20px; padding-block:28px 40px; border-top:1px solid var(--line); color:var(--muted); font-size:14px; }
-.site-footer div { display:flex; gap:26px; }
+.site-footer { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:20px; padding-block:28px 40px; border-top:1px solid var(--line); color:var(--muted); font-size:14px; }
+.footer-maker { display:flex; flex-direction:column; align-items:flex-start; gap:12px; }
+.footer-links { display:flex; flex-wrap:wrap; gap:12px 26px; }
 .site-footer a { color:var(--ink); text-decoration:none; }
+.site-footer .maker-signature { display:inline-flex; align-items:center; gap:8px; min-height:24px; padding:3px; color:var(--muted); white-space:nowrap; }
+.maker-signature img { display:block; flex:none; }
+.maker-signature span { text-decoration:underline; text-underline-offset:3px; }
+.site-footer a:focus-visible { outline:2px solid currentColor; outline-offset:3px; }
+@media(forced-colors:active) { .site-footer a:focus-visible { outline-color:LinkText; } }
 .policy { max-width:780px; min-height:calc(100vh - 180px); padding-block:80px 100px; }
-.policy h1 { margin-bottom:8px; font-size:clamp(52px,7vw,78px); line-height:1.05; letter-spacing:-.055em; }
+.policy h1 { overflow-wrap:anywhere; margin-bottom:8px; font-size:clamp(52px,7vw,78px); line-height:1.05; letter-spacing:-.055em; }
 .policy-date { margin-bottom:44px; color:var(--muted); }
 .policy h2 { margin:42px 0 10px; font-size:25px; letter-spacing:-.03em; }
 .policy p { font-size:17px; }

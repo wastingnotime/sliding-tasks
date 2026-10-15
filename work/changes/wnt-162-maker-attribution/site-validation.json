@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "source_revision": "local-wnt-162-working-tree",
+  "checks": [
+    "/sliding-tasks/",
+    "/sliding-tasks/pt-br/",
+    "/sliding-tasks/privacy/",
+    "/sliding-tasks/pt-br/privacy/",
+    "/sliding-tasks/styles.css",
+    "/sliding-tasks/favicon.svg",
+    "/health/live",
+    "/health/ready",
+    "/sliding-tasks/styles.ee73186900f2335878720c069c6b8552324d6896bff8b1cb6938b9375c6e7d1a.css",
+    "/sliding-tasks/styles.0000000000000000000000000000000000000000000000000000000000000000.css"
+  ],
+  "unrelated_paths": "404",
+  "image_reference": "sliding-tasks-site:wnt-162"
+}

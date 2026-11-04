@@ -14,6 +14,9 @@ application API, secrets, writable volumes, or runtime environment variables.
 - The public pages are `/sliding-tasks/`, `/sliding-tasks/privacy/`,
   `/sliding-tasks/pt-br/`, and `/sliding-tasks/pt-br/privacy/`.
 - `htmlHandling: auto-trailing-slash` serves canonical directory pages.
+- Legacy cached HTML may reference `/sliding-tasks/styles.<sha256>.css`; the
+  Worker routes these requests to the current `styles.css`, preserving the
+  previous nginx fallback behavior.
 - The page links `/sliding-tasks/favicon.svg`; the domain-level favicon remains
   owned by the parent site.
 

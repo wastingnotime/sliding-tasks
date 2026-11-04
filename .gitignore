@@ -1,4 +1,6 @@
 __pycache__/
+node_modules/
+.cloudflare/
 *.py[cod]
 .pytest_cache/
 .coverage

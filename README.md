@@ -39,8 +39,8 @@ make mobile-apk
 
 The static Sliding Tasks page and privacy policy live in
 [`apps/site`](apps/site/README.md). Their intended public path is
-`https://wastingnotime.org/sliding-tasks/`; infra-platform owns the route and
-immutable image selection.
+`https://wastingnotime.org/sliding-tasks/`; this repository owns its Cloudflare
+Workers Static Assets route and deployment.
 
 ## Deferred surfaces
 

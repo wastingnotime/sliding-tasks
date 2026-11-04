@@ -12,4 +12,4 @@ The contract was accepted after model EGD review on 2026-09-18. Consumers may
 build technology adapters from it, while experimental projection fields remain
 explicitly marked in the contract.
 
-- [Site candidate promotion](site-promotion.md): validated immutable image handoff and infra-owned draft promotion intake.
+- [Sliding Tasks static site deployment](site-deployment.md): Cloudflare Workers Static Assets route and publication boundary.

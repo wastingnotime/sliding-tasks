@@ -1,0 +1,52 @@
+name: Build and deploy Sliding Tasks public site
+
+on:
+  pull_request:
+    paths:
+      - "apps/site/sliding-tasks/**"
+      - "cloudflare.config.ts"
+      - "vite.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy-site.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/site/sliding-tasks/**"
+      - "cloudflare.config.ts"
+      - "vite.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy-site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v6.2.0
+        with:
+          node-version: 24.22.0
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  deploy:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v6.2.0
+        with:
+          node-version: 24.22.0
+          cache: npm
+      - run: npm ci
+      - name: Deploy static assets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npm run deploy

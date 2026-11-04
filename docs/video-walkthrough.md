@@ -20,7 +20,7 @@ learning path.
 
 When replacing a video, update the landing page ID and direct link, the
 localized `walkthrough_url` Android resource, the corresponding poster, and
-this record together. Site production follows `contracts/site-promotion.md`;
+this record together. Site production follows `contracts/site-deployment.md`;
 mobile source changes require a subsequent app release.
 
 ## Generation process used on October 12, 2026

@@ -7,9 +7,8 @@ export default defineConfig({
     entrypoint: "./src/index.ts",
     compatibilityDate: "2026-11-03",
     assets: {
-      basePath: "/sliding-tasks",
       htmlHandling: "auto-trailing-slash",
-      runWorkerFirst: ["/sliding-tasks/styles.*.css"],
+      runWorkerFirst: true,
     },
     env: {
       ASSETS: bindings.assets(),

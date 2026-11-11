@@ -237,4 +237,16 @@
     <string name="walkthrough_url">https://www.youtube.com/watch?v=Sm0Mm8f_FAs</string>
     <string name="walkthrough_open_error">Nenhum app está disponível para abrir este vídeo.</string>
     <string name="import_backup_setup_required">Tarefas e histórico restaurados. Os backups automáticos estão desativados nesta instalação. Escolha uma pasta de backup para ativá-los; o acesso à pasta não é restaurado pelo arquivo de backup.</string>
+    <string name="daily_reminder">Lembrete diário</string>
+    <string name="reminder_description">Um lembrete para abrir o Sliding Tasks e começar as tarefas de hoje. Escolha um horário que funcione para você.</string>
+    <string name="reminder_on">Ativado · todos os dias</string>
+    <string name="reminder_off">Desativado</string>
+    <string name="reminder_time">Horário do lembrete: %1$s</string>
+    <string name="reminder_timing_hint">Usa o horário local do dispositivo. O Android pode mostrar o lembrete mais tarde para economizar bateria.</string>
+    <string name="reminder_permission_blocked">As notificações estão bloqueadas nas configurações do Android. Permita as notificações do Sliding Tasks e do canal Lembrete diário para receber os lembretes.</string>
+    <string name="reminder_open_settings">Abrir configurações de notificações</string>
+    <string name="reminder_save_error">Não foi possível atualizar o lembrete. Tente novamente.</string>
+    <string name="reminder_channel_description">Um convite diário para abrir o app e começar suas tarefas.</string>
+    <string name="reminder_notification_title">Hora das suas tarefas</string>
+    <string name="reminder_notification_body">Abra o Sliding Tasks e comece as tarefas de hoje.</string>
 </resources>

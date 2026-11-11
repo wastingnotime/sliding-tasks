@@ -237,4 +237,16 @@
     <string name="walkthrough_url">https://www.youtube.com/watch?v=RxyXm0tKKXg</string>
     <string name="walkthrough_open_error">No app is available to open this video.</string>
     <string name="import_backup_setup_required">Tasks and history restored. Automatic backups are off on this installation. Choose a backup folder to turn them on; folder access is not restored from a backup file.</string>
+    <string name="daily_reminder">Daily reminder</string>
+    <string name="reminder_description">A gentle reminder to open Sliding Tasks and start today’s tasks. Choose a time that works for you.</string>
+    <string name="reminder_on">On · every day</string>
+    <string name="reminder_off">Off</string>
+    <string name="reminder_time">Reminder time: %1$s</string>
+    <string name="reminder_timing_hint">Uses your device’s local time. Android may show the reminder later to save battery.</string>
+    <string name="reminder_permission_blocked">Notifications are blocked in Android settings. Allow notifications for Sliding Tasks and its Daily reminder channel to receive reminders.</string>
+    <string name="reminder_open_settings">Open notification settings</string>
+    <string name="reminder_save_error">Could not update the reminder. Please try again.</string>
+    <string name="reminder_channel_description">A daily invitation to open the app and start your tasks.</string>
+    <string name="reminder_notification_title">Time for your tasks</string>
+    <string name="reminder_notification_body">Open Sliding Tasks and start today’s tasks.</string>
 </resources>

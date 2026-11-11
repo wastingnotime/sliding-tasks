@@ -189,7 +189,7 @@ days, **Skip today** closes only that day's card.
 For example, plan a vitamin every two days; a haircut every two weeks on
 weekdays; separate Saturday pickup and Sunday drop-off routines anchored in the
 same two-week cycle; and trash once per week on any day. Morning and night can
-be included in the titles; the app does not schedule time-of-day reminders.
+be included in the titles; individual tasks do not have time-of-day reminders.
 Routine and one-time are the stored task types in Milestone 1; **Once per week**
 is a weekly schedule for a routine. The earlier Focus label had no distinct
 behavior and stored Focus tasks migrate to Routine. One-time tasks can be
@@ -283,3 +283,27 @@ GitHub Actions should build the debug APK and upload it as an artifact from
 `.github/workflows/build-mobile-apk.yml`.
 
 The local APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
+
+## Daily reminder
+
+Open **More → Daily reminder** to enable a daily notification and choose its time.
+It starts off, with 09:00 as the suggested time. The app asks for notification
+permission when you enable it. If Android blocks notifications, the screen links
+to notification settings. Tapping a reminder opens Today.
+
+The reminder uses the device’s local time and works offline, including after a
+reboot or time zone change. Android may delay delivery to save battery. Turning
+it off cancels the scheduled and visible reminder. Its settings stay on this
+installation and are not included in exported task backups.
+
+To exercise notification denial on a test emulator, revoke the permission and
+clear its prompt flags before running `DailyReminderPermissionTest` (this test
+skips when permission is already granted):
+
+```bash
+adb -s <emulator-serial> shell pm revoke org.wastingnotime.slidingtasks android.permission.POST_NOTIFICATIONS
+adb -s <emulator-serial> shell pm clear-permission-flags org.wastingnotime.slidingtasks android.permission.POST_NOTIFICATIONS user-set user-fixed
+```
+
+`DailyReminderTest` covers the time picker, saved settings, notification receiver,
+duplicate suppression, cancellation, and system-event rescheduling.

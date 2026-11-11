@@ -163,7 +163,7 @@ mobile event history -> event receiver API -> web analytics projection
 - event receiver: deferred and undefined
 - planning synchronization: deferred and optional
 - event receiver auth: deferred and undefined
-- notifications: not implemented; no scheduling assumptions are made
+- notifications: optional local daily reminder, off by default; see below
 - telemetry/event upload: not implemented; no user interaction leaves the
   device yet
 
@@ -179,3 +179,21 @@ guide. It opens the English or Brazilian Portuguese YouTube video externally,
 using the app's resource language, and states that internet is required. A
 missing external handler reports an error without affecting task data. The
 interactive practice guide remains available offline.
+
+## Daily reminder
+
+More → Daily reminder offers an on/off switch and a saved time, initially 09:00.
+The reminder is off on new installations. Enabling requests Android notification
+permission when needed; denial leaves the reminder off and provides a link to
+system notification settings. If permission or the channel is later blocked,
+the screen explains why an enabled reminder cannot appear.
+
+The app schedules one local notification per day at or after the selected local
+time. Android battery restrictions may delay delivery. Reboots, app updates,
+clock changes, and time zone changes reschedule the next occurrence. Daylight
+saving transitions follow the local calendar. Turning off cancels the alarm and
+visible reminder. Tapping the notification opens Today. Notifications contain
+only a generic invitation, without task titles, and work offline.
+
+Reminder preferences belong to this installation and are excluded from task
+backup files. Reminders do not generate cards or alter task history.

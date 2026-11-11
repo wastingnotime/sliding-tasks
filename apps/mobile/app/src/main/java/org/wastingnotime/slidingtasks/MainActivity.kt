@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import org.wastingnotime.slidingtasks.data.LocalTaskStore
 import org.wastingnotime.slidingtasks.data.BackupStatus
 import org.wastingnotime.slidingtasks.data.ScheduledBackup
+import org.wastingnotime.slidingtasks.data.DailyReminder
 import org.wastingnotime.slidingtasks.model.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -87,6 +88,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent { SlidingTasksApp() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        runCatching { DailyReminder(applicationContext).reschedule() }
     }
 }
 
@@ -122,6 +128,8 @@ private enum class AppSection(val label: Int, val icon: Int) {
     PLAN(R.string.plan, R.drawable.ic_nav_plan),
     REVIEW(R.string.review, R.drawable.ic_nav_review),
 }
+private enum class MoreScreen { ABOUT, BACKUP, REMINDER }
+
 private enum class PlanMode(val label: Int) {
     ROUTINE(R.string.routine), UNTIL_DECIDED(R.string.until_decided), ONE_TIME(R.string.one_time),
 }
@@ -182,8 +190,7 @@ fun SlidingTasksApp() {
     var section by remember { mutableStateOf(AppSection.TODAY) }
     var planEditorOpen by remember { mutableStateOf(false) }
     var planEditorTask by remember { mutableStateOf<PlannedTask?>(null) }
-    var aboutOpen by remember { mutableStateOf(false) }
-    var backupOnly by remember { mutableStateOf(false) }
+    var moreScreen by remember { mutableStateOf<MoreScreen?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     var pendingUndo by remember { mutableStateOf<PendingUndo?>(null) }
     val accessibilityManager = LocalAccessibilityManager.current
@@ -290,8 +297,7 @@ fun SlidingTasksApp() {
                     importError = null
                     finishGuide()
                     backupStatus = scheduledBackup.status()
-                    backupOnly = !backupStatus.enabled
-                    aboutOpen = !backupStatus.enabled
+                    moreScreen = if (backupStatus.enabled) null else MoreScreen.BACKUP
                     backupMessage = if (backupStatus.enabled) null else
                         context.getString(R.string.import_backup_setup_required)
                     section = AppSection.TODAY
@@ -342,8 +348,8 @@ fun SlidingTasksApp() {
         if (state.hasUserData()) guidePreferences.edit().putBoolean("completed", true).apply()
         runCatching { scheduledBackup.ensureScheduled() }
     }
-    BackHandler(enabled = aboutOpen || (guideStep < 0 && planEditorOpen)) {
-        if (aboutOpen) aboutOpen = false else planEditorOpen = false
+    BackHandler(enabled = moreScreen != null || (guideStep < 0 && planEditorOpen)) {
+        if (moreScreen != null) moreScreen = null else planEditorOpen = false
     }
 
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors) {
@@ -371,7 +377,7 @@ fun SlidingTasksApp() {
             },
             containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
-                if (!planEditorOpen && !aboutOpen && guideStep < 0) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                if (!planEditorOpen && moreScreen == null && guideStep < 0) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     AppSection.entries.forEach { item ->
                         NavigationBarItem(
                             selected = section == item,
@@ -386,9 +392,11 @@ fun SlidingTasksApp() {
         ) { padding ->
             Column(Modifier.padding(padding).consumeWindowInsets(padding).fillMaxSize()) {
                 saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
-                if (aboutOpen) AboutScreen(
-                    backupOnly = backupOnly,
-                    onBack = { aboutOpen = false },
+                if (moreScreen == MoreScreen.REMINDER) DailyReminderScreen(
+                    onBack = { moreScreen = null },
+                ) else if (moreScreen != null) AboutScreen(
+                    backupOnly = moreScreen == MoreScreen.BACKUP,
+                    onBack = { moreScreen = null },
                     onExport = { exportResult = null; exportLauncher.launch("sliding-tasks-backup.json") },
                     exportResult = exportResult,
                     backupStatus = backupStatus,
@@ -414,7 +422,7 @@ fun SlidingTasksApp() {
                     onPractice = {
                         snackbarHostState.currentSnackbarData?.dismiss()
                         pendingUndo = null
-                        aboutOpen = false
+                        moreScreen = null
                         guidePreferences.edit().remove("decisions").remove("day_passed").remove("date").remove("practice_plan").remove("plan_editing").remove("plan_exercise").apply()
                         changeGuideStep(1)
                     },
@@ -447,7 +455,7 @@ fun SlidingTasksApp() {
                     AppSection.TODAY -> TodayScreen(
                         date = today,
                         cards = engine.pendingCards(state),
-                        onAbout = { backups -> backupOnly = backups; aboutOpen = true },
+                        onAbout = { moreScreen = it },
                         pausedOneTimeTasks = state.tasks.filter { task ->
                             task.type == TaskType.ONE_TIME && !task.active && !task.resolved &&
                                 state.cards.none { it.taskId == task.id && it.boardDate == today && it.status == CardStatus.PENDING }
@@ -479,7 +487,7 @@ fun SlidingTasksApp() {
                     } else {
                         PlanScreen(
                             tasks = state.tasks.filter { it.type == TaskType.ROUTINE || !it.resolved },
-                            onAbout = { backups -> backupOnly = backups; aboutOpen = true },
+                            onAbout = { moreScreen = it },
                             onAdd = { planEditorTask = null; planEditorOpen = true },
                             onEdit = { planEditorTask = it; planEditorOpen = true },
                             onSetActive = { id, active -> commit(engine.setTaskActive(state, id, active)) },
@@ -496,7 +504,7 @@ fun SlidingTasksApp() {
                             onRemove = { id -> removeTask(id) },
                         )
                     }
-                    AppSection.REVIEW -> ReviewScreen(state, today, onAbout = { backups -> backupOnly = backups; aboutOpen = true })
+                    AppSection.REVIEW -> ReviewScreen(state, today, onAbout = { moreScreen = it })
                 }
             }
         }
@@ -633,7 +641,7 @@ private fun PageHeader(
     title: String,
     subtitle: String,
     subtitleTag: String? = null,
-    onAbout: ((Boolean) -> Unit)? = null,
+    onAbout: ((MoreScreen) -> Unit)? = null,
     onBack: (() -> Unit)? = null,
 ) {
     var moreMenuOpen by remember { mutableStateOf(false) }
@@ -670,13 +678,18 @@ private fun PageHeader(
             }
             DropdownMenu(expanded = moreMenuOpen, onDismissRequest = { moreMenuOpen = false }) {
                 DropdownMenuItem(
+                    text = { Text(stringResource(R.string.daily_reminder)) },
+                    onClick = { moreMenuOpen = false; onAbout(MoreScreen.REMINDER) },
+                    modifier = Modifier.testTag("reminder-menu-item"),
+                )
+                DropdownMenuItem(
                     text = { Text(stringResource(R.string.backup_restore)) },
-                    onClick = { moreMenuOpen = false; onAbout(true) },
+                    onClick = { moreMenuOpen = false; onAbout(MoreScreen.BACKUP) },
                     modifier = Modifier.testTag("backup-menu-item"),
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.about)) },
-                    onClick = { moreMenuOpen = false; onAbout(false) },
+                    onClick = { moreMenuOpen = false; onAbout(MoreScreen.ABOUT) },
                     modifier = Modifier.testTag("about-menu-item"),
                 )
             }
@@ -688,7 +701,7 @@ private fun PageHeader(
 private fun TodayScreen(
     date: LocalDate,
     cards: List<TaskCard>,
-    onAbout: (Boolean) -> Unit,
+    onAbout: (MoreScreen) -> Unit,
     pausedOneTimeTasks: List<PlannedTask>,
     onCommand: (CardCommand) -> Unit,
     onCreateOneTime: (String) -> Boolean,
@@ -786,7 +799,7 @@ private fun TodayScreen(
 @Composable
 private fun PlanScreen(
     tasks: List<PlannedTask>,
-    onAbout: (Boolean) -> Unit,
+    onAbout: (MoreScreen) -> Unit,
     onAdd: () -> Unit,
     onEdit: (PlannedTask) -> Unit,
     onSetActive: (String, Boolean) -> Unit,
@@ -1226,7 +1239,7 @@ private fun schedulePreview(schedule: TaskSchedule): String {
 private fun ReviewScreen(
     state: SlidingTasksState,
     today: LocalDate,
-    onAbout: ((Boolean) -> Unit)? = null,
+    onAbout: ((MoreScreen) -> Unit)? = null,
     introduction: (@Composable () -> Unit)? = null,
     conclusion: (@Composable () -> Unit)? = null,
 ) {

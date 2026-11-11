@@ -229,7 +229,10 @@ repository root:
 make mobile-run
 ```
 
-The command reuses a running emulator or starts the first configured AVD, waits
+The command uses a visible emulator window. If the selected running emulator is
+headless, it restarts that AVD with a visible window, preserving its saved data.
+Automated checks may continue to launch headless emulators separately.
+It reuses a visible emulator or starts the first configured AVD, waits
 for it to boot, builds and installs the debug APK, and launches the app. Select
 a specific AVD when needed:
 
